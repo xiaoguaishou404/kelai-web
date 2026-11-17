@@ -20,14 +20,14 @@ export function AbilityRadar({
   }));
 
   return (
-    <div className="h-72 w-full">
+    <div className="ability-radar">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart data={data} outerRadius="68%">
           <PolarGrid stroke="#DBE4FF" />
-          <PolarAngleAxis dataKey="name" tick={{ fill: "#465B73", fontSize: 12 }} />
+          <PolarAngleAxis dataKey="name" tick={{ fill: "#465B73", fontSize: "calc(var(--scale-base) * 12)" }} />
           <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-          {benchmark ? <Radar dataKey="benchmark" stroke="#94A3B8" strokeDasharray="4 4" fill="#94A3B8" fillOpacity={0.04} /> : null}
-          <Radar dataKey="score" stroke={color} strokeWidth={2} fill={color} fillOpacity={0.2} />
+          {benchmark ? <Radar dataKey="benchmark" stroke="#94A3B8" strokeDasharray="calc(var(--scale-base) * 4) calc(var(--scale-base) * 4)" fill="#94A3B8" fillOpacity={0.04} /> : null}
+          <Radar dataKey="score" stroke={color} strokeWidth="calc(var(--scale-base) * 2)" fill={color} fillOpacity={0.2} />
         </RadarChart>
       </ResponsiveContainer>
     </div>

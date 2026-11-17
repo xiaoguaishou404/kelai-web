@@ -496,7 +496,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return <DemoContext.Provider value={value}>{hydrated ? children : <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-400" role="status">正在载入实训工作空间…</div>}</DemoContext.Provider>;
+  return <DemoContext.Provider value={value}>{hydrated ? children : <div className="demo-loading" role="status">正在载入实训工作空间…</div>}</DemoContext.Provider>;
 }
 
 export function useDemo() {

@@ -1119,12 +1119,15 @@ function WorkspaceShell({ path }: { path: string[] }) {
                   <Tag>产业项目</Tag><h2>{project.name}</h2><p>{project.description}</p>
                   <div className="ep-chips">{project.deliverables.map((item) => <Tag key={item}>{item}</Tag>)}</div>
                   <p>能力匹配 <b className="ep-blue">{eligibility.match?.match ?? 0}%</b> · 截止 {project.deadline}</p>
-                  <div className="ep-actions"><Link className="ep-button secondary" href={`/platform/project/${project.id}`}>查看项目详情</Link>{state.role === "student" && (applied ? <Tag>{applied.status}</Tag> : <Btn disabled={!eligibility.ok} title={eligibility.reason} onClick={() => {
-                    if (!eligibility.ok) return notify(eligibility.reason);
-                    applyWithNotice({ kind: "project", targetId: project.id, name: project.name, company: project.company });
-                  }}>申请接单</Btn>)}</div>
-                  {state.role === "student" && !eligibility.ok && !applied && <small>{eligibility.reason}</small>}
-                  <Btn secondary onClick={() => project.jobId && go(`job/${job?.id ?? ""}`)}>查看能力要求</Btn>
+                  <div className="ep-actions">
+                    <Link className="ep-button secondary" href={`/platform/project/${project.id}`}>查看项目详情</Link>
+                    {state.role === "student" && (applied ? <Tag>{applied.status}</Tag> : <Btn disabled={!eligibility.ok} title={eligibility.reason} onClick={() => {
+                      if (!eligibility.ok) return notify(eligibility.reason);
+                      applyWithNotice({ kind: "project", targetId: project.id, name: project.name, company: project.company });
+                    }}>申请接单</Btn>)}
+                    <Btn secondary onClick={() => project.jobId && go(`job/${job?.id ?? ""}`)}>查看能力要求</Btn>
+                  </div>
+                  {state.role === "student" && !eligibility.ok && !applied && <small className="ep-action-note">{eligibility.reason}</small>}
                 </div>
               </Card>
             );
@@ -1150,12 +1153,14 @@ function WorkspaceShell({ path }: { path: string[] }) {
                 <div className="ep-cardbody">
                   <Tag>校招 / 实习</Tag><h2>{posting.name}</h2><p>{posting.description}</p>
                   <p>能力匹配 <b className="ep-blue">{match.match}%</b>{match.missing.length ? ` · 缺少${match.missing.join("、")}` : ""}</p>
-                  {state.role === "student" && (applied ? <Tag>{applied.status}</Tag> : <Btn disabled={!eligibility.ok} title={eligibility.reason} onClick={() => {
-                    if (!eligibility.ok) return notify(eligibility.reason);
-                    applyWithNotice({ kind: "job", targetId: posting.id, name: posting.name, company: posting.company });
-                  }}>投递简历</Btn>)}
-                  {state.role === "student" && !eligibility.ok && !applied && <small>{eligibility.reason}</small>}
-                  {state.role === "student" && <Btn secondary onClick={() => go("learning/resume")}>编辑简历</Btn>}
+                  <div className="ep-actions">
+                    {state.role === "student" && (applied ? <Tag>{applied.status}</Tag> : <Btn disabled={!eligibility.ok} title={eligibility.reason} onClick={() => {
+                      if (!eligibility.ok) return notify(eligibility.reason);
+                      applyWithNotice({ kind: "job", targetId: posting.id, name: posting.name, company: posting.company });
+                    }}>投递简历</Btn>)}
+                    {state.role === "student" && <Btn secondary onClick={() => go("learning/resume")}>编辑简历</Btn>}
+                  </div>
+                  {state.role === "student" && !eligibility.ok && !applied && <small className="ep-action-note">{eligibility.reason}</small>}
                 </div>
               </Card>
             );

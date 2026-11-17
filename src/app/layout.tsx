@@ -15,7 +15,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="zh-CN">
       <body className="page-enter">
         <DemoProvider>
-          <Suspense fallback={<div className="p-8 text-center text-ink-muted">正在加载科来工作空间…</div>}>{children}</Suspense>
+          <Suspense fallback={<div className="demo-loading">正在加载科来工作空间…</div>}>{children}</Suspense>
           <PageAgentBootstrap />
         </DemoProvider>
       </body>
