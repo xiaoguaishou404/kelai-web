@@ -30,13 +30,16 @@ import {
   classMetrics,
   completedDays,
   dimensions,
+  effectiveRightsStatus,
   examQuestions,
   generatedCertificateNumber,
   jobMatch,
   jobPostingEligibility,
   jobTrainingReadiness,
   latestWork,
+  majorGroupAdaptation,
   nowLabel,
+  orderRightsBlockers,
   projectEligibility,
   publishedAssessments,
   publishedCourses,
@@ -45,14 +48,19 @@ import {
   publishedStandards,
   resourceById,
   resourceName,
+  resourceRightsBlockedReason,
+  resourceRightsReady,
   resourceVisible,
+  rightsSummary,
   resumeComplete,
+  trainingEligibility,
   trainings,
   workBlockedReason,
   workReview,
   type Application,
   type ApplicationStatus,
   type AssessmentProfile,
+  type MajorGroup,
   type Resource,
   type Resume,
   type Review,
@@ -211,6 +219,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
     submitExam,
     issueCertificate,
     resourceAction,
+    updateMajorGroup,
     publishProject,
     toggleProject,
     publishJob,
@@ -235,6 +244,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
   const courses = publishedCourses(state);
   const publishedAssessmentList = publishedAssessments(state);
   const publishedStandardList = publishedStandards(state);
+  const accessibleAssessmentList = publishedAssessmentList.filter((item) => state.role === "manage" || resourceVisible(state, item.id));
+  const accessibleStandardList = publishedStandardList.filter((item) => state.role === "manage" || resourceVisible(state, item.id));
   const jobById = (id: string) => jobs.find((item) => item.id === id);
   const sceneById = (id: string) => scenes.find((item) => item.id === id);
   const courseById = (id: string) => courses.find((item) => item.id === id);
@@ -273,8 +284,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
     return training.dayPlans.find((item) => !done.includes(item.day)) ?? training.dayPlans[training.dayPlans.length - 1];
   };
   const assessment: AssessmentProfile =
-    publishedAssessmentList.find((item) => item.jobId === "service") ??
-    publishedAssessmentList[0] ??
+    accessibleAssessmentList.find((item) => item.jobId === "service") ??
+    accessibleAssessmentList[0] ??
     {
       id: "assessment-service",
       name: "技术服务岗位综合测评",
@@ -284,8 +295,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
       questions: examQuestions,
     };
   const evaluationStandard: StandardProfile =
-    publishedStandardList.find((item) => item.jobId === "service") ??
-    publishedStandardList[0] ??
+    accessibleStandardList.find((item) => item.jobId === "service") ??
+    accessibleStandardList[0] ??
     {
       id: "standard-service",
       name: "技术服务工程师能力评价标准",
@@ -502,43 +513,168 @@ function WorkspaceShell({ path }: { path: string[] }) {
   }
 
   function IndustryView() {
-    const visibleJobs = jobs.filter((item) => resourceVisible(state, item.id));
-    const visibleScenes = scenes.filter((item) => resourceVisible(state, item.id));
+    const [groupFilter, setGroupFilter] = useState("全部");
+    const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+    const [groupMajors, setGroupMajors] = useState("");
+    const [groupJobIds, setGroupJobIds] = useState<string[]>([]);
+    const manager = state.role === "manage";
+    const selectedGroup = state.majorGroups.find((item) => item.id === groupFilter);
+    const resourceAvailable = (id: string) =>
+      manager ? Boolean(resourceById(state, id)?.publishedContent) : resourceVisible(state, id);
+    const visibleJobs = jobs.filter(
+      (item) =>
+        resourceAvailable(item.id) &&
+        (!selectedGroup || selectedGroup.jobIds.includes(item.id)),
+    );
+    const visibleScenes = scenes.filter(
+      (item) =>
+        resourceAvailable(item.id) &&
+        (!selectedGroup || selectedGroup.jobIds.includes(item.jobId)),
+    );
+    const rights = rightsSummary(state);
+    const pendingScenes = scenes.filter((scene) => {
+      const status = effectiveRightsStatus(resourceById(state, scene.id)?.rights);
+      return status !== "已确权";
+    });
+    const beginGroupEdit = (group: MajorGroup) => {
+      setEditingGroupId(group.id);
+      setGroupMajors(group.majors.join("，"));
+      setGroupJobIds(group.jobIds);
+    };
+    const saveGroup = () => {
+      if (!editingGroupId) return;
+      const majors = groupMajors.split(/[，,、]/).map((item) => item.trim()).filter(Boolean);
+      if (!majors.length || !groupJobIds.length) return notify("请选择专业与关联岗位");
+      updateMajorGroup(editingGroupId, { majors, jobIds: groupJobIds });
+      notify("专业群适配已更新");
+      setEditingGroupId(null);
+    };
     return (
       <>
         <div className="ep-stats">
-          <Metric label="岗位方向" value={visibleJobs.length} />
-          <Metric label="实践场景" value={visibleScenes.length} />
-          <Metric label="短训路径" value={state.classroom.assignedTrainingIds.length} />
-          <Metric label="应用行业" value={new Set(visibleScenes.map((item) => item.industry)).size} />
+          <Metric label="产业链环节" value={3} />
+          <Metric label="科来适配岗位" value={jobs.filter((item) => resourceAvailable(item.id)).length} />
+          <Metric label="适配专业群" value={state.majorGroups.length} />
+          <Metric label="已确权资源" value={`${rights.confirmed}/${state.resources.length}`} />
         </div>
         <div className="ep-section-title">
-          <div><Tag>INDUSTRY LANDSCAPE</Tag><h1>从流量可见，到业务可知</h1><p>连接网络分析产业链与真实岗位能力</p></div>
+          <div><Tag>INDUSTRY LANDSCAPE</Tag><h1>从产业链到专业群</h1><p>连接科来岗位能力、院校专业群与可确权教学资源</p></div>
           <Link className="ep-button" href="/platform/resources">探索岗位与场景 <ArrowUpRight size={16} /></Link>
         </div>
         <div className="ep-chain industry">
           {[["采集基础设施", "TAP · 镜像采集 · 环境部署", Network], ["分析研判", "协议分析 · 性能诊断 · 安全研判", Activity], ["技术服务", "方案验证 · 现场交付 · 业务运维", ShieldCheck]].map(([name, desc, Icon]) => {
             const Comp = Icon as typeof Network;
+            const stageJobs = visibleJobs.filter((item) => item.stage === name);
+            const relatedGroups = state.majorGroups.filter((group) => group.jobIds.some((id) => stageJobs.some((job) => job.id === id)));
+            const readyCount = stageJobs.filter((job) => jobTrainingReadiness(state, job.id).ready).length;
             return (
-              <Card key={String(name)}>
+              <Card className="ep-industry-stage" key={String(name)}>
                 <Comp size={48} strokeWidth={1} />
                 <h2>{String(name)}</h2>
                 <p>{String(desc)}</p>
-                {visibleJobs.filter((item) => item.stage === name).map((item) => (
+                <div className="ep-stage-meta">
+                  <span>{stageJobs.length} 个岗位</span>
+                  <span>{readyCount}/{stageJobs.length} 条完整路径</span>
+                </div>
+                <div className="ep-chips">{relatedGroups.map((group) => <Tag key={group.id}>{group.name}</Tag>)}</div>
+                {stageJobs.map((item) => (
                   <Link className="ep-row" key={item.id} href={`/platform/job/${item.id}`}>{item.name}<ArrowUpRight size={15} /></Link>
                 ))}
               </Card>
             );
           })}
         </div>
+        <Card className="ep-major-matrix">
+          <div className="ep-section-title">
+            <div><Tag>MAJOR GROUP FIT</Tag><h2>科来适配的专业群</h2></div>
+            <button className="ep-button secondary" onClick={() => setGroupFilter("全部")}>全部专业群</button>
+          </div>
+          <div className="ep-filters">
+            <button className={groupFilter === "全部" ? "active" : ""} onClick={() => setGroupFilter("全部")}>全部</button>
+            {state.majorGroups.map((group) => (
+              <button key={group.id} className={groupFilter === group.id ? "active" : ""} onClick={() => setGroupFilter(group.id)}>{group.name}</button>
+            ))}
+          </div>
+          <div className="ep-major-grid">
+            {state.majorGroups.map((group) => {
+              const fit = majorGroupAdaptation(state, group.id);
+              return (
+                <article className={"ep-major-card " + (groupFilter === group.id ? "selected" : "")} key={group.id}>
+                  <button className="ep-major-main" onClick={() => setGroupFilter(group.id)}>
+                    <div className="ep-major-head"><Tag>{group.code}</Tag><Tag tone={fit.status === "强适配" ? "success" : fit.status === "可适配" ? "warning" : "muted"}>{fit.status}</Tag></div>
+                    <h3>{group.name}</h3>
+                    <p>{group.description}</p>
+                    <div className="ep-chips">{group.majors.map((major) => <span key={major}>{major}</span>)}</div>
+                    <div className="ep-major-stats">
+                      <span><b>{fit.jobs.length}</b> 岗位</span>
+                      <span><b>{fit.scenes.length}</b> 场景</span>
+                      <span><b>{fit.courses.length}</b> 课程</span>
+                      <span><b>{fit.completedJobs.length}</b> 完整路径</span>
+                    </div>
+                  </button>
+                  {manager && <button type="button" className="ep-major-edit" onClick={() => beginGroupEdit(group)}>维护适配</button>}
+                </article>
+              );
+            })}
+          </div>
+          {manager && editingGroupId && (
+            <div className="ep-major-editor">
+              <h3>维护专业与岗位映射</h3>
+              <label className="ep-form">覆盖专业<input value={groupMajors} onChange={(event) => setGroupMajors(event.target.value)} /></label>
+              <div className="ep-resource-checks">
+                <h3>关联岗位</h3>
+                {jobs.map((job) => (
+                  <label key={job.id}>
+                    <input type="checkbox" checked={groupJobIds.includes(job.id)} onChange={(event) => setGroupJobIds(event.target.checked ? [...groupJobIds, job.id] : groupJobIds.filter((id) => id !== job.id))} />
+                    {job.name}
+                  </label>
+                ))}
+              </div>
+              <div className="ep-actions"><Btn onClick={saveGroup}>保存适配</Btn><Btn secondary onClick={() => setEditingGroupId(null)}>取消</Btn></div>
+            </div>
+          )}
+        </Card>
+        <Card className="ep-rights-overview">
+          <div className="ep-section-title">
+            <div><Tag>RIGHT CLEARANCE</Tag><h2>场景与资源确权</h2></div>
+            {manager && <Link className="ep-link" href="/platform/manage/resources">进入资源管理 <ArrowUpRight size={15} /></Link>}
+          </div>
+          <div className="ep-rights-stats">
+            <div><b>{rights.confirmed}</b><span>已确权</span></div>
+            <div><b>{rights.reviewing}</b><span>审核中</span></div>
+            <div><b>{rights.pending}</b><span>待确权</span></div>
+            <div><b>{rights.rejected + rights.expired}</b><span>驳回 / 过期</span></div>
+          </div>
+          {manager && pendingScenes.length > 0 && (
+            <div className="ep-rights-pending">
+              {pendingScenes.slice(0, 4).map((scene) => {
+                const resource = resourceById(state, scene.id);
+                const status = effectiveRightsStatus(resource?.rights);
+                return (
+                  <div key={scene.id}>
+                    <span><b>{scene.name}</b><small>{resource?.rights?.ownership ?? "待补录"}</small></span>
+                    <Tag tone={status === "已驳回" || status === "已过期" ? "danger" : "warning"}>{status}</Tag>
+                    {manager && resource?.rights?.agreementNo && <small>{resource.rights.agreementNo}</small>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
         <Card>
           <h2>行业应用现场</h2>
           <div className="ep-grid compact">
-            {visibleScenes.map((item) => (
-              <Link className="ep-field" href={`/platform/scene/${item.id}`} key={item.id}>
-                <Tag>{item.industry}</Tag><h3>{item.name}</h3><p>{item.description}</p>
-              </Link>
-            ))}
+            {visibleScenes.map((item) => {
+              const resource = resourceById(state, item.id);
+              const rightsStatus = effectiveRightsStatus(resource?.rights);
+              return (
+                <Link className="ep-field ep-scene-field" href={`/platform/scene/${item.id}`} key={item.id}>
+                  <div className="ep-field-tags"><Tag>{item.industry}</Tag><Tag tone={rightsStatus === "已确权" ? "success" : "warning"}>{rightsStatus}</Tag></div>
+                  <h3>{item.name}</h3><p>{item.description}</p>
+                  <small>{resource?.rights?.ownership ?? "待补录"} · {resource?.rights?.useScopes.join(" / ")}</small>
+                </Link>
+              );
+            })}
           </div>
         </Card>
       </>
@@ -656,16 +792,22 @@ function WorkspaceShell({ path }: { path: string[] }) {
   function JobView({ id }: { id?: string }) {
     const job = jobs.find((item) => item.id === id);
     if (!job) return <Empty>岗位不存在。</Empty>;
-    if (!resourceVisible(state, job.id) && state.role !== "manage") return <Empty>该岗位尚未授权给当前院校。</Empty>;
+    if (!resourceVisible(state, job.id) && state.role !== "manage") {
+      return <Empty>{resourceRightsBlockedReason(state, job.id, "教学使用") || "该岗位尚未授权给当前院校。"}</Empty>;
+    }
     const readiness = jobTrainingReadiness(state, job.id);
-    const relatedAssessments = publishedAssessmentList.filter((item) => (job.assessmentIds ?? []).includes(item.id));
-    const relatedStandards = publishedStandardList.filter((item) => (job.standardIds ?? []).includes(item.id));
-    const relatedScenes = scenes.filter((item) => (job.sceneIds ?? []).includes(item.id) && resourceVisible(state, item.id));
-    const relatedCourses = courses.filter((item) => (job.courseIds ?? []).includes(item.id) && resourceVisible(state, item.id));
+    const relatedAssessments = publishedAssessmentList.filter((item) => (job.assessmentIds ?? []).includes(item.id) && (state.role === "manage" || resourceVisible(state, item.id)));
+    const relatedStandards = publishedStandardList.filter((item) => (job.standardIds ?? []).includes(item.id) && (state.role === "manage" || resourceVisible(state, item.id)));
+    const relatedScenes = scenes.filter((item) => (job.sceneIds ?? []).includes(item.id) && (state.role === "manage" || resourceVisible(state, item.id)));
+    const relatedCourses = courses.filter((item) => (job.courseIds ?? []).includes(item.id) && (state.role === "manage" || resourceVisible(state, item.id)));
+    const relatedGroups = state.majorGroups.filter((group) => (job.majorGroupIds ?? []).includes(group.id));
+    const jobRights = resourceById(state, job.id)?.rights;
     return (
       <>
         <Card>
-          <Tag>{job.category}</Tag><Tag tone={readiness.ready ? "success" : "warning"}>{readiness.ready ? "可培养" : "学习路径待完善"}</Tag><h1>{resourceName(state, job.id, job.name)}</h1><p>{job.description}</p>
+          <Tag>{job.category}</Tag><Tag tone={readiness.ready ? "success" : "warning"}>{readiness.ready ? "可培养" : "学习路径待完善"}</Tag>
+          {jobRights && <Tag tone={effectiveRightsStatus(jobRights) === "已确权" ? "success" : "warning"}>{effectiveRightsStatus(jobRights)}</Tag>}
+          <h1>{resourceName(state, job.id, job.name)}</h1><p>{job.description}</p>
           <div className="ep-chips">{job.skills.map((item) => <Tag key={item}>{item}</Tag>)}</div>
           {state.role === "student" && <Btn secondary onClick={() => toggleFavoriteWithNotice(job.id)}>{state.favorites.includes(job.id) ? "已收藏" : "收藏岗位"}</Btn>}
         </Card>
@@ -686,6 +828,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
           </Card>
           <Card>
             <h2>岗位实践路径</h2>
+            {relatedGroups.length > 0 && <><h2>适配专业群</h2><div className="ep-chips">{relatedGroups.map((group) => <Tag key={group.id}>{group.name}</Tag>)}</div></>}
             {relatedScenes.map((item) => <Link className="ep-row" key={item.id} href={`/platform/scene/${item.id}`}>{item.name}<ChevronRight /></Link>)}
             <h2>关联课程与评价</h2>
             {relatedCourses.map((item) => <Link className="ep-row" key={item.id} href={`/platform/course/${item.id}`}>{item.name}<ChevronRight /></Link>)}
@@ -767,7 +910,9 @@ function WorkspaceShell({ path }: { path: string[] }) {
   function CourseView({ id }: { id?: string }) {
     const course = courseById(id ?? "course-0");
     if (!course) return <Empty>课程不存在。</Empty>;
-    if (!resourceVisible(state, course.id) && state.role !== "manage") return <Empty>课程尚未授权给当前院校。</Empty>;
+    if (!resourceVisible(state, course.id) && state.role !== "manage") {
+      return <Empty>{resourceRightsBlockedReason(state, course.id, "教学使用") || "课程尚未授权给当前院校。"}</Empty>;
+    }
     const chapter = course.chapters[selected] ?? course.chapters[0];
     return (
       <div className="ep-split">
@@ -787,14 +932,19 @@ function WorkspaceShell({ path }: { path: string[] }) {
   function SceneView({ id }: { id?: string }) {
     const scene = sceneById(id ?? "bank");
     if (!scene) return <Empty>场景不存在。</Empty>;
-    if (!resourceVisible(state, scene.id) && state.role !== "manage") return <Empty>场景尚未授权给当前院校。</Empty>;
+    if (!resourceVisible(state, scene.id) && state.role !== "manage") {
+      return <Empty>{resourceRightsBlockedReason(state, scene.id, "教学使用") || "场景尚未授权给当前院校。"}</Empty>;
+    }
     const work = latestWork(state, scene.id);
     return <ScenePanel key={scene.id} scene={scene} work={work} notify={notify} />;
   }
 
   function AssessmentDetail({ id }: { id: string }) {
     const item = publishedAssessmentList.find((assessmentItem) => assessmentItem.id === id);
-    if (!item || (!resourceVisible(state, item.id) && state.role !== "manage")) return <Empty>测评不存在或尚未授权。</Empty>;
+    if (!item) return <Empty>测评不存在。</Empty>;
+    if (!resourceVisible(state, item.id) && state.role !== "manage") {
+      return <Empty>{resourceRightsBlockedReason(state, item.id, "教学使用") || "测评尚未授权给当前院校。"}</Empty>;
+    }
     const job = jobById(item.jobId);
     return (
       <Card>
@@ -811,7 +961,10 @@ function WorkspaceShell({ path }: { path: string[] }) {
 
   function StandardDetail({ id }: { id: string }) {
     const item = publishedStandardList.find((standard) => standard.id === id);
-    if (!item || (!resourceVisible(state, item.id) && state.role !== "manage")) return <Empty>评价标准不存在或尚未授权。</Empty>;
+    if (!item) return <Empty>评价标准不存在。</Empty>;
+    if (!resourceVisible(state, item.id) && state.role !== "manage") {
+      return <Empty>{resourceRightsBlockedReason(state, item.id, "教学使用") || "评价标准尚未授权给当前院校。"}</Empty>;
+    }
     const job = jobById(item.jobId);
     return (
       <Card>
@@ -829,6 +982,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
   }
 
   function AssessmentView() {
+    if (accessibleAssessmentList.length === 0) return <Empty>暂无已完成确权并授权给当前院校的岗位测评。</Empty>;
     const eligibility = certificateEligibility(state);
     return (
       <>
@@ -852,8 +1006,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
             <div className="ep-row" key={item.id}><div className="ep-grow"><b>{item.score} 分</b><p>{item.submittedAt}</p></div><Tag tone={item.passed ? "success" : "warning"}>{item.passed ? "已通过" : "未通过"}</Tag></div>
           ))}
         </Card>
-        {publishedAssessmentList.length > 1 && <Card><h2>全部岗位测评</h2>{publishedAssessmentList.map((item) => <Link className="ep-row" key={item.id} href={`/platform/assessment/${item.id}`}><span className="ep-grow">{item.name}<small>{jobById(item.jobId)?.name}</small></span><ChevronRight /></Link>)}</Card>}
-        <Card><h2>岗位评价标准</h2>{publishedStandardList.map((item) => <Link className="ep-row" key={item.id} href={`/platform/standard/${item.id}`}><span className="ep-grow">{item.name}<small>{jobById(item.jobId)?.name}</small></span><ChevronRight /></Link>)}</Card>
+        {accessibleAssessmentList.length > 1 && <Card><h2>全部岗位测评</h2>{accessibleAssessmentList.map((item) => <Link className="ep-row" key={item.id} href={`/platform/assessment/${item.id}`}><span className="ep-grow">{item.name}<small>{jobById(item.jobId)?.name}</small></span><ChevronRight /></Link>)}</Card>}
+        <Card><h2>岗位评价标准</h2>{accessibleStandardList.map((item) => <Link className="ep-row" key={item.id} href={`/platform/standard/${item.id}`}><span className="ep-grow">{item.name}<small>{jobById(item.jobId)?.name}</small></span><ChevronRight /></Link>)}</Card>
       </>
     );
   }
@@ -879,7 +1033,9 @@ function WorkspaceShell({ path }: { path: string[] }) {
 
   function ExamView({ id }: { id?: string }) {
     if (state.role !== "student") return <Empty>学生登录后可参加测评。</Empty>;
-    const activeAssessment = publishedAssessmentList.find((item) => item.id === id) ?? assessment;
+    if (accessibleAssessmentList.length === 0) return <Empty>测评尚未完成权属确认或院校授权。</Empty>;
+    const activeAssessment = id ? accessibleAssessmentList.find((item) => item.id === id) : assessment;
+    if (!activeAssessment) return <Empty>测评不存在或尚未完成权属确认与院校授权。</Empty>;
     const latest = state.examAttempts[0];
     return (
       <Card>
@@ -1150,7 +1306,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
           <h2>可分配短训</h2>
           {assignableTrainings.map((training) => {
             const assigned = state.classroom.assignedTrainingIds.includes(training.id);
-            return <div className="ep-row" key={training.id}><span className="ep-grow">{training.name} · {training.days} 天</span><Btn secondary disabled={assigned} onClick={() => { assignTraining(training.id); notify("短训已分配至班级"); }}>{assigned ? "已分配" : "分配给本班"}</Btn></div>;
+            const eligibility = trainingEligibility(state, training);
+            return <div className="ep-row" key={training.id}><span className="ep-grow">{training.name} · {training.days} 天{!eligibility.ok && <small>{eligibility.reason}</small>}</span><Btn secondary disabled={assigned || !eligibility.ok} title={eligibility.reason} onClick={() => { if (!eligibility.ok) return notify(eligibility.reason); assignTraining(training.id); notify("短训已分配至班级"); }}>{assigned ? "已分配" : "分配给本班"}</Btn></div>;
           })}
         </Card>
         <Card>
@@ -1232,6 +1389,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
 
   function ManageHome() {
     const pendingResources = state.resources.filter((item) => item.status === "待审核").length;
+    const rights = rightsSummary(state);
+    const rightsAttention = rights.pending + rights.reviewing + rights.rejected + rights.expired;
     const projectApplications = state.applications.filter((item) => item.kind === "project").length;
     const jobApplications = state.applications.filter((item) => item.kind === "job").length;
     const pendingOrders = state.orders.filter((item) => item.status !== "已结算" && item.status !== "已取消").length;
@@ -1239,7 +1398,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
       <>
         <div className="ep-stats">
           <Metric label="合作院校" value={state.schools.filter((item) => item.status === "服务中").length} />
-          <Metric label="待审核资源" value={pendingResources} />
+          <Metric label="待处理资源" value={pendingResources + rightsAttention} />
           <Metric label="待处理申请" value={projectApplications + jobApplications} />
           <Metric label="订阅流程中" value={pendingOrders} />
         </div>
@@ -1261,6 +1420,12 @@ function WorkspaceShell({ path }: { path: string[] }) {
           <div className="ep-stats">
             {(["岗位", "场景", "课程", "测评", "评价标准"] as const).map((type) => <Metric key={type} label={type} value={state.resources.filter((item) => item.type === type).length} />)}
           </div>
+          <div className="ep-rights-stats">
+            <div><b>{rights.confirmed}</b><span>已确权</span></div>
+            <div><b>{rights.reviewing}</b><span>审核中</span></div>
+            <div><b>{rights.pending}</b><span>待确权</span></div>
+            <div><b>{rights.rejected + rights.expired}</b><span>驳回 / 过期</span></div>
+          </div>
         </Card>
       </>
     );
@@ -1277,23 +1442,28 @@ function WorkspaceShell({ path }: { path: string[] }) {
           <div className="ep-toolbar ep-resource-toolbar"><div><b>{resourceType}资源</b><p>{resourceType === "岗位" ? "按真实工作任务建设能力模型并组织学习路径" : `管理${resourceType}资源、版本和院校授权`}</p></div><Btn onClick={() => setCreatingResource(true)}><Plus size={16} />新建{resourceType}</Btn></div>
           {creatingResource && <ResourceBuilder kind={resourceType} notify={notify} onClose={() => setCreatingResource(false)} />}
           <div className="ep-tablewrap"><table>
-            <thead><tr><th>编码 / 名称</th><th>版本</th><th>状态</th><th>关联 / 完整性</th><th>院校授权</th><th>操作</th></tr></thead>
+            <thead><tr><th>编码 / 名称</th><th>版本</th><th>状态</th><th>关联 / 完整性</th><th>资源确权</th><th>院校授权</th><th>操作</th></tr></thead>
             <tbody>{resources.map((resource) => {
               const content = resource.draftContent.data;
               const code = "code" in content ? content.code : undefined;
               const readiness = resource.draftContent.kind === "job" ? jobTrainingReadiness(state, resource.id) : { ready: false, reason: "" };
+              const rightsStatus = effectiveRightsStatus(resource.rights);
+              const rightsReason = resourceRightsBlockedReason(state, resource.id, "教学使用");
               return (
                 <tr key={resource.id}>
                   <td><Link href={`/platform/resource/${resource.id}`}>{resource.name}</Link><small>{code ?? resource.id}</small>{resource.reviewNote && <small className="danger">{resource.reviewNote}</small>}</td>
                   <td>{resource.version}</td>
                   <td><Tag tone={resource.status === "已发布" ? "success" : resource.status === "已驳回" ? "danger" : "warning"}>{resource.status}</Tag></td>
                   <td>{resource.draftContent.kind === "job" ? <><Tag tone={readiness.ready ? "success" : "muted"}>{readiness.ready ? "可培养" : "待完善"}</Tag><small>{readiness.reason}</small></> : `${resource.relatedIds.length} 项关联`}</td>
+                  <td><Tag tone={rightsStatus === "已确权" ? "success" : rightsStatus === "已驳回" || rightsStatus === "已过期" ? "danger" : "warning"}>{rightsStatus}</Tag><small>{rightsReason}</small></td>
                   <td>{state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") ? "已授权" : "未授权"}</td>
                   <td><div className="ep-actions">
+                    {(rightsStatus === "待确权" || rightsStatus === "已驳回" || rightsStatus === "已过期") && <Btn secondary onClick={() => go(`resource/${resource.id}`)}>补录确权</Btn>}
                     {resource.status === "草稿" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "submit", "")}>提交审核</Btn>}
-                    {resource.status === "待审核" && <><Btn onClick={() => resourceActionWithNotice(resource.id, "publish", "")}>审核发布</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject", "请补充内容与关联资源")}>驳回</Btn></>}
+                    {resource.status === "待审核" && rightsStatus === "审核中" && <><Btn onClick={() => resourceActionWithNotice(resource.id, "confirm-rights", "")}>通过确权</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject-rights", "请补充权属材料")}>驳回权属</Btn></>}
+                    {resource.status === "待审核" && <><Btn disabled={Boolean(rightsReason)} title={rightsReason} onClick={() => resourceActionWithNotice(resource.id, "publish", "")}>审核发布</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject", "请补充内容与关联资源")}>驳回内容</Btn></>}
                     {resource.status === "已驳回" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "submit", "")}>重新提交</Btn>}
-                    {resource.status === "已发布" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "authorize", "")}>{state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") ? "撤回授权" : "发放授权"}</Btn>}
+                    {resource.status === "已发布" && <Btn secondary disabled={!state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") && Boolean(rightsReason)} title={rightsReason} onClick={() => resourceActionWithNotice(resource.id, "authorize", "")}>{state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") ? "撤回授权" : "发放授权"}</Btn>}
                     {resource.status === "已发布" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "offline", "")}>下线</Btn>}
                     {(resource.status === "已下线" || resource.status === "已驳回") && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "revise", "")}>编辑新版本</Btn>}
                   </div></td>
@@ -1347,7 +1517,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
     const [acceptance, setAcceptance] = useState("结论有证据支撑\n说明采集边界");
     const [minMatch, setMinMatch] = useState(60);
     const applications = state.applications.filter((item) => item.kind === kind);
-    const selectableJobs = jobs.filter((job) => jobTrainingReadiness(state, job.id).ready);
+    const requiredScope = kind === "project" ? "项目展示" : "招聘引用";
+    const selectableJobs = jobs.filter((job) => jobTrainingReadiness(state, job.id).ready && resourceRightsReady(state, job.id, requiredScope));
     const selectedJob = selectableJobs.find((job) => job.id === jobId) ?? selectableJobs[0];
     return (
       <>
@@ -1361,7 +1532,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
             <label className="ep-form">最低能力匹配<input type="number" min="0" max="100" value={minMatch} onChange={(event) => setMinMatch(Number(event.target.value))} /></label>
             <label className="ep-form">{kind === "project" ? "业务问题与验收标准" : "岗位职责与任职要求"}<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
             {kind === "project" && <><label className="ep-form">交付物（每行一项）<textarea value={deliverables} onChange={(event) => setDeliverables(event.target.value)} /></label><label className="ep-form">验收标准（每行一项）<textarea value={acceptance} onChange={(event) => setAcceptance(event.target.value)} /></label></>}
-            {selectableJobs.length === 0 && <p className="ep-status warn">暂无可培养岗位。岗位至少需要发布并授权一个场景和一门课程。</p>}
+            {selectableJobs.length === 0 && <p className="ep-status warn">暂无可引用岗位。岗位需形成完整学习路径，且权属范围包含{requiredScope}。</p>}
             <Btn disabled={!name.trim() || !company.trim() || !description.trim() || !selectedJob} onClick={() => {
               if (kind === "project") {
                 publishProject({
@@ -1410,17 +1581,21 @@ function WorkspaceShell({ path }: { path: string[] }) {
       <Card>
         <h1>资源订阅与授权</h1>
         <p>基础包已生效，年度更新包完成确认、授权后才会对院校开放。</p>
-        {state.orders.map((order) => (
-          <div className="ep-field" key={order.id}>
-            <div className="ep-row"><div className="ep-grow"><h2>{order.name}</h2><p>{order.packageId === "base" ? "基础岗位培养资源" : "新增场景与课程更新"}</p></div><Tag tone={order.status === "已结算" ? "success" : "warning"}>{order.status}</Tag></div>
-            <p>演示金额 ¥{order.amount.toLocaleString("zh-CN")} · {order.id}</p>
-            {order.status === "待确认" && <Btn onClick={() => { advanceOrder(order.id, "已确认", "院校确认年度更新包"); notify("订阅已确认"); }}>确认订阅订单</Btn>}
-            {order.status === "已确认" && <Btn onClick={() => { advanceOrder(order.id, "已授权", "资源已发放至江城理工学院"); notify("资源授权已发放"); }}>发放资源授权</Btn>}
-            {order.status === "已授权" && <Btn onClick={() => { advanceOrder(order.id, "已结算", "确认收款并完成结算"); notify("订单已结算"); }}>确认收款并结算</Btn>}
-            {order.status === "已结算" && <Tag tone="success">流程完成</Tag>}
-            <History items={order.history} />
-          </div>
-        ))}
+        {state.orders.map((order) => {
+          const blockers = orderRightsBlockers(state, order);
+          return (
+            <div className="ep-field" key={order.id}>
+              <div className="ep-row"><div className="ep-grow"><h2>{order.name}</h2><p>{order.packageId === "base" ? "基础岗位培养资源" : "新增场景与课程更新"} · {order.majorGroupIds.map((id) => state.majorGroups.find((group) => group.id === id)?.name).filter(Boolean).join(" / ")}</p></div><Tag tone={order.status === "已结算" ? "success" : "warning"}>{order.status}</Tag></div>
+              <p>演示金额 ¥{order.amount.toLocaleString("zh-CN")} · {order.id}</p>
+              {order.status === "待确认" && <Btn onClick={() => { advanceOrder(order.id, "已确认", "院校确认年度更新包"); notify("订阅已确认"); }}>确认订阅订单</Btn>}
+              {order.status === "已确认" && <Btn disabled={blockers.length > 0} title={blockers.map((item) => item.reason).join("；")} onClick={() => { if (blockers.length) return notify("仍有资源未完成确权"); advanceOrder(order.id, "已授权", "资源已发放至江城理工学院"); notify("资源授权已发放"); }}>发放资源授权</Btn>}
+              {order.status === "已授权" && <Btn onClick={() => { advanceOrder(order.id, "已结算", "确认收款并完成结算"); notify("订单已结算"); }}>确认收款并结算</Btn>}
+              {order.status === "已结算" && <Tag tone="success">流程完成</Tag>}
+              {blockers.length > 0 && <div className="ep-rights-pending">{blockers.map((item) => <div key={item.id}><span><b>{item.name}</b><small>{item.reason}</small></span><Tag tone="warning">待处理</Tag></div>)}</div>}
+              <History items={order.history} />
+            </div>
+          );
+        })}
       </Card>
     );
   }
@@ -1439,6 +1614,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
     const [mode, setMode] = useState<"preview" | "edit">("preview");
     const resource = id ? resourceById(state, id) : undefined;
     if (!resource) return <Empty>资源不存在。</Empty>;
+    const rightsStatus = effectiveRightsStatus(resource.rights);
+    const rightsReason = resourceRightsBlockedReason(state, resource.id, "教学使用");
     if (state.role === "manage") return (
       <div>
         <Card>
@@ -1446,15 +1623,35 @@ function WorkspaceShell({ path }: { path: string[] }) {
         </Card>
         {mode === "edit" ? <ResourceBuilder resource={resource} notify={notify} onClose={() => setMode("preview")} /> : <>
           <Card><ResourcePreview state={state} resource={resource} /></Card>
+          <Card className="ep-rights-detail">
+            <div className="ep-section-title"><div><Tag>RIGHT CLEARANCE</Tag><h2>资源确权</h2><p>{resource.rights.ownership} · {resource.rights.ownerName}</p></div><Tag tone={rightsStatus === "已确权" ? "success" : rightsStatus === "已驳回" || rightsStatus === "已过期" ? "danger" : "warning"}>{rightsStatus}</Tag></div>
+            <div className="ep-rights-detail-grid">
+              <div><span>协议 / 授权编号</span><b>{resource.rights.agreementNo || "待补录"}</b></div>
+              <div><span>权属材料</span><b>{resource.rights.evidenceName || "待补录"}</b></div>
+              <div><span>有效期</span><b>{resource.rights.validFrom} 至 {resource.rights.validUntil}</b></div>
+              <div><span>使用范围</span><b>{resource.rights.useScopes.join(" / ") || "待选择"}</b></div>
+            </div>
+            <p>{resource.rights.sourceNote}</p>
+            <p>{resource.rights.desensitizationNote}</p>
+            {rightsReason && <p className="ep-status warn">{rightsReason}</p>}
+            <div className="ep-actions">
+              {(rightsStatus === "待确权" || rightsStatus === "已驳回" || rightsStatus === "已过期") && <Btn secondary onClick={() => setMode("edit")}>补录权属</Btn>}
+              {rightsStatus === "审核中" && <><Btn onClick={() => resourceActionWithNotice(resource.id, "confirm-rights", "")}>确认已确权</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject-rights", "请补充权属证明材料")}>驳回权属</Btn></>}
+              {rightsStatus === "已确权" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "revoke-rights", "权属撤回后资源将停止前台使用")}>撤回权属</Btn>}
+            </div>
+            <History items={(resource.rights.history ?? []).map((item) => ({ at: item.at, actor: item.actor, action: item.action, note: item.note }))} />
+          </Card>
           <Card><h2>审核与发布</h2><div className="ep-actions">
             {resource.status === "草稿" && <Btn onClick={() => resourceActionWithNotice(resource.id, "submit", "")}>提交审核</Btn>}
-            {resource.status === "待审核" && <><Btn onClick={() => resourceActionWithNotice(resource.id, "publish", "")}>审核发布</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject", "请补充内容与关联资源")}>驳回</Btn></>}
-            {resource.status === "已发布" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "authorize", "")}>{state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") ? "撤回授权" : "发放授权"}</Btn>}
+            {resource.status === "待审核" && <><Btn disabled={Boolean(rightsReason)} title={rightsReason} onClick={() => resourceActionWithNotice(resource.id, "publish", "")}>审核发布</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject", "请补充内容与关联资源")}>驳回内容</Btn></>}
+            {resource.status === "已发布" && <Btn secondary disabled={!state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") && Boolean(rightsReason)} title={rightsReason} onClick={() => resourceActionWithNotice(resource.id, "authorize", "")}>{state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") ? "撤回授权" : "发放授权"}</Btn>}
           </div><History items={resource.reviewHistory.map((item) => ({ at: item.at, actor: item.actor, action: item.action, note: item.note }))} /></Card>
         </>}
       </div>
     );
-    if (!resourceVisible(state, resource.id)) return <Empty>该资源尚未对当前院校开放。</Empty>;
+    if (!resourceVisible(state, resource.id)) {
+      return <Empty>{resourceRightsBlockedReason(state, resource.id, "教学使用") || "该资源尚未对当前院校开放。"}</Empty>;
+    }
     return <Card><ResourcePreview state={state} resource={resource} /><h2>关联资源</h2>{resource.relatedIds.map((relatedId) => {
       const related = resourceById(state, relatedId);
       return related && resourceVisible(state, related.id) ? <Link className="ep-row" key={related.id} href={related.type === "岗位" ? `/platform/job/${related.id}` : related.type === "场景" ? `/platform/scene/${related.id}` : related.type === "课程" ? `/platform/course/${related.id}` : related.type === "测评" ? `/platform/assessment/${related.id}` : `/platform/standard/${related.id}`}>{related.name}<ChevronRight /></Link> : null;
@@ -1520,9 +1717,20 @@ function WorkspaceShell({ path }: { path: string[] }) {
     notify(input.kind === "project" ? "项目申请已提交" : "简历已投递");
   }
 
-  function resourceActionWithNotice(id: string, action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize", note: string) {
+  function resourceActionWithNotice(id: string, action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize" | "confirm-rights" | "reject-rights" | "revoke-rights", note: string) {
+    const currentlyAuthorized = state.authorizations.some((item) => item.resourceId === id && item.schoolId === state.activeSchoolId && item.status === "有效");
+    const rightsReason = action === "publish" || (action === "authorize" && !currentlyAuthorized) ? resourceRightsBlockedReason(state, id, "教学使用") : "";
+    if (rightsReason) return notify(rightsReason);
     resourceAction(id, action, note);
-    notify(action === "publish" ? "资源已发布" : action === "reject" ? "资源已驳回" : action === "authorize" ? "院校授权已更新" : "资源状态已更新");
+    notify(
+      action === "publish" ? "资源已发布"
+        : action === "reject" ? "资源已驳回"
+          : action === "authorize" ? "院校授权已更新"
+            : action === "confirm-rights" ? "资源权属已确认"
+              : action === "reject-rights" ? "资源权属已驳回"
+                : action === "revoke-rights" ? "资源权属已撤回"
+                : "资源状态已更新",
+    );
   }
 }
 

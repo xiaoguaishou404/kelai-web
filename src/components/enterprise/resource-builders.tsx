@@ -3,7 +3,9 @@
 import { useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronLeft, ChevronRight, Plus, Send, Trash2 } from "lucide-react";
 import {
+  createResourceRights,
   dimensions,
+  effectiveRightsStatus,
   jobMatch,
   nowLabel,
   publishedAssessments,
@@ -18,7 +20,9 @@ import {
   type JobProfile,
   type Resource,
   type ResourceContent,
+  type ResourceRights,
   type ResourceType,
+  type ResourceUseScope,
   type SceneProfile,
   type StandardProfile,
 } from "@/lib/enterprise-workspace";
@@ -44,6 +48,7 @@ function defaultJob(): JobProfile {
     industry: "金融",
     description: "",
     majors: ["网络工程"],
+    majorGroupIds: [],
     responsibilities: [],
     requirements: [],
     certificates: [],
@@ -149,6 +154,75 @@ function comma(value: string) {
   return value.split(/[，,]/).map((item) => item.trim()).filter(Boolean);
 }
 
+const rightsScopes: ResourceUseScope[] = ["教学使用", "实训交付", "项目展示", "招聘引用"];
+
+function initialRights(resource: Resource | undefined, id: string): ResourceRights {
+  return resource?.rights ?? {
+    ...createResourceRights(id),
+    agreementNo: "",
+    evidenceName: "",
+    status: "待确权",
+    history: [],
+  };
+}
+
+function rightsMissing(rights: ResourceRights) {
+  return [
+    !rights.ownerName.trim() ? "权属人" : "",
+    !rights.sourceNote.trim() ? "来源说明" : "",
+    !rights.desensitizationNote.trim() && rights.ownership === "客户授权" ? "脱敏说明" : "",
+    !rights.agreementNo.trim() ? "协议或授权编号" : "",
+    !rights.evidenceName.trim() ? "权属材料" : "",
+    !rights.useScopes.length ? "使用范围" : "",
+    !rights.validFrom || !rights.validUntil ? "有效期" : "",
+  ].filter(Boolean);
+}
+
+function RightsFields({
+  rights,
+  onChange,
+}: {
+  rights: ResourceRights;
+  onChange: (rights: ResourceRights) => void;
+}) {
+  const update = (patch: Partial<ResourceRights>) =>
+    onChange({ ...rights, ...patch, status: "待确权", reviewNote: "" });
+  const toggleScope = (scope: ResourceUseScope) => {
+    update({
+      useScopes: rights.useScopes.includes(scope)
+        ? rights.useScopes.filter((item) => item !== scope)
+        : [...rights.useScopes, scope],
+    });
+  };
+  return (
+    <div className="ep-rights-form">
+      <div className="ep-rights-head">
+        <div><h3>权属与合规</h3><small>{effectiveRightsStatus(rights)}</small></div>
+        {rights.status === "已确权" && <span className="ep-tag is-success">已确权</span>}
+      </div>
+      <div className="ep-form-grid">
+        <label className="ep-form">权属类型
+          <select value={rights.ownership} onChange={(event) => update({ ownership: event.target.value as ResourceRights["ownership"] })}>
+            {["科来自有", "客户授权", "校企共建", "公开资料改编"].map((item) => <option key={item}>{item}</option>)}
+          </select>
+        </label>
+        <label className="ep-form">权属人<input value={rights.ownerName} onChange={(event) => update({ ownerName: event.target.value })} /></label>
+        <label className="ep-form wide">来源说明<textarea value={rights.sourceNote} onChange={(event) => update({ sourceNote: event.target.value })} /></label>
+        <label className="ep-form wide">脱敏说明<textarea value={rights.desensitizationNote} onChange={(event) => update({ desensitizationNote: event.target.value })} /></label>
+        <label className="ep-form">协议 / 授权编号<input value={rights.agreementNo} onChange={(event) => update({ agreementNo: event.target.value })} placeholder="如 KL-RIGHTS-2026-001" /></label>
+        <label className="ep-form">权属材料<input value={rights.evidenceName} onChange={(event) => update({ evidenceName: event.target.value })} placeholder="模拟文件名" /></label>
+        <label className="ep-form">生效日期<input type="date" value={rights.validFrom} onChange={(event) => update({ validFrom: event.target.value })} /></label>
+        <label className="ep-form">有效期至<input type="date" value={rights.validUntil} onChange={(event) => update({ validUntil: event.target.value })} /></label>
+      </div>
+      <div className="ep-rights-scopes">
+        <span>使用范围</span>
+        {rightsScopes.map((scope) => <label key={scope}><input type="checkbox" checked={rights.useScopes.includes(scope)} onChange={() => toggleScope(scope)} />{scope}</label>)}
+      </div>
+      {rights.reviewNote && <p className="ep-status warn">{rights.reviewNote}</p>}
+    </div>
+  );
+}
+
 function Field({
   label,
   children,
@@ -224,7 +298,7 @@ function useResourceSave(resource?: Resource) {
   const { state, createResource, updateResource, resourceAction } = useWorkspace();
   const persist = (
     content: ResourceContent,
-    meta: { name: string; description: string; relatedIds: string[]; packageId: string },
+    meta: { name: string; description: string; relatedIds: string[]; packageId: string; rights: ResourceRights },
     submit: boolean,
   ) => {
     const status = submit ? "待审核" as const : "草稿" as const;
@@ -243,6 +317,11 @@ function useResourceSave(resource?: Resource) {
       authorizedTo: [],
       updatedAt: nowLabel(),
       draftContent: content,
+      rights: {
+        ...meta.rights,
+        status: submit ? "审核中" : "待确权",
+        reviewNote: "",
+      },
       reviewHistory: submit
         ? [{ id: crypto.randomUUID(), action: "提交审核", actor: "科来运营", note: "资源建设完成并提交审核", at: nowLabel() }]
         : [],
@@ -255,6 +334,7 @@ function useResourceSave(resource?: Resource) {
 function JobBuilder({ resource, initial, notify, onClose }: BuilderProps & { initial?: JobProfile }) {
   const { state, persist } = useResourceSave(resource);
   const [draft, setDraft] = useState<JobProfile>(() => initial ?? defaultJob());
+  const [rights, setRights] = useState<ResourceRights>(() => initialRights(resource, draft.id));
   const [step, setStep] = useState(0);
   const [responsibilities, setResponsibilities] = useState((draft.responsibilities ?? []).join("\n"));
   const [requirements, setRequirements] = useState((draft.requirements ?? []).join("\n"));
@@ -267,8 +347,10 @@ function JobBuilder({ resource, initial, notify, onClose }: BuilderProps & { ini
     !draft.name.trim() ? "岗位名称" : "",
     !draft.description.trim() ? "岗位简介" : "",
     !lines(responsibilities).length ? "岗位职责" : "",
+    !(draft.majorGroupIds ?? []).length ? "适配专业群" : "",
     !(draft.tasks ?? []).length ? "工作任务" : "",
     (draft.abilityPoints ?? []).reduce((sum, item) => sum + item.weight, 0) !== 100 ? "能力权重须为 100%" : "",
+    ...rightsMissing(rights),
   ].filter(Boolean);
   const content = (): ResourceContent => ({
     kind: "job",
@@ -286,6 +368,7 @@ function JobBuilder({ resource, initial, notify, onClose }: BuilderProps & { ini
       description: draft.description || "岗位草稿待完善",
       relatedIds: [...(draft.sceneIds ?? []), ...(draft.courseIds ?? []), ...(draft.assessmentIds ?? []), ...(draft.standardIds ?? [])],
       packageId: "renewal",
+      rights,
     }, submit);
     notify(submit ? "岗位已提交审核" : "岗位草稿已保存");
     onClose();
@@ -301,6 +384,7 @@ function JobBuilder({ resource, initial, notify, onClose }: BuilderProps & { ini
           <Field label="所属行业"><select value={draft.industry} onChange={(event) => setDraft({ ...draft, industry: event.target.value })}>{["金融", "能源", "医疗", "制造", "政务", "运营商"].map((item) => <option key={item}>{item}</option>)}</select></Field>
           <Field label="产业链阶段"><select value={draft.stage} onChange={(event) => setDraft({ ...draft, stage: event.target.value })}>{["采集基础设施", "分析研判", "技术服务"].map((item) => <option key={item}>{item}</option>)}</select></Field>
           <Field label="面向专业" wide><input value={(draft.majors ?? []).join("，")} onChange={(event) => setDraft({ ...draft, majors: comma(event.target.value) })} /></Field>
+          <div className="wide"><ResourceChecks title="适配专业群" items={state.majorGroups.map((item) => [item.id, item.name])} selected={draft.majorGroupIds ?? []} onChange={(majorGroupIds) => setDraft({ ...draft, majorGroupIds })} /></div>
           <Field label="岗位简介" wide><textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></Field>
           <Field label="岗位职责（每行一项）" wide><textarea value={responsibilities} onChange={(event) => setResponsibilities(event.target.value)} /></Field>
           <Field label="任职要求（每行一项）" wide><textarea value={requirements} onChange={(event) => setRequirements(event.target.value)} /></Field>
@@ -335,6 +419,7 @@ function JobBuilder({ resource, initial, notify, onClose }: BuilderProps & { ini
           <div><span>岗位</span><b>{draft.name || "未填写"}</b></div><div><span>工作任务</span><b>{draft.tasks?.length ?? 0} 项</b></div><div><span>能力权重</span><b>{draft.abilityPoints?.reduce((sum, item) => sum + item.weight, 0) ?? 0}%</b></div><div><span>关联场景</span><b>{draft.sceneIds?.length ?? 0} 个</b></div><div><span>关联课程</span><b>{draft.courseIds?.length ?? 0} 门</b></div><div><span>建设方式</span><b>{draft.buildMode}</b></div>
           <label className="ep-form">建设方式<select value={draft.buildMode} onChange={(event) => setDraft({ ...draft, buildMode: event.target.value as JobProfile["buildMode"] })}><option>独立建设</option><option>校企共建</option></select></label>
           <label className="ep-form">可见范围<select><option>年度更新包 · 授权院校</option><option>发布后全平台可见</option></select></label>
+          <RightsFields rights={rights} onChange={setRights} />
           <p className="ep-status warn">岗位发布后若没有场景或课程，会标记为“学习路径待完善”，暂不可被短训、项目和招聘选择。</p>
         </div>}
       </div>
@@ -351,18 +436,19 @@ function SceneBuilder({ resource, initial, notify, onClose }: BuilderProps & { i
   const { state, persist } = useResourceSave(resource);
   const jobs = publishedJobs(state);
   const [draft, setDraft] = useState<SceneProfile>(() => initial ?? defaultScene(jobs[0]?.id ?? ""));
+  const [rights, setRights] = useState<ResourceRights>(() => initialRights(resource, draft.id));
   const [step, setStep] = useState(0);
-  const missing = [!draft.name.trim() ? "场景名称" : "", !draft.jobId ? "所属岗位" : "", !draft.description.trim() ? "场景背景" : "", draft.tasks.length === 0 ? "任务链" : "", draft.evidence.length < 3 ? "至少三条证据" : ""].filter(Boolean);
+  const missing = [!draft.name.trim() ? "场景名称" : "", !draft.jobId ? "所属岗位" : "", !draft.description.trim() ? "场景背景" : "", draft.tasks.length === 0 ? "任务链" : "", draft.evidence.length < 3 ? "至少三条证据" : "", ...rightsMissing(rights)].filter(Boolean);
   const save = (submit: boolean) => {
     if (submit && missing.length) return notify(missing.join("；"));
-    persist({ kind: "scene", data: draft }, { name: draft.name || "未命名场景", description: draft.description || "场景草稿待完善", relatedIds: [draft.jobId], packageId: "renewal" }, submit);
+    persist({ kind: "scene", data: draft }, { name: draft.name || "未命名场景", description: draft.description || "场景草稿待完善", relatedIds: [draft.jobId], packageId: "renewal", rights }, submit);
     notify(submit ? "场景已提交审核" : "场景草稿已保存");
     onClose();
   };
   return <div className="ep-builder"><div className="ep-builder-head"><div><span>场景资源建设</span><h2>{draft.name || "新建场景"}</h2></div><button onClick={onClose}>关闭</button></div><WizardSteps current={step} steps={["基础信息", "任务链与量规", "提交"]} /><div className="ep-builder-body">
     {step === 0 && <div className="ep-form-grid"><Field label="场景名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></Field><Field label="所属岗位"><select value={draft.jobId} onChange={(event) => setDraft({ ...draft, jobId: event.target.value })}><option value="">请选择</option>{jobs.map((job) => <option value={job.id} key={job.id}>{job.name}</option>)}</select></Field><Field label="难度"><select value={draft.difficulty} onChange={(event) => setDraft({ ...draft, difficulty: event.target.value })}><option>基础</option><option>进阶</option><option>综合</option></select></Field><Field label="归属短训"><select value={draft.trainingIds[0] ?? ""} onChange={(event) => setDraft({ ...draft, trainingIds: event.target.value ? [event.target.value] : [] })}><option value="">暂不关联</option>{trainings.map((training) => <option value={training.id} key={training.id}>{training.name}</option>)}</select></Field><Field label="场景介绍" wide><textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></Field><Field label="专家参考答案" wide><textarea value={draft.answer} onChange={(event) => setDraft({ ...draft, answer: event.target.value })} /></Field></div>}
     {step === 1 && <div className="ep-builder-list">{draft.tasks.map((task, index) => <div className="ep-builder-item" key={`${task}-${index}`}><span className="ep-number">{index + 1}</span><input value={task} onChange={(event) => setDraft({ ...draft, tasks: draft.tasks.map((item, current) => current === index ? event.target.value : item) })} /><button onClick={() => setDraft({ ...draft, tasks: draft.tasks.filter((_, current) => current !== index) })}><Trash2 size={15} /></button></div>)}<button className="ep-add-row" onClick={() => setDraft({ ...draft, tasks: [...draft.tasks, ""] })}><Plus size={15} />新增任务</button><h3>可观测证据</h3>{draft.evidence.map((item, index) => <div className="ep-builder-item" key={item.id}><span className="ep-number">{index + 1}</span><input value={item.title} onChange={(event) => setDraft({ ...draft, evidence: draft.evidence.map((evidence, current) => current === index ? { ...evidence, title: event.target.value } : evidence) })} /><input value={item.detail} onChange={(event) => setDraft({ ...draft, evidence: draft.evidence.map((evidence, current) => current === index ? { ...evidence, detail: event.target.value } : evidence) })} /><button onClick={() => setDraft({ ...draft, evidence: draft.evidence.filter((_, current) => current !== index) })}><Trash2 size={15} /></button></div>)}<button className="ep-add-row" onClick={() => setDraft({ ...draft, evidence: [...draft.evidence, { id: uid("evidence"), time: "10:00:00", title: "新证据", detail: "填写证据内容" }] })}><Plus size={15} />新增证据</button><p className="ep-status warn">任务评价沿用证据准确、定位推理和交付表达三项量规。</p></div>}
-    {step === 2 && <div className="ep-submit-summary"><div><span>场景</span><b>{draft.name}</b></div><div><span>所属岗位</span><b>{jobs.find((job) => job.id === draft.jobId)?.name}</b></div><div><span>任务数</span><b>{draft.tasks.length}</b></div><div><span>可见方式</span><b>年度更新包授权</b></div></div>}
+    {step === 2 && <><div className="ep-submit-summary"><div><span>场景</span><b>{draft.name}</b></div><div><span>所属岗位</span><b>{jobs.find((job) => job.id === draft.jobId)?.name}</b></div><div><span>任务数</span><b>{draft.tasks.length}</b></div><div><span>可见方式</span><b>年度更新包授权</b></div></div><RightsFields rights={rights} onChange={setRights} /></>}
   </div><Footer current={step} max={2} canSubmit={!missing.length} missing={missing} onBack={() => setStep(Math.max(0, step - 1))} onNext={() => setStep(Math.min(2, step + 1))} onDraft={() => save(false)} onSubmit={() => save(true)} /></div>;
 }
 
@@ -371,15 +457,51 @@ function CourseBuilder({ resource, initial, notify, onClose }: BuilderProps & { 
   const jobs = publishedJobs(state);
   const scenes = publishedScenes(state);
   const [draft, setDraft] = useState<CourseProfile>(() => initial ?? defaultCourse(jobs[0]?.id ?? "", scenes[0]?.id ?? ""));
+  const [rights, setRights] = useState<ResourceRights>(() => initialRights(resource, draft.id));
   const [chapter, setChapter] = useState({ title: "", content: "", method: "" });
-  const missing = [!draft.name.trim() ? "课程名称" : "", !draft.jobId ? "所属岗位" : "", draft.chapters.length === 0 ? "课程章节" : ""].filter(Boolean);
+  const missing = [!draft.name.trim() ? "课程名称" : "", !draft.jobId ? "所属岗位" : "", draft.chapters.length === 0 ? "课程章节" : "", ...rightsMissing(rights)].filter(Boolean);
   const save = (submit: boolean) => {
     if (submit && missing.length) return notify(missing.join("；"));
-    persist({ kind: "course", data: draft }, { name: draft.name || "未命名课程", description: `${draft.chapters.length} 个章节`, relatedIds: [draft.jobId, draft.sceneId], packageId: "renewal" }, submit);
+    persist({ kind: "course", data: draft }, { name: draft.name || "未命名课程", description: `${draft.chapters.length} 个章节`, relatedIds: [draft.jobId, draft.sceneId], packageId: "renewal", rights }, submit);
     notify(submit ? "课程已提交审核" : "课程草稿已保存");
     onClose();
   };
-  return <div className="ep-builder"><div className="ep-builder-head"><div><span>课程资源建设</span><h2>{draft.name || "新建课程"}</h2></div><button onClick={onClose}>关闭</button></div><WizardSteps current={0} steps={["课程信息与章节", "提交"]} /><div className="ep-builder-body"><div className="ep-form-grid"><Field label="课程名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></Field><Field label="课程类型"><select value={draft.courseType} onChange={(event) => setDraft({ ...draft, courseType: event.target.value as CourseProfile["courseType"] })}><option>体系课</option><option>颗粒课</option><option>混合课</option></select></Field><Field label="所属岗位"><select value={draft.jobId} onChange={(event) => setDraft({ ...draft, jobId: event.target.value })}><option value="">请选择</option>{jobs.map((job) => <option value={job.id} key={job.id}>{job.name}</option>)}</select></Field><Field label="关联场景"><select value={draft.sceneId} onChange={(event) => setDraft({ ...draft, sceneId: event.target.value })}>{scenes.map((scene) => <option value={scene.id} key={scene.id}>{scene.name}</option>)}</select></Field><Field label="总学时"><input type="number" value={draft.totalHours ?? 0} onChange={(event) => setDraft({ ...draft, totalHours: Number(event.target.value) })} /></Field></div><div className="ep-builder-list"><h3>章节大纲</h3>{draft.chapters.map((item, index) => <div className="ep-builder-item" key={`${item.title}-${index}`}><span className="ep-number">{index + 1}</span><b>{item.title}</b><span>{item.content}</span><button onClick={() => setDraft({ ...draft, chapters: draft.chapters.filter((_, current) => current !== index) })}><Trash2 size={15} /></button></div>)}<div className="ep-form-grid"><Field label="章节标题"><input value={chapter.title} onChange={(event) => setChapter({ ...chapter, title: event.target.value })} /></Field><Field label="节点内容"><input value={chapter.content} onChange={(event) => setChapter({ ...chapter, content: event.target.value })} /></Field><Field label="教学方法" wide><input value={chapter.method} onChange={(event) => setChapter({ ...chapter, method: event.target.value })} /></Field><button className="ep-add-row" onClick={() => { if (!chapter.title.trim()) return notify("请填写章节标题"); setDraft({ ...draft, chapters: [...draft.chapters, chapter] }); setChapter({ title: "", content: "", method: "" }); }}><Plus size={15} />添加章节</button></div></div></div><Footer current={0} max={0} canSubmit={!missing.length} missing={missing} onBack={() => {}} onNext={() => {}} onDraft={() => save(false)} onSubmit={() => save(true)} /></div>;
+  return (
+    <div className="ep-builder">
+      <div className="ep-builder-head"><div><span>课程资源建设</span><h2>{draft.name || "新建课程"}</h2></div><button onClick={onClose}>关闭</button></div>
+      <WizardSteps current={0} steps={["课程信息与章节", "提交"]} />
+      <div className="ep-builder-body">
+        <div className="ep-form-grid">
+          <Field label="课程名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></Field>
+          <Field label="课程类型"><select value={draft.courseType} onChange={(event) => setDraft({ ...draft, courseType: event.target.value as CourseProfile["courseType"] })}><option>体系课</option><option>颗粒课</option><option>混合课</option></select></Field>
+          <Field label="所属岗位"><select value={draft.jobId} onChange={(event) => setDraft({ ...draft, jobId: event.target.value })}><option value="">请选择</option>{jobs.map((job) => <option value={job.id} key={job.id}>{job.name}</option>)}</select></Field>
+          <Field label="关联场景"><select value={draft.sceneId} onChange={(event) => setDraft({ ...draft, sceneId: event.target.value })}>{scenes.map((scene) => <option value={scene.id} key={scene.id}>{scene.name}</option>)}</select></Field>
+          <Field label="总学时"><input type="number" value={draft.totalHours ?? 0} onChange={(event) => setDraft({ ...draft, totalHours: Number(event.target.value) })} /></Field>
+        </div>
+        <div className="ep-builder-list">
+          <h3>章节大纲</h3>
+          {draft.chapters.map((item, index) => (
+            <div className="ep-builder-item" key={`${item.title}-${index}`}>
+              <span className="ep-number">{index + 1}</span><b>{item.title}</b><span>{item.content}</span>
+              <button onClick={() => setDraft({ ...draft, chapters: draft.chapters.filter((_, current) => current !== index) })}><Trash2 size={15} /></button>
+            </div>
+          ))}
+          <div className="ep-form-grid">
+            <Field label="章节标题"><input value={chapter.title} onChange={(event) => setChapter({ ...chapter, title: event.target.value })} /></Field>
+            <Field label="节点内容"><input value={chapter.content} onChange={(event) => setChapter({ ...chapter, content: event.target.value })} /></Field>
+            <Field label="教学方法" wide><input value={chapter.method} onChange={(event) => setChapter({ ...chapter, method: event.target.value })} /></Field>
+            <button className="ep-add-row" onClick={() => {
+              if (!chapter.title.trim()) return notify("请填写章节标题");
+              setDraft({ ...draft, chapters: [...draft.chapters, chapter] });
+              setChapter({ title: "", content: "", method: "" });
+            }}><Plus size={15} />添加章节</button>
+          </div>
+        </div>
+        <RightsFields rights={rights} onChange={setRights} />
+      </div>
+      <Footer current={0} max={0} canSubmit={!missing.length} missing={missing} onBack={() => {}} onNext={() => {}} onDraft={() => save(false)} onSubmit={() => save(true)} />
+    </div>
+  );
 }
 
 function AssessmentBuilder({ resource, initial, notify, onClose }: BuilderProps & { initial?: AssessmentProfile }) {
@@ -387,30 +509,92 @@ function AssessmentBuilder({ resource, initial, notify, onClose }: BuilderProps 
   const jobs = publishedJobs(state);
   const standards = publishedStandards(state);
   const [draft, setDraft] = useState<AssessmentProfile>(() => initial ?? defaultAssessment(jobs[0]?.id ?? "", standards[0]?.id ?? ""));
+  const [rights, setRights] = useState<ResourceRights>(() => initialRights(resource, draft.id));
   const [question, setQuestion] = useState({ title: "", optionA: "", optionB: "" });
-  const missing = [!draft.name.trim() ? "测评名称" : "", !draft.jobId ? "关联岗位" : "", draft.questions.length === 0 ? "测评题目" : ""].filter(Boolean);
+  const missing = [!draft.name.trim() ? "测评名称" : "", !draft.jobId ? "关联岗位" : "", draft.questions.length === 0 ? "测评题目" : "", ...rightsMissing(rights)].filter(Boolean);
   const save = (submit: boolean) => {
     if (submit && missing.length) return notify(missing.join("；"));
-    persist({ kind: "assessment", data: draft }, { name: draft.name || "未命名测评", description: `${draft.questions.length} 题 · ${draft.passScore} 分合格`, relatedIds: [draft.jobId, draft.standardId ?? ""].filter(Boolean), packageId: "renewal" }, submit);
+    persist({ kind: "assessment", data: draft }, { name: draft.name || "未命名测评", description: `${draft.questions.length} 题 · ${draft.passScore} 分合格`, relatedIds: [draft.jobId, draft.standardId ?? ""].filter(Boolean), packageId: "renewal", rights }, submit);
     notify(submit ? "测评已提交审核" : "测评草稿已保存");
     onClose();
   };
-  return <div className="ep-builder"><div className="ep-builder-head"><div><span>测评资源建设</span><h2>{draft.name || "新建测评"}</h2></div><button onClick={onClose}>关闭</button></div><WizardSteps current={0} steps={["测评信息与题目", "提交"]} /><div className="ep-builder-body"><div className="ep-form-grid"><Field label="测评名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></Field><Field label="关联岗位"><select value={draft.jobId} onChange={(event) => setDraft({ ...draft, jobId: event.target.value })}><option value="">请选择</option>{jobs.map((job) => <option value={job.id} key={job.id}>{job.name}</option>)}</select></Field><Field label="评价标准"><select value={draft.standardId ?? ""} onChange={(event) => setDraft({ ...draft, standardId: event.target.value })}>{standards.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></Field><Field label="时长（分钟）"><input type="number" value={draft.durationMinutes} onChange={(event) => setDraft({ ...draft, durationMinutes: Number(event.target.value) })} /></Field><Field label="合格线"><input type="number" value={draft.passScore} onChange={(event) => setDraft({ ...draft, passScore: Number(event.target.value) })} /></Field></div><div className="ep-builder-list"><h3>题目</h3>{draft.questions.map((item, index) => <div className="ep-builder-item" key={item.id}><span className="ep-number">{index + 1}</span><b>{item.title}</b><span>{item.options.join(" / ")}</span><button onClick={() => setDraft({ ...draft, questions: draft.questions.filter((question) => question.id !== item.id) })}><Trash2 size={15} /></button></div>)}<div className="ep-form-grid"><Field label="题干" wide><input value={question.title} onChange={(event) => setQuestion({ ...question, title: event.target.value })} /></Field><Field label="正确选项"><input value={question.optionA} onChange={(event) => setQuestion({ ...question, optionA: event.target.value })} /></Field><Field label="干扰选项"><input value={question.optionB} onChange={(event) => setQuestion({ ...question, optionB: event.target.value })} /></Field><button className="ep-add-row" onClick={() => { if (!question.title || !question.optionA || !question.optionB) return notify("请填写完整题目"); setDraft({ ...draft, questions: [...draft.questions, { id: uid("q"), title: question.title, options: [question.optionA, question.optionB], answer: 0 }] }); setQuestion({ title: "", optionA: "", optionB: "" }); }}><Plus size={15} />添加题目</button></div></div></div><Footer current={0} max={0} canSubmit={!missing.length} missing={missing} onBack={() => {}} onNext={() => {}} onDraft={() => save(false)} onSubmit={() => save(true)} /></div>;
+  return (
+    <div className="ep-builder">
+      <div className="ep-builder-head"><div><span>测评资源建设</span><h2>{draft.name || "新建测评"}</h2></div><button onClick={onClose}>关闭</button></div>
+      <WizardSteps current={0} steps={["测评信息与题目", "提交"]} />
+      <div className="ep-builder-body">
+        <div className="ep-form-grid">
+          <Field label="测评名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></Field>
+          <Field label="关联岗位"><select value={draft.jobId} onChange={(event) => setDraft({ ...draft, jobId: event.target.value })}><option value="">请选择</option>{jobs.map((job) => <option value={job.id} key={job.id}>{job.name}</option>)}</select></Field>
+          <Field label="评价标准"><select value={draft.standardId ?? ""} onChange={(event) => setDraft({ ...draft, standardId: event.target.value })}>{standards.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></Field>
+          <Field label="时长（分钟）"><input type="number" value={draft.durationMinutes} onChange={(event) => setDraft({ ...draft, durationMinutes: Number(event.target.value) })} /></Field>
+          <Field label="合格线"><input type="number" value={draft.passScore} onChange={(event) => setDraft({ ...draft, passScore: Number(event.target.value) })} /></Field>
+        </div>
+        <div className="ep-builder-list">
+          <h3>题目</h3>
+          {draft.questions.map((item, index) => (
+            <div className="ep-builder-item" key={item.id}>
+              <span className="ep-number">{index + 1}</span><b>{item.title}</b><span>{item.options.join(" / ")}</span>
+              <button onClick={() => setDraft({ ...draft, questions: draft.questions.filter((question) => question.id !== item.id) })}><Trash2 size={15} /></button>
+            </div>
+          ))}
+          <div className="ep-form-grid">
+            <Field label="题干" wide><input value={question.title} onChange={(event) => setQuestion({ ...question, title: event.target.value })} /></Field>
+            <Field label="正确选项"><input value={question.optionA} onChange={(event) => setQuestion({ ...question, optionA: event.target.value })} /></Field>
+            <Field label="干扰选项"><input value={question.optionB} onChange={(event) => setQuestion({ ...question, optionB: event.target.value })} /></Field>
+            <button className="ep-add-row" onClick={() => {
+              if (!question.title || !question.optionA || !question.optionB) return notify("请填写完整题目");
+              setDraft({ ...draft, questions: [...draft.questions, { id: uid("q"), title: question.title, options: [question.optionA, question.optionB], answer: 0 }] });
+              setQuestion({ title: "", optionA: "", optionB: "" });
+            }}><Plus size={15} />添加题目</button>
+          </div>
+        </div>
+        <RightsFields rights={rights} onChange={setRights} />
+      </div>
+      <Footer current={0} max={0} canSubmit={!missing.length} missing={missing} onBack={() => {}} onNext={() => {}} onDraft={() => save(false)} onSubmit={() => save(true)} />
+    </div>
+  );
 }
 
 function StandardBuilder({ resource, initial, notify, onClose }: BuilderProps & { initial?: StandardProfile }) {
   const { state, persist } = useResourceSave(resource);
   const jobs = publishedJobs(state);
   const [draft, setDraft] = useState<StandardProfile>(() => initial ?? defaultStandard(jobs[0]?.id ?? ""));
+  const [rights, setRights] = useState<ResourceRights>(() => initialRights(resource, draft.id));
   const total = draft.abilityPointWeights.reduce((sum, item) => sum + item.weight, 0);
-  const missing = [!draft.name.trim() ? "标准名称" : "", !draft.jobId ? "关联岗位" : "", total !== 100 ? "能力权重须为 100%" : ""].filter(Boolean);
+  const missing = [!draft.name.trim() ? "标准名称" : "", !draft.jobId ? "关联岗位" : "", total !== 100 ? "能力权重须为 100%" : "", ...rightsMissing(rights)].filter(Boolean);
   const save = (submit: boolean) => {
     if (submit && missing.length) return notify(missing.join("；"));
-    persist({ kind: "standard", data: draft }, { name: draft.name || "未命名评价标准", description: "岗位能力等级与认定规则", relatedIds: [draft.jobId], packageId: "renewal" }, submit);
+    persist({ kind: "standard", data: draft }, { name: draft.name || "未命名评价标准", description: "岗位能力等级与认定规则", relatedIds: [draft.jobId], packageId: "renewal", rights }, submit);
     notify(submit ? "评价标准已提交审核" : "评价标准草稿已保存");
     onClose();
   };
-  return <div className="ep-builder"><div className="ep-builder-head"><div><span>评价标准建设</span><h2>{draft.name || "新建评价标准"}</h2></div><button onClick={onClose}>关闭</button></div><WizardSteps current={0} steps={["能力权重与认定规则", "提交"]} /><div className="ep-builder-body"><div className="ep-form-grid"><Field label="标准名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></Field><Field label="关联岗位"><select value={draft.jobId} onChange={(event) => setDraft({ ...draft, jobId: event.target.value })}><option value="">请选择</option>{jobs.map((job) => <option value={job.id} key={job.id}>{job.name}</option>)}</select></Field><Field label="岗位认定规则" wide><textarea value={draft.recognitionRule} onChange={(event) => setDraft({ ...draft, recognitionRule: event.target.value })} /></Field></div><div className="ep-builder-list"><h3>能力点权重</h3>{draft.abilityPointWeights.map((item, index) => <div className="ep-builder-item" key={item.id}><span className="ep-number">{index + 1}</span><b>{item.name}</b><input type="number" value={item.weight} onChange={(event) => setDraft({ ...draft, abilityPointWeights: draft.abilityPointWeights.map((point, current) => current === index ? { ...point, weight: Number(event.target.value) } : point) })} /><select value={item.level} onChange={(event) => setDraft({ ...draft, abilityPointWeights: draft.abilityPointWeights.map((point, current) => current === index ? { ...point, level: event.target.value } : point) })}>{["L1", "L2", "L3", "L4", "L5"].map((level) => <option key={level}>{level}</option>)}</select></div>)}<p className={total === 100 ? "ep-status ok" : "ep-status warn"}>权重合计 {total}%</p></div></div><Footer current={0} max={0} canSubmit={!missing.length} missing={missing} onBack={() => {}} onNext={() => {}} onDraft={() => save(false)} onSubmit={() => save(true)} /></div>;
+  return (
+    <div className="ep-builder">
+      <div className="ep-builder-head"><div><span>评价标准建设</span><h2>{draft.name || "新建评价标准"}</h2></div><button onClick={onClose}>关闭</button></div>
+      <WizardSteps current={0} steps={["能力权重与认定规则", "提交"]} />
+      <div className="ep-builder-body">
+        <div className="ep-form-grid">
+          <Field label="标准名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></Field>
+          <Field label="关联岗位"><select value={draft.jobId} onChange={(event) => setDraft({ ...draft, jobId: event.target.value })}><option value="">请选择</option>{jobs.map((job) => <option value={job.id} key={job.id}>{job.name}</option>)}</select></Field>
+          <Field label="岗位认定规则" wide><textarea value={draft.recognitionRule} onChange={(event) => setDraft({ ...draft, recognitionRule: event.target.value })} /></Field>
+        </div>
+        <div className="ep-builder-list">
+          <h3>能力点权重</h3>
+          {draft.abilityPointWeights.map((item, index) => (
+            <div className="ep-builder-item" key={item.id}>
+              <span className="ep-number">{index + 1}</span><b>{item.name}</b>
+              <input type="number" value={item.weight} onChange={(event) => setDraft({ ...draft, abilityPointWeights: draft.abilityPointWeights.map((point, current) => current === index ? { ...point, weight: Number(event.target.value) } : point) })} />
+              <select value={item.level} onChange={(event) => setDraft({ ...draft, abilityPointWeights: draft.abilityPointWeights.map((point, current) => current === index ? { ...point, level: event.target.value } : point) })}>{["L1", "L2", "L3", "L4", "L5"].map((level) => <option key={level}>{level}</option>)}</select>
+            </div>
+          ))}
+          <p className={total === 100 ? "ep-status ok" : "ep-status warn"}>权重合计 {total}%</p>
+        </div>
+        <RightsFields rights={rights} onChange={setRights} />
+      </div>
+      <Footer current={0} max={0} canSubmit={!missing.length} missing={missing} onBack={() => {}} onNext={() => {}} onDraft={() => save(false)} onSubmit={() => save(true)} />
+    </div>
+  );
 }
 
 export function ResourcePreview({ state, resource }: { state: EnterpriseWorkspaceState; resource: Resource }) {

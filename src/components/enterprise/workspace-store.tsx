@@ -10,16 +10,22 @@ import {
 } from "react";
 import {
   WORKSPACE_STORAGE_KEY,
+  LEGACY_WORKSPACE_STORAGE_KEY,
   createAudit,
+  createResourceRights,
   generatedCertificateNumber,
   jobById,
   nowLabel,
+  orderRightsBlockers,
   projectEligibility,
+  resourceRightsBlockedReason,
   seedWorkspace,
   type Application,
   type ApplicationStatus,
   type EnterpriseWorkspaceState,
+  type JobProfile,
   type JobPosting,
+  type MajorGroup,
   type OrderStatus,
   type ProjectPosting,
   type Resource,
@@ -44,7 +50,8 @@ type Action =
   | { type: "certificate" }
   | { type: "new-resource"; resource: Resource }
   | { type: "update-resource"; id: string; patch: Partial<Resource>; actor: string }
-  | { type: "resource-action"; id: string; action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize"; note?: string }
+  | { type: "resource-action"; id: string; action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize" | "confirm-rights" | "reject-rights" | "revoke-rights"; note?: string }
+  | { type: "update-major-group"; id: string; patch: Pick<MajorGroup, "majors" | "jobIds"> }
   | { type: "standard"; weights: number[] }
   | { type: "publish-project"; project: ProjectPosting }
   | { type: "toggle-project"; id: string }
@@ -57,6 +64,16 @@ type Action =
 
 function audit(state: EnterpriseWorkspaceState, event: ReturnType<typeof createAudit>) {
   return { ...state, auditEvents: [event, ...state.auditEvents].slice(0, 120) };
+}
+
+function syncMajorGroupsForJob(groups: MajorGroup[], job: JobProfile) {
+  return groups.map((group) => {
+    const selected = (job.majorGroupIds ?? []).includes(group.id);
+    const jobIds = selected
+      ? Array.from(new Set([...group.jobIds, job.id]))
+      : group.jobIds.filter((id) => id !== job.id);
+    return { ...group, jobIds };
+  });
 }
 
 function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWorkspaceState {
@@ -169,52 +186,126 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
         createAudit(state.resume.name, "领取结业凭证", certificate.number, "岗位能力条件已满足"),
       );
     }
-    case "new-resource":
+    case "new-resource": {
+      const majorGroups = action.resource.draftContent.kind === "job"
+        ? syncMajorGroupsForJob(state.majorGroups, action.resource.draftContent.data)
+        : state.majorGroups;
       return audit(
-        { ...state, resources: [action.resource, ...state.resources] },
+        { ...state, resources: [action.resource, ...state.resources], majorGroups },
         createAudit("科来运营", "新建资源", action.resource.name, `${action.resource.type}草稿`),
       );
-    case "update-resource":
+    }
+    case "update-resource": {
+      const updatedResources = state.resources.map((item) =>
+        item.id === action.id
+          ? {
+              ...item,
+              ...action.patch,
+              status: action.patch.status ?? (item.status === "已发布" ? "草稿" : item.status),
+              updatedAt: nowLabel(),
+              reviewNote: undefined,
+              reviewHistory: [
+                {
+                  id: crypto.randomUUID(),
+                  action: item.status === "已发布" ? "新版本" as const : "提交审核" as const,
+                  actor: action.actor,
+                  note: item.status === "已发布" ? "基于已发布版本创建新草稿" : "更新资源草稿",
+                  at: nowLabel(),
+                },
+                ...item.reviewHistory,
+              ],
+            }
+          : item,
+      );
+      const updated = updatedResources.find((item) => item.id === action.id);
+      const majorGroups = updated?.draftContent.kind === "job"
+        ? syncMajorGroupsForJob(state.majorGroups, updated.draftContent.data)
+        : state.majorGroups;
       return audit(
         {
           ...state,
-          resources: state.resources.map((item) =>
-            item.id === action.id
-              ? {
-                  ...item,
-                  ...action.patch,
-                  status: action.patch.status ?? (item.status === "已发布" ? "草稿" : item.status),
-                  updatedAt: nowLabel(),
-                  reviewNote: undefined,
-                  reviewHistory: [
-                    {
-                      id: crypto.randomUUID(),
-                      action: item.status === "已发布" ? "新版本" : "提交审核",
-                      actor: action.actor,
-                      note: item.status === "已发布" ? "基于已发布版本创建新草稿" : "更新资源草稿",
-                      at: nowLabel(),
-                    },
-                    ...item.reviewHistory,
-                  ],
-                }
-              : item,
-          ),
+          resources: updatedResources,
+          majorGroups,
         },
         createAudit(action.actor, "更新资源", action.id, "资源编排已保存为新草稿"),
       );
-    case "resource-action":
+    }
+    case "resource-action": {
+      const target = state.resources.find((item) => item.id === action.id);
+      if (!target) return state;
+      const currentlyAuthorized = state.authorizations.some(
+        (item) => item.resourceId === action.id && item.schoolId === state.activeSchoolId && item.status === "有效",
+      );
+      if (
+        (action.action === "publish" || (action.action === "authorize" && !currentlyAuthorized)) &&
+        resourceRightsBlockedReason(state, action.id, "教学使用")
+      ) {
+        return state;
+      }
+      const event = {
+        id: crypto.randomUUID(),
+        actor: "科来运营",
+        note: action.note || action.action,
+        at: nowLabel(),
+      };
+      if (action.action === "confirm-rights" || action.action === "reject-rights" || action.action === "revoke-rights") {
+        const rights = target.rights;
+        if (!rights) return state;
+        const confirmed = action.action === "confirm-rights";
+        const revoked = action.action === "revoke-rights";
+        return audit(
+          {
+            ...state,
+            resources: state.resources.map((item) =>
+              item.id === action.id
+                ? {
+                    ...item,
+                    rights: {
+                      ...rights,
+                      status: confirmed ? "已确权" as const : revoked ? "待确权" as const : "已驳回" as const,
+                      reviewNote: confirmed ? "" : revoked ? "权属已撤回，需重新确认" : action.note || "请补充权属证明材料",
+                      history: [
+                        createAudit(
+                          "科来运营",
+                          confirmed ? "确认资源权属" : revoked ? "撤回资源权属" : "驳回资源权属",
+                          item.name,
+                          confirmed ? `${rights.ownership} · ${rights.agreementNo}` : revoked ? "权属状态撤回，前台停止使用" : action.note || "权属材料不完整",
+                        ),
+                        ...rights.history,
+                      ],
+                    },
+                    authorizedTo: revoked ? [] : item.authorizedTo,
+                    updatedAt: nowLabel(),
+                  }
+                : item,
+            ),
+            authorizations: revoked
+              ? state.authorizations.map((authorization) =>
+                  authorization.resourceId === action.id && authorization.status === "有效"
+                    ? { ...authorization, status: "已撤回" as const }
+                    : authorization,
+                )
+              : state.authorizations,
+          },
+          createAudit("科来运营", confirmed ? "确认资源权属" : revoked ? "撤回资源权属" : "驳回资源权属", target.name, action.note || target.rights.agreementNo),
+        );
+      }
       return audit(
         {
           ...state,
           resources: state.resources.map((item) => {
             if (item.id !== action.id) return item;
-            const event = {
-              id: crypto.randomUUID(),
-              actor: "科来运营",
-              note: action.note || action.action,
-              at: nowLabel(),
-            };
-            if (action.action === "submit") return { ...item, status: "待审核", updatedAt: nowLabel(), reviewNote: undefined, reviewHistory: [{ ...event, action: "提交审核" as const }, ...item.reviewHistory] };
+            if (action.action === "submit") {
+              const rights = item.rights
+                ? {
+                    ...item.rights,
+                    status: item.rights.status === "已确权" ? "已确权" as const : "审核中" as const,
+                    reviewNote: "",
+                    history: [createAudit("科来运营", "提交资源审核", item.name, "资源内容与权属材料进入审核"), ...item.rights.history],
+                  }
+                : item.rights;
+              return { ...item, status: "待审核", rights, updatedAt: nowLabel(), reviewNote: undefined, reviewHistory: [{ ...event, action: "提交审核" as const }, ...item.reviewHistory] };
+            }
             if (action.action === "publish") return {
               ...item,
               status: "已发布",
@@ -225,7 +316,14 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
             };
             if (action.action === "reject") return { ...item, status: "已驳回", updatedAt: nowLabel(), reviewNote: action.note || "请补充验收要求后重新提交", reviewHistory: [{ ...event, action: "驳回" as const }, ...item.reviewHistory] };
             if (action.action === "offline") return { ...item, status: "已下线", updatedAt: nowLabel(), reviewHistory: [{ ...event, action: "下线" as const }, ...item.reviewHistory] };
-            if (action.action === "revise") return { ...item, status: "草稿", version: bumpVersion(item.version), updatedAt: nowLabel(), reviewHistory: [{ ...event, action: "新版本" as const }, ...item.reviewHistory] };
+            if (action.action === "revise") return {
+              ...item,
+              status: "草稿",
+              version: bumpVersion(item.version),
+              rights: item.rights ? { ...item.rights, status: "待确权" as const, reviewNote: "新版本需重新确认权属" } : item.rights,
+              updatedAt: nowLabel(),
+              reviewHistory: [{ ...event, action: "新版本" as const }, ...item.reviewHistory],
+            };
             return {
               ...item,
               authorizedTo: item.authorizedTo.includes(state.activeSchoolId)
@@ -255,7 +353,8 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
                           resourceId: resource.id,
                           resourceVersion: resource.version,
                           schoolId: state.activeSchoolId,
-                          scope: "网络工程专业",
+                          scope: "科来适配专业群",
+                          majorGroupIds: ["major-network", "major-security", "major-observability", "major-computer"],
                           expiresAt: "2027-12-31",
                           authorizedBy: "科来运营",
                           authorizedAt: nowLabel(),
@@ -269,6 +368,29 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
         },
         createAudit("科来运营", "资源流转", action.id, action.action),
       );
+    }
+    case "update-major-group": {
+      const updatedGroups = state.majorGroups.map((group) =>
+        group.id === action.id ? { ...group, ...action.patch, updatedAt: nowLabel() } : group,
+      );
+      const resources = state.resources.map((resource) => {
+        const content = resource.draftContent;
+        const published = resource.publishedContent;
+        const updateJob = (job: JobProfile) => ({
+          ...job,
+          majorGroupIds: updatedGroups.filter((group) => group.jobIds.includes(job.id)).map((group) => group.id),
+        });
+        return {
+          ...resource,
+          draftContent: content.kind === "job" ? { kind: "job" as const, data: updateJob(content.data) } : content,
+          publishedContent: published?.kind === "job" ? { kind: "job" as const, data: updateJob(published.data) } : published,
+        };
+      });
+      return audit(
+        { ...state, majorGroups: updatedGroups, resources },
+        createAudit("科来运营", "维护专业群适配", updatedGroups.find((group) => group.id === action.id)?.name ?? action.id, `专业 ${action.patch.majors.length} 个 · 岗位 ${action.patch.jobIds.length} 个`),
+      );
+    }
     case "standard":
       return audit(
         { ...state, standardWeights: action.weights },
@@ -344,6 +466,7 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
     case "order": {
       const target = state.orders.find((item) => item.id === action.id);
       if (!target) return state;
+      if (action.status === "已授权" && orderRightsBlockers(state, target).length > 0) return state;
       const event = createAudit("科来运营", `订单 · ${action.status}`, target.name, action.note);
       const packageResourceIds = Array.from(
         new Set([
@@ -374,7 +497,8 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
                       resourceId: resource.id,
                       resourceVersion: resource.version,
                       schoolId: target.schoolId,
-                      scope: "网络工程专业",
+                      scope: "科来适配专业群",
+                      majorGroupIds: target.majorGroupIds,
                       expiresAt: "2027-12-31",
                       authorizedBy: "科来运营",
                       authorizedAt: event.at,
@@ -419,9 +543,10 @@ interface StoreValue {
   updateResource: (id: string, patch: Partial<Resource>, actor: string) => void;
   resourceAction: (
     id: string,
-    action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize",
+    action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize" | "confirm-rights" | "reject-rights" | "revoke-rights",
     note?: string,
   ) => void;
+  updateMajorGroup: (id: string, patch: Pick<MajorGroup, "majors" | "jobIds">) => void;
   saveStandard: (weights: number[]) => void;
   publishProject: (project: ProjectPosting) => void;
   toggleProject: (id: string) => void;
@@ -445,10 +570,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const saved = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved) as EnterpriseWorkspaceState;
-        if (parsed.schemaVersion === 3) dispatch({ type: "hydrate", state: { ...seedWorkspace(), ...parsed } });
+        if (parsed.schemaVersion === 4) dispatch({ type: "hydrate", state: { ...seedWorkspace(), ...parsed } });
       } else {
-        const legacy = window.localStorage.getItem("colasoft-enterprise-v2");
-        if (legacy) dispatch({ type: "hydrate", state: migrateV2(JSON.parse(legacy)) });
+        const legacyV3 = window.localStorage.getItem(LEGACY_WORKSPACE_STORAGE_KEY);
+        if (legacyV3) {
+          dispatch({ type: "hydrate", state: migrateV3(JSON.parse(legacyV3)) });
+        } else {
+          const legacy = window.localStorage.getItem("colasoft-enterprise-v2");
+          if (legacy) dispatch({ type: "hydrate", state: migrateV2(JSON.parse(legacy)) });
+        }
       }
     } finally {
       setHydrated(true);
@@ -480,6 +610,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     createResource: (resource) => dispatch({ type: "new-resource", resource }),
     updateResource: (id, patch, actor) => dispatch({ type: "update-resource", id, patch, actor }),
     resourceAction: (id, resourceAction, note) => dispatch({ type: "resource-action", id, action: resourceAction, note }),
+    updateMajorGroup: (id, patch) => dispatch({ type: "update-major-group", id, patch }),
     saveStandard: (weights) => dispatch({ type: "standard", weights }),
     publishProject: (project) => dispatch({ type: "publish-project", project }),
     toggleProject: (id) => dispatch({ type: "toggle-project", id }),
@@ -491,11 +622,54 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     advanceOrder: (id, status, note) => dispatch({ type: "order", id, status, note }),
     reset: () => {
       window.localStorage.removeItem(WORKSPACE_STORAGE_KEY);
+      window.localStorage.removeItem(LEGACY_WORKSPACE_STORAGE_KEY);
+      window.localStorage.removeItem("colasoft-enterprise-v2");
       dispatch({ type: "reset" });
     },
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+}
+
+function migrateV3(
+  legacy: Partial<EnterpriseWorkspaceState> & { schemaVersion?: number; resources?: Resource[] },
+): EnterpriseWorkspaceState {
+  const seed = seedWorkspace();
+  const resources = (legacy.resources?.length ? legacy.resources : seed.resources).map((resource) => {
+    const seeded = seed.resources.find((item) => item.id === resource.id);
+    const fallback = seeded?.rights ?? createResourceRights(resource.id, {
+      ownership: "科来自有",
+      ownerName: "待补录权属人",
+      sourceNote: "历史资源迁移，需补录来源与授权说明。",
+      desensitizationNote: "尚未确认脱敏范围。",
+      agreementNo: "",
+      evidenceName: "",
+      useScopes: [],
+      status: "待确权",
+      reviewNote: "历史资源需补录权属信息",
+    });
+    return {
+      ...resource,
+      rights: resource.rights ?? fallback,
+    };
+  });
+  const existingIds = new Set(resources.map((item) => item.id));
+  resources.push(...seed.resources.filter((item) => !existingIds.has(item.id)));
+  return {
+    ...seed,
+    ...legacy,
+    schemaVersion: 4,
+    resources,
+    majorGroups: seed.majorGroups,
+    authorizations: (legacy.authorizations ?? seed.authorizations).map((authorization) => ({
+      ...authorization,
+      majorGroupIds: authorization.majorGroupIds ?? ["major-network", "major-security"],
+    })),
+    orders: (legacy.orders ?? seed.orders).map((order) => ({
+      ...order,
+      majorGroupIds: order.majorGroupIds ?? ["major-network", "major-security"],
+    })),
+  } as EnterpriseWorkspaceState;
 }
 
 function migrateV2(legacy: Partial<EnterpriseWorkspaceState> & { resources?: Array<Record<string, unknown>> }): EnterpriseWorkspaceState {
@@ -569,9 +743,18 @@ function migrateV2(legacy: Partial<EnterpriseWorkspaceState> & { resources?: Arr
         updatedAt: String(item.updatedAt ?? nowLabel()),
         draftContent: content,
         reviewHistory: [],
+        rights: createResourceRights(id, {
+          ownerName: "待补录权属人",
+          sourceNote: "历史资源迁移，需补录来源与授权说明。",
+          agreementNo: "",
+          evidenceName: "",
+          useScopes: [],
+          status: "待确权",
+          reviewNote: "历史资源需补录权属信息",
+        }),
       }];
     });
-  return {
+  const v3 = {
     ...seed,
     role: legacy.role ?? null,
     teacherGuideSeen: legacy.teacherGuideSeen ?? false,
@@ -590,6 +773,7 @@ function migrateV2(legacy: Partial<EnterpriseWorkspaceState> & { resources?: Arr
     resources: [...seed.resources, ...legacyResources],
     orders: legacy.orders ?? seed.orders,
   } as EnterpriseWorkspaceState;
+  return migrateV3(v3);
 }
 
 export function useWorkspace() {

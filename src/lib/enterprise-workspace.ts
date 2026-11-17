@@ -1,10 +1,14 @@
-export const WORKSPACE_STORAGE_KEY = "colasoft-enterprise-v3";
+export const WORKSPACE_STORAGE_KEY = "colasoft-enterprise-v4";
+export const LEGACY_WORKSPACE_STORAGE_KEY = "colasoft-enterprise-v3";
 
 export const dimensions = ["环境部署", "需求理解", "链路分析", "故障定位", "安全研判", "交付汇报"];
 
 export type Role = "student" | "teacher" | "manage";
 export type ResourceType = "岗位" | "场景" | "课程" | "测评" | "评价标准";
 export type ResourceStatus = "草稿" | "待审核" | "已发布" | "已下线" | "已驳回";
+export type ResourceRightsStatus = "待确权" | "审核中" | "已确权" | "已驳回" | "已过期";
+export type ResourceOwnership = "科来自有" | "客户授权" | "校企共建" | "公开资料改编";
+export type ResourceUseScope = "教学使用" | "实训交付" | "项目展示" | "招聘引用";
 export type WorkStatus = "待评价" | "已通过" | "已退回";
 export type ApplicationKind = "project" | "job";
 export type ApplicationStatus =
@@ -35,6 +39,7 @@ export interface JobProfile {
   industry: string;
   description: string;
   majors?: string[];
+  majorGroupIds?: string[];
   responsibilities?: string[];
   requirements?: string[];
   certificates?: string[];
@@ -129,6 +134,21 @@ export interface ResourceReviewRecord {
   at: string;
 }
 
+export interface ResourceRights {
+  ownership: ResourceOwnership;
+  ownerName: string;
+  sourceNote: string;
+  desensitizationNote: string;
+  agreementNo: string;
+  evidenceName: string;
+  useScopes: ResourceUseScope[];
+  validFrom: string;
+  validUntil: string;
+  status: ResourceRightsStatus;
+  reviewNote: string;
+  history: AuditEvent[];
+}
+
 export type ResourceContent =
   | { kind: "job"; data: JobProfile }
   | { kind: "scene"; data: SceneProfile }
@@ -175,6 +195,18 @@ export interface Resource {
   draftContent: ResourceContent;
   publishedContent?: ResourceContent;
   reviewHistory: ResourceReviewRecord[];
+  rights: ResourceRights;
+}
+
+export interface MajorGroup {
+  id: string;
+  code: string;
+  name: string;
+  schoolIds: string[];
+  majors: string[];
+  jobIds: string[];
+  description: string;
+  updatedAt: string;
 }
 
 export interface Review {
@@ -320,6 +352,7 @@ export interface Order {
   amount: number;
   status: OrderStatus;
   resourceIds: string[];
+  majorGroupIds: string[];
   createdAt: string;
   updatedAt: string;
   history: AuditEvent[];
@@ -331,6 +364,7 @@ export interface ResourceAuthorization {
   resourceVersion: string;
   schoolId: string;
   scope: string;
+  majorGroupIds: string[];
   expiresAt: string;
   authorizedBy: string;
   authorizedAt: string;
@@ -338,13 +372,14 @@ export interface ResourceAuthorization {
 }
 
 export interface EnterpriseWorkspaceState {
-  schemaVersion: 3;
+  schemaVersion: 4;
   role: Role | null;
   activeSchoolId: string;
   activeStudentId: string;
   activeTeacherId: string;
   teacherGuideSeen: boolean;
   resources: Resource[];
+  majorGroups: MajorGroup[];
   classroom: Classroom;
   classmates: SampleLearner[];
   works: Work[];
@@ -364,6 +399,49 @@ export interface EnterpriseWorkspaceState {
   auditEvents: AuditEvent[];
 }
 
+export const majorGroups: MajorGroup[] = [
+  {
+    id: "major-network",
+    code: "MG-NET",
+    name: "网络与通信专业群",
+    schoolIds: ["school-1"],
+    majors: ["网络工程", "通信工程", "计算机网络技术"],
+    jobIds: ["service", "deployment"],
+    description: "面向网络采集、协议分析与现场技术服务岗位。",
+    updatedAt: "2026-11-10 09:00",
+  },
+  {
+    id: "major-security",
+    code: "MG-SEC",
+    name: "网络空间安全专业群",
+    schoolIds: ["school-1"],
+    majors: ["网络空间安全", "信息安全技术应用", "密码技术应用"],
+    jobIds: ["security"],
+    description: "面向全流量安全研判、告警分析与证据链组织岗位。",
+    updatedAt: "2026-11-10 09:00",
+  },
+  {
+    id: "major-observability",
+    code: "MG-OBS",
+    name: "云网运维与可观测性专业群",
+    schoolIds: ["school-1"],
+    majors: ["计算机科学与技术", "云计算技术应用", "大数据技术"],
+    jobIds: ["observability", "operations"],
+    description: "面向业务性能分析、云网运行监控与异常定位岗位。",
+    updatedAt: "2026-11-10 09:00",
+  },
+  {
+    id: "major-computer",
+    code: "MG-CS",
+    name: "计算机与软件专业群",
+    schoolIds: ["school-1"],
+    majors: ["软件工程", "计算机科学与技术", "人工智能技术应用"],
+    jobIds: ["presales", "observability"],
+    description: "面向解决方案验证、数据观测与行业数字化交付岗位。",
+    updatedAt: "2026-11-10 09:00",
+  },
+];
+
 export const jobs: JobProfile[] = [
   {
     id: "service",
@@ -372,6 +450,7 @@ export const jobs: JobProfile[] = [
     stage: "技术服务",
     industry: "金融",
     description: "从客户现场到问题闭环，完成采集部署、性能诊断与交付复盘。",
+    majorGroupIds: ["major-network"],
     skills: ["旁路采集", "TCP 分析", "故障定位"],
     target: [80, 75, 85, 90, 60, 85],
     requiredDimensions: [3, 5],
@@ -383,6 +462,7 @@ export const jobs: JobProfile[] = [
     stage: "分析研判",
     industry: "能源",
     description: "还原通信行为，建立可追溯的威胁证据链，识别值得调查的风险。",
+    majorGroupIds: ["major-security"],
     skills: ["会话还原", "告警研判", "证据链"],
     target: [65, 70, 80, 80, 95, 80],
     requiredDimensions: [4, 5],
@@ -394,6 +474,7 @@ export const jobs: JobProfile[] = [
     stage: "技术服务",
     industry: "政务",
     description: "理解业务问题，设计观测方案，以 PoC 证据支撑客户决策。",
+    majorGroupIds: ["major-computer"],
     skills: ["需求访谈", "PoC 验证", "方案汇报"],
     target: [70, 95, 85, 75, 60, 95],
     requiredDimensions: [1, 5],
@@ -405,6 +486,7 @@ export const jobs: JobProfile[] = [
     stage: "分析研判",
     industry: "医疗",
     description: "贯通用户、网络与应用链路，让业务性能问题可见、可定位。",
+    majorGroupIds: ["major-observability", "major-computer"],
     skills: ["链路追踪", "响应分析", "基线对比"],
     target: [75, 80, 95, 90, 65, 80],
     requiredDimensions: [2, 3],
@@ -416,6 +498,7 @@ export const jobs: JobProfile[] = [
     stage: "采集基础设施",
     industry: "制造",
     description: "规划 TAP 与镜像采集，验证覆盖范围和采集质量。",
+    majorGroupIds: ["major-network"],
     skills: ["TAP 部署", "镜像配置", "采集验证"],
     target: [95, 70, 85, 75, 65, 75],
     requiredDimensions: [0, 2],
@@ -427,6 +510,7 @@ export const jobs: JobProfile[] = [
     stage: "技术服务",
     industry: "运营商",
     description: "建立网络运行基线，处理异常工单并完成稳定性复盘。",
+    majorGroupIds: ["major-observability"],
     skills: ["运行监控", "异常处置", "运维复盘"],
     target: [85, 75, 85, 85, 75, 80],
     requiredDimensions: [3, 5],
@@ -603,7 +687,7 @@ const networkDays: [string, string, string?][] = [
   ["正常与异常基线对比", "course-2"],
   ["银行交易慢案例研判", "course-2", "bank"],
   ["医疗影像查询超时分析", "course-2", "hospital"],
-  ["MES 断连时间线还原", "course-1", "factory"],
+  ["制造产线断连案例阅读", "course-1"],
   ["证据清单与边界说明", "course-5", "bank"],
   ["客户复盘与口头答辩", "course-5", "bank"],
   ["综合成果交付", "course-5", "bank"],
@@ -699,8 +783,46 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+export function createResourceRights(
+  id: string,
+  overrides: Partial<ResourceRights> = {},
+): ResourceRights {
+  return {
+    ownership: "科来自有",
+    ownerName: "科来网络",
+    sourceNote: "基于科来教学体系自研，完成案例脱敏与方法抽象。",
+    desensitizationNote: "已移除客户名称、地址、账号与真实业务标识。",
+    agreementNo: `KL-RIGHTS-${id.toUpperCase()}`,
+    evidenceName: "教学资源权属确认单.pdf",
+    useScopes: ["教学使用", "实训交付", "项目展示", "招聘引用"],
+    validFrom: "2026-09-01",
+    validUntil: "2029-08-31",
+    status: "已确权",
+    reviewNote: "",
+    history: [],
+    ...overrides,
+  };
+}
+
+function seededRights(id: string) {
+  if (id === "factory") {
+    return createResourceRights(id, {
+      ownership: "客户授权",
+      ownerName: "制造行业客户",
+      sourceNote: "由客户生产网络故障案例改编，待补充正式教学使用授权协议。",
+      desensitizationNote: "已隐去厂区、终端与地址信息，仍需完成授权材料复核。",
+      agreementNo: "",
+      evidenceName: "",
+      useScopes: ["教学使用", "实训交付"],
+      status: "待确权",
+      reviewNote: "待补充客户授权协议与脱敏确认材料",
+    });
+  }
+  return createResourceRights(id);
+}
+
 function seededResource(
-  base: Omit<Resource, "draftContent" | "publishedContent" | "reviewHistory">,
+  base: Omit<Resource, "draftContent" | "publishedContent" | "reviewHistory" | "rights">,
   content: ResourceContent,
 ): Resource {
   return {
@@ -708,6 +830,7 @@ function seededResource(
     draftContent: clone(content),
     publishedContent: clone(content),
     reviewHistory: [],
+    rights: seededRights(base.id),
   };
 }
 
@@ -715,7 +838,7 @@ function initialResources(): Resource[] {
   const baseIds = [
     ...jobs.map((item) => item.id),
     ...scenes.filter((item) => item.id !== "factory").map((item) => item.id),
-    ...courses.filter((item) => item.id !== "course-5").map((item) => item.id),
+    ...courses.map((item) => item.id),
     assessment.id,
     evaluationStandard.id,
   ];
@@ -727,6 +850,7 @@ function initialResources(): Resource[] {
         ...job,
         code: `KL-GW-${String(jobIndex + 1).padStart(3, "0")}`,
         majors: ["网络工程", "网络空间安全"],
+        majorGroupIds: job.majorGroupIds ?? [],
         responsibilities: relatedScenes.map((scene) => scene.tasks[0] ?? scene.name),
         requirements: ["掌握网络协议与流量分析方法", "能够依据证据说明结论与边界", "具备客户沟通和复盘表达能力"],
         certificates: ["CSNA 能力体系参考"],
@@ -793,8 +917,8 @@ function initialResources(): Resource[] {
           status: "已发布",
           description: `${course.chapters.length} 个章节 · 关联 ${scenes.find((scene) => scene.id === course.sceneId)?.name ?? "岗位实训"}`,
           version: "V1.0",
-          packageId: course.id === "course-5" ? "renewal" : "base",
-          authorizedTo: course.id === "course-5" ? [] : ["school-1"],
+          packageId: "base",
+          authorizedTo: ["school-1"],
           relatedIds: [course.jobId, course.sceneId],
           updatedAt: createdAt,
         },
@@ -877,13 +1001,14 @@ const classmates: SampleLearner[] = classNames.map((name, index) => {
 export function seedWorkspace(): EnterpriseWorkspaceState {
   const resources = initialResources();
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     role: null,
     activeSchoolId: "school-1",
     activeStudentId: "student-lin",
     activeTeacherId: "teacher-zhou",
     teacherGuideSeen: false,
     resources,
+    majorGroups: clone(majorGroups),
     classroom: {
       id: "class-1",
       name: "网络工程 2401",
@@ -964,7 +1089,8 @@ export function seedWorkspace(): EnterpriseWorkspaceState {
         resourceId: resource.id,
         resourceVersion: resource.version,
         schoolId,
-        scope: "网络工程专业",
+        scope: "网络与通信、网络空间安全专业群",
+        majorGroupIds: ["major-network", "major-security"],
         expiresAt: "2027-12-31",
         authorizedBy: "科来运营",
         authorizedAt: resource.updatedAt,
@@ -980,6 +1106,7 @@ export function seedWorkspace(): EnterpriseWorkspaceState {
         amount: 80000,
         status: "已授权",
         resourceIds: initialResources().filter((item) => item.packageId === "base").map((item) => item.id),
+        majorGroupIds: ["major-network", "major-security"],
         createdAt: "2026-08-20 10:00",
         updatedAt: "2026-09-01 09:30",
         history: [],
@@ -991,7 +1118,8 @@ export function seedWorkspace(): EnterpriseWorkspaceState {
         name: "2027 年度场景更新包",
         amount: 22000,
         status: "待确认",
-        resourceIds: ["factory", "course-5"],
+        resourceIds: ["factory"],
+        majorGroupIds: ["major-network", "major-observability"],
         createdAt,
         updatedAt: createdAt,
         history: [],
@@ -1079,12 +1207,63 @@ export function publishedStandards(state: EnterpriseWorkspaceState) {
     .filter((item): item is StandardProfile => Boolean(item));
 }
 
-export function resourceVisible(state: EnterpriseWorkspaceState, id: string) {
+export function effectiveRightsStatus(rights?: ResourceRights, now = new Date()): ResourceRightsStatus {
+  if (!rights) return "待确权";
+  if (rights.status === "已确权" && new Date(`${rights.validUntil}T23:59:59`).getTime() < now.getTime()) return "已过期";
+  return rights.status;
+}
+
+export function resourceRightsReady(
+  state: EnterpriseWorkspaceState,
+  id: string,
+  scope: ResourceUseScope = "教学使用",
+) {
+  const resource = resourceById(state, id);
+  const rights = resource?.rights;
+  const now = Date.now();
+  return Boolean(
+    rights &&
+      effectiveRightsStatus(rights) === "已确权" &&
+      rights.useScopes.includes(scope) &&
+      new Date(`${rights.validFrom}T00:00:00`).getTime() <= now,
+  );
+}
+
+export function resourceRightsBlockedReason(
+  state: EnterpriseWorkspaceState,
+  id: string,
+  scope: ResourceUseScope = "教学使用",
+) {
+  const resource = resourceById(state, id);
+  if (!resource) return "资源不存在";
+  const rights = resource.rights;
+  if (!rights) return "资源尚未补录权属信息";
+  const status = effectiveRightsStatus(rights);
+  if (status === "待确权") return rights.reviewNote || "资源尚未完成权属确认";
+  if (status === "审核中") return "资源权属正在审核";
+  if (status === "已驳回") return rights.reviewNote || "资源权属审核被驳回";
+  if (status === "已过期") return `资源权属已于 ${rights.validUntil} 到期`;
+  if (!rights.useScopes.includes(scope)) return `权属范围不包含${scope}`;
+  if (new Date(`${rights.validFrom}T00:00:00`).getTime() > Date.now()) return `资源权属自 ${rights.validFrom} 起生效`;
+  return "";
+}
+
+export function resourceVisible(
+  state: EnterpriseWorkspaceState,
+  id: string,
+  scope: ResourceUseScope = "教学使用",
+) {
   const resource = resourceById(state, id);
   const authorized = state.authorizations?.some(
     (item) => item.resourceId === id && item.schoolId === state.activeSchoolId && item.status === "有效",
   ) ?? Boolean(resource?.authorizedTo.includes(state.activeSchoolId));
-  return Boolean(resource && resource.status !== "已下线" && resource.publishedContent && authorized);
+  return Boolean(
+    resource &&
+      resource.status !== "已下线" &&
+      resource.publishedContent &&
+      authorized &&
+      resourceRightsReady(state, id, scope),
+  );
 }
 
 export function resourceName(state: EnterpriseWorkspaceState, id: string, fallback: string) {
@@ -1096,10 +1275,66 @@ export function activeTrainingIds(state: EnterpriseWorkspaceState) {
   return state.classroom.assignedTrainingIds;
 }
 
+export function majorGroupAdaptation(state: EnterpriseWorkspaceState, groupId: string) {
+  const group = state.majorGroups.find((item) => item.id === groupId);
+  if (!group) return { group, status: "待补齐" as const, jobs: [], completedJobs: [], scenes: [], courses: [] };
+  const relatedJobs = publishedJobs(state).filter((job) => group.jobIds.includes(job.id));
+  const readyJobs = relatedJobs.filter((job) => jobTrainingReadiness(state, job.id).ready);
+  const relatedScenes = publishedScenes(state).filter(
+    (scene) =>
+      relatedJobs.some((job) => job.id === scene.jobId) &&
+      resourceVisible(state, scene.id),
+  );
+  const relatedCourses = publishedCourses(state).filter(
+    (course) =>
+      relatedJobs.some((job) => job.id === course.jobId) &&
+      resourceVisible(state, course.id),
+  );
+  return {
+    group,
+    status: readyJobs.length >= 2 ? "强适配" as const : readyJobs.length === 1 ? "可适配" as const : "待补齐" as const,
+    jobs: relatedJobs,
+    completedJobs: readyJobs,
+    scenes: relatedScenes,
+    courses: relatedCourses,
+  };
+}
+
+export function rightsSummary(state: EnterpriseWorkspaceState) {
+  const statuses = state.resources.map((resource) => effectiveRightsStatus(resource.rights));
+  return {
+    confirmed: statuses.filter((status) => status === "已确权").length,
+    reviewing: statuses.filter((status) => status === "审核中").length,
+    pending: statuses.filter((status) => status === "待确权").length,
+    rejected: statuses.filter((status) => status === "已驳回").length,
+    expired: statuses.filter((status) => status === "已过期").length,
+  };
+}
+
+export function orderRightsBlockers(state: EnterpriseWorkspaceState, order: Order) {
+  const ids = Array.from(
+    new Set([
+      ...order.resourceIds,
+      ...state.resources.filter((item) => item.packageId === order.packageId).map((item) => item.id),
+    ]),
+  );
+  return ids.flatMap((id) => {
+    const resource = resourceById(state, id);
+    if (!resource) return [{ id, name: id, reason: "资源不存在" }];
+    if (resource.status !== "已发布" || !resource.publishedContent) {
+      return [{ id, name: resource.name, reason: "资源尚未审核发布" }];
+    }
+    const reason = resourceRightsBlockedReason(state, id, "教学使用");
+    return reason ? [{ id, name: resource.name, reason }] : [];
+  });
+}
+
 export function jobTrainingReadiness(state: EnterpriseWorkspaceState, jobId: string) {
   const resource = resourceById(state, jobId);
   const job = resource?.publishedContent?.kind === "job" ? resource.publishedContent.data : undefined;
   if (!resource || resource.status === "已下线" || !job) return { ready: false, reason: "岗位标准尚未发布" };
+  const rightsReason = resourceRightsBlockedReason(state, jobId, "教学使用");
+  if (rightsReason) return { ready: false, reason: rightsReason };
   if (!resourceVisible(state, jobId)) return { ready: false, reason: "岗位尚未授权给当前院校" };
   const sceneReady = (job.sceneIds ?? []).some((id) => resourceVisible(state, id));
   const courseReady = (job.courseIds ?? []).some((id) => resourceVisible(state, id));
@@ -1117,6 +1352,18 @@ export function currentTrainingDay(state: EnterpriseWorkspaceState, trainingId =
   if (!training) return undefined;
   const done = completedDays(state, trainingId);
   return training.dayPlans.find((item) => !done.includes(item.day)) ?? training.dayPlans[training.dayPlans.length - 1];
+}
+
+export function trainingEligibility(state: EnterpriseWorkspaceState, training: TrainingProfile) {
+  const job = jobTrainingReadiness(state, training.jobId);
+  if (!job.ready) return { ok: false, reason: job.reason };
+  const courseIds = Array.from(new Set(training.dayPlans.map((item) => item.courseId).filter(Boolean)));
+  const sceneIds = Array.from(new Set(training.dayPlans.map((item) => item.sceneId).filter((id): id is string => Boolean(id))));
+  const blockedCourse = courseIds.find((id) => !resourceVisible(state, id));
+  if (blockedCourse) return { ok: false, reason: `课程资源未完成确权或授权：${resourceName(state, blockedCourse, blockedCourse)}` };
+  const blockedScene = sceneIds.find((id) => !resourceVisible(state, id));
+  if (blockedScene) return { ok: false, reason: `场景资源未完成确权或授权：${resourceName(state, blockedScene, blockedScene)}` };
+  return { ok: true, reason: "" };
 }
 
 export function latestWork(state: EnterpriseWorkspaceState, sceneId: string) {
@@ -1243,6 +1490,8 @@ export function applicationTarget(state: EnterpriseWorkspaceState, application: 
 export function projectEligibility(state: EnterpriseWorkspaceState, project: ProjectPosting) {
   const job = jobById(project.jobId);
   const match = job ? jobMatch(state, job) : { match: 0, missing: [], ready: false };
+  const rightsReason = resourceRightsBlockedReason(state, project.jobId, "项目展示");
+  if (rightsReason) return { ok: false, reason: rightsReason, match };
   if (!resumeComplete(state.resume)) return { ok: false, reason: "请先补全联系方式", match };
   if (!project.schoolIds.includes(state.activeSchoolId)) return { ok: false, reason: "项目未向当前院校开放", match };
   if (match.missing.length) return { ok: false, reason: `缺少${match.missing.join("、")}证据`, match };
@@ -1253,6 +1502,8 @@ export function projectEligibility(state: EnterpriseWorkspaceState, project: Pro
 export function jobPostingEligibility(state: EnterpriseWorkspaceState, posting: JobPosting) {
   const job = jobById(posting.jobId);
   const match = job ? jobMatch(state, job) : { match: 0, missing: [], ready: false };
+  const rightsReason = resourceRightsBlockedReason(state, posting.jobId, "招聘引用");
+  if (rightsReason) return { ok: false, reason: rightsReason, match };
   if (!resumeComplete(state.resume)) return { ok: false, reason: "请先补全简历", match };
   if (match.missing.length) return { ok: false, reason: `缺少${match.missing.join("、")}证据`, match };
   if (match.match < posting.minMatch) return { ok: false, reason: `匹配度需达到 ${posting.minMatch}%`, match };
