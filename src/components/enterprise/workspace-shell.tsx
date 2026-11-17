@@ -411,12 +411,40 @@ function WorkspaceShell({ path }: { path: string[] }) {
         </div>
       )}
       <footer className="ep-footer">
-        <Image src="/brand/colasoft-logo.png" alt="科来 - 知与" width={32} height={30} />
-        <div className="ep-footer-copy">
-          <strong>场景化产教融合平台</strong>
-          <span>场景化产教融合平台体系支撑单位：杭州知与未来科技有限公司</span>
+        <div className="ep-footer-main">
+          <div className="ep-footer-brand">
+            <Link href="/platform/industry">
+              <Image src="/brand/colasoft-logo.png" alt="" width={34} height={32} />
+              <strong>科来 - 知与</strong>
+            </Link>
+            <p>场景化产教融合平台，连接产业岗位、院校教学与人才评价。</p>
+          </div>
+          <nav className="ep-footer-links" aria-label="平台功能">
+            <strong>平台功能</strong>
+            <Link href="/platform/industry">产业链分析</Link>
+            <Link href="/platform/resources">岗位与场景</Link>
+            <Link href="/platform/projects">产业项目</Link>
+            <Link href="/platform/employment">就业服务</Link>
+          </nav>
+          <nav className="ep-footer-links" aria-label="资源体系">
+            <strong>资源体系</strong>
+            <Link href="/platform/courses">课程与教材</Link>
+            <Link href="/platform/assessment">测评与证书</Link>
+            <Link href="/platform/manage/resources">资源建设</Link>
+            <Link href="/platform/manage/standards">能力标准</Link>
+          </nav>
+          <div className="ep-footer-qr">
+            <Image src="/brand/zhiyu-wechat-qr.png" alt="知与公众号二维码" width={92} height={92} />
+            <div>
+              <strong>关注知与</strong>
+              <span>扫码了解产业人才培养实践</span>
+            </div>
+          </div>
         </div>
-        <small>本地数据与操作记录</small>
+        <div className="ep-footer-bottom">
+          <span>© 2026 场景化产教融合平台</span>
+          <span className="ep-footer-support">场景化产教融合平台体系支撑单位：杭州知与未来科技有限公司</span>
+        </div>
       </footer>
       {state.role === "teacher" && !state.teacherGuideSeen && page === "industry" && (
         <TeacherGuide onClose={() => { markGuideSeen(); notify("教师导览已记录"); }} />
