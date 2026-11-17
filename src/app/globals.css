@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --color-page: #f3f6fb;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f8fafc;
+  --color-border: #e8edf5;
+  --color-border-soft: #eef0f6;
+  --color-border-control: #e3e9f3;
+  --color-text: #1f2937;
+  --color-text-secondary: #465b73;
+  --color-text-muted: #586d83;
+  --color-primary: #3361e8;
+  --color-primary-hover: #2a50c9;
+  --font-numeric: Bahnschrift, "DIN Alternate", "Arial Narrow", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+html {
+  background: var(--color-page);
+}
+
+body {
+  margin: 0;
+  background-color: #f3f4f6;
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea,
+select {
+  border-color: var(--color-border-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #5f636a;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  border-color: var(--color-primary);
+  outline: 3px solid rgb(51 97 232 / 10%);
+  outline-offset: 0;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+thead {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+}
+
+tbody tr {
+  border-color: var(--color-border-soft);
+  transition: background-color 0.2s ease;
+}
+
+tbody tr:hover {
+  background: #eef2ff;
+}
+
+::selection {
+  background: #dbe4ff;
+}
+
+@layer components {
+  .surface-card {
+    @apply rounded-xl border border-line bg-paper shadow-card;
+  }
+
+  .section-title {
+    @apply font-display text-[15px] font-medium text-ink;
+  }
+
+  .field-control {
+    @apply min-h-9 rounded-md border border-line-control bg-white px-3 text-[13px] text-ink transition;
+  }
+
+  .notice-info {
+    @apply rounded-lg border border-tide-border bg-tide-mist px-4 py-3 text-sm leading-6 text-tide-deep;
+  }
+
+  .notice-warning {
+    @apply rounded-lg border border-warning-border bg-warning-mist px-4 py-3 text-sm leading-6 text-warning-deep;
+  }
+
+  .numeric {
+    font-family: var(--font-numeric);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter {
+    animation: page-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+    background-image: none;
+  }
+
+  .print-sheet {
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+}
+
+/* Shared readable text colors, including already-open development pages. */
+.text-ink-soft{color:var(--color-text-secondary)}
+.text-ink-muted{color:var(--color-text-muted)}
+.text-blue-400{color:#2e649a}
+.to-tide-light{--tw-gradient-to:#3e69d1 var(--tw-gradient-to-position)}
+.text-success{color:#087b67}
+.text-danger{color:#c42d35}
+
+.text-danger-deep,.text-clay{color:#b91c1c}

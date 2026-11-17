@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+.DS_Store
+*.tsbuildinfo
+
+.next-production
+网络视听行业场景化人才培养服务平台-2.1版
