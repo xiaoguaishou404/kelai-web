@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { PageAgentBootstrap } from "@/components/enterprise/page-agent-bootstrap";
 import { DemoProvider } from "@/lib/demo-store";
 import "./globals.css";
 
@@ -15,6 +16,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="page-enter">
         <DemoProvider>
           <Suspense fallback={<div className="p-8 text-center text-ink-muted">正在加载科来工作空间…</div>}>{children}</Suspense>
+          <PageAgentBootstrap />
         </DemoProvider>
       </body>
     </html>
