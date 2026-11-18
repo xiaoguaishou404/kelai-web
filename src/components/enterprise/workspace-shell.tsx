@@ -79,6 +79,7 @@ import {
 } from "@/components/enterprise/workspace-store";
 import { ResourceBuilder, ResourcePreview } from "@/components/enterprise/resource-builders";
 import { IndustryHero } from "@/components/enterprise/industry-hero";
+import { ChannelHero } from "@/components/enterprise/channel-hero";
 
 const channels = [
   ["industry", "产业链分析"],
@@ -115,6 +116,8 @@ const management = [
   ["manage/orders", "资源订阅与授权"],
   ["manage/settlement", "结算台账"],
 ];
+
+const channelHeroPages = new Set(["courses", "assessment", "projects", "employment"]);
 
 const radarKeys = ["deploy", "listen", "path", "locate", "alert", "report"] as const;
 
@@ -295,6 +298,10 @@ function WorkspaceShell({ path }: { path: string[] }) {
       passScore: 80,
       questions: examQuestions,
     };
+  const scrollToSection = (id: string) => {
+    const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    document.getElementById(id)?.scrollIntoView({ behavior, block: "start" });
+  };
   const evaluationStandard: StandardProfile =
     accessibleStandardList.find((item) => item.jobId === "service") ??
     accessibleStandardList[0] ??
@@ -394,8 +401,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
             </aside>
           )}
           <main className="ep-main">
-            {!["industry", "resources"].includes(page) && <div className="ep-breadcrumb">场景化产教融合平台 <ChevronRight size={12} /> {title}</div>}
-            {!["industry", "learning", "resources"].includes(page) && (
+            {!["industry", "resources", ...channelHeroPages].includes(page) && <div className="ep-breadcrumb">场景化产教融合平台 <ChevronRight size={12} /> {title}</div>}
+            {!["industry", "learning", "resources", ...channelHeroPages].includes(page) && (
               <div className="ep-pageheading">
                 <h1>{title}</h1>
                 <span>2026 学年 · 企业版</span>
@@ -1073,26 +1080,48 @@ function WorkspaceShell({ path }: { path: string[] }) {
   }
 
   function CoursesView() {
+    const visibleCourses = courses.filter((course) => resourceVisible(state, course.id));
+    const visibleScenes = scenes.filter((scene) => resourceVisible(state, scene.id));
+    const visibleTrainings = trainings.filter((training) => resourceVisible(state, training.sceneId));
     return (
-      <div className="ep-grid">
-        {courses.filter((course) => resourceVisible(state, course.id)).map((course, index) => (
-          <Card key={course.id}>
-            <div className={`ep-art art-${index}`}>
-              <BookOpen size={64} />
-              <span>COLASOFT ACADEMY</span>
-            </div>
-            <div className="ep-cardbody">
-              <Tag>岗位核心课程</Tag>
-              <h2>{resourceName(state, course.id, course.name)}</h2>
-              <p>{course.chapters.length} 个章节 · 原理、案例与实操联动</p>
-              <Link className="ep-link" href={`/platform/course/${course.id}`}>进入课程 <ArrowUpRight size={16} /></Link>
-            </div>
-          </Card>
-        ))}
-        {state.resources
-          .filter((resource) => resource.type === "课程" && !courseById(resource.id) && resourceVisible(state, resource.id))
-          .map((resource) => <ResourceCard key={resource.id} resource={resource} />)}
-      </div>
+      <>
+        <ChannelHero
+          variant="courses"
+          kicker="COURSE & TEXTBOOK"
+          title="让课程沿着岗位，"
+          highlight="生长成学习现场"
+          description="把岗位任务、方法内容与真实场景组织成可教、可练、可评价的动态课程体系。"
+          metrics={[
+            { label: "岗位课程", value: String(visibleCourses.length).padStart(2, "0") },
+            { label: "课程章节", value: visibleCourses.reduce((sum, course) => sum + course.chapters.length, 0) },
+            { label: "场景联动", value: String(visibleScenes.length).padStart(2, "0") },
+            { label: "学习路径", value: String(visibleTrainings.length).padStart(2, "0") },
+          ]}
+          actions={[
+            { label: "浏览课程", onClick: () => scrollToSection("course-browser") },
+            { label: "查看岗位与场景", href: "/platform/resources", secondary: true },
+          ]}
+        />
+        <div className="ep-grid" id="course-browser">
+          {visibleCourses.map((course, index) => (
+            <Card key={course.id}>
+              <div className={`ep-art art-${index}`}>
+                <BookOpen size={64} />
+                <span>COLASOFT ACADEMY</span>
+              </div>
+              <div className="ep-cardbody">
+                <Tag>岗位核心课程</Tag>
+                <h2>{resourceName(state, course.id, course.name)}</h2>
+                <p>{course.chapters.length} 个章节 · 原理、案例与实操联动</p>
+                <Link className="ep-link" href={`/platform/course/${course.id}`}>进入课程 <ArrowUpRight size={16} /></Link>
+              </div>
+            </Card>
+          ))}
+          {state.resources
+            .filter((resource) => resource.type === "课程" && !courseById(resource.id) && resourceVisible(state, resource.id))
+            .map((resource) => <ResourceCard key={resource.id} resource={resource} />)}
+        </div>
+      </>
     );
   }
 
@@ -1175,9 +1204,26 @@ function WorkspaceShell({ path }: { path: string[] }) {
     const eligibility = certificateEligibility(state);
     return (
       <>
-        <div className="ep-split">
+        <ChannelHero
+          variant="assessment"
+          kicker="ASSESSMENT & CREDENTIAL"
+          title="让能力达成，"
+          highlight="有证据也有凭证"
+          description="用岗位标准组织理论核验、场景实操与能力认定，让每一次达标都可追溯、可证明。"
+          metrics={[
+            { label: "岗位测评", value: String(accessibleAssessmentList.length).padStart(2, "0") },
+            { label: "评价标准", value: String(accessibleStandardList.length).padStart(2, "0") },
+            { label: "核验题目", value: accessibleAssessmentList.reduce((sum, item) => sum + item.questions.length, 0) },
+            { label: "合格线", value: assessment.passScore },
+          ]}
+          actions={[
+            { label: "查看我的测评", onClick: () => scrollToSection("assessment-overview") },
+            { label: "查看评价标准", onClick: () => scrollToSection("assessment-standards"), secondary: true },
+          ]}
+        />
+        <div className="ep-split" id="assessment-overview">
           <Card>
-            <Tag>岗位能力综合测评</Tag><h1>{assessment.name}</h1><p>完成理论核验与场景实操评价，确认岗位能力达成情况。</p>
+            <Tag>岗位能力综合测评</Tag><h2>{assessment.name}</h2><p>完成理论核验与场景实操评价，确认岗位能力达成情况。</p>
             {state.role === "student" ? <Link className="ep-button" href="/platform/exam">{eligibility.latestExam ? "查看成绩与重新测评" : "开始测评"}</Link> : <Empty>学生登录后可参加测评。</Empty>}
             <h2>当前状态</h2><p>理论成绩 {eligibility.latestExam?.score ?? "待测评"} · 必选场景 {eligibility.sceneReady ? "已通过" : "未通过"}</p>
           </Card>
@@ -1196,7 +1242,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
           ))}
         </Card>
         {accessibleAssessmentList.length > 1 && <Card><h2>全部岗位测评</h2>{accessibleAssessmentList.map((item) => <Link className="ep-row" key={item.id} href={`/platform/assessment/${item.id}`}><span className="ep-grow">{item.name}<small>{jobById(item.jobId)?.name}</small></span><ChevronRight /></Link>)}</Card>}
-        <Card><h2>岗位评价标准</h2>{accessibleStandardList.map((item) => <Link className="ep-row" key={item.id} href={`/platform/standard/${item.id}`}><span className="ep-grow">{item.name}<small>{jobById(item.jobId)?.name}</small></span><ChevronRight /></Link>)}</Card>
+        <Card id="assessment-standards"><h2>岗位评价标准</h2>{accessibleStandardList.map((item) => <Link className="ep-row" key={item.id} href={`/platform/standard/${item.id}`}><span className="ep-grow">{item.name}<small>{jobById(item.jobId)?.name}</small></span><ChevronRight /></Link>)}</Card>
       </>
     );
   }
@@ -1265,11 +1311,29 @@ function WorkspaceShell({ path }: { path: string[] }) {
   }
 
   function ProjectsView() {
+    const publishedProjects = state.projects.filter((project) => project.status === "已发布");
     return (
       <>
-        <div className="ep-toolbar"><h2>来自业务现场的真实课题</h2><label className="ep-search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索项目" /></label></div>
+        <ChannelHero
+          variant="projects"
+          kicker="INDUSTRY PROJECT"
+          title="把真实业务课题，"
+          highlight="交给课堂完成"
+          description="从企业任务到交付验收，让学生在真实约束中完成分析、协作与成果表达。"
+          metrics={[
+            { label: "开放课题", value: String(publishedProjects.length).padStart(2, "0") },
+            { label: "合作企业", value: new Set(publishedProjects.map((project) => project.company)).size },
+            { label: "岗位方向", value: new Set(publishedProjects.map((project) => project.jobId)).size },
+            { label: "交付要求", value: publishedProjects.reduce((sum, project) => sum + project.deliverables.length, 0) },
+          ]}
+          actions={[
+            { label: "浏览项目", onClick: () => scrollToSection("project-browser") },
+            { label: "查看岗位能力", href: "/platform/resources", secondary: true },
+          ]}
+        />
+        <div className="ep-toolbar" id="project-browser"><h2>来自业务现场的真实课题</h2><label className="ep-search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索项目" /></label></div>
         <div className="ep-grid">
-          {state.projects.filter((item) => item.status === "已发布" && item.name.includes(query)).map((project) => {
+          {publishedProjects.filter((item) => item.name.includes(query)).map((project) => {
             const job = jobById(project.jobId);
             const eligibility = projectEligibility(state, project);
             const applied = state.applications.find((item) => item.kind === "project" && item.targetId === project.id);
@@ -1299,11 +1363,29 @@ function WorkspaceShell({ path }: { path: string[] }) {
   }
 
   function EmploymentView() {
+    const publishedPostings = state.jobPostings.filter((posting) => posting.status === "已发布");
     return (
       <>
-        <div className="ep-toolbar"><h2>让实战成果连接岗位机会</h2><label className="ep-search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索岗位" /></label></div>
+        <ChannelHero
+          variant="employment"
+          kicker="CAREER SERVICE"
+          title="让实战成果，"
+          highlight="抵达真实岗位机会"
+          description="把能力画像、岗位匹配与投递服务连成一条路径，帮助学生看清差距、找到方向。"
+          metrics={[
+            { label: "在招岗位", value: String(publishedPostings.length).padStart(2, "0") },
+            { label: "招聘企业", value: new Set(publishedPostings.map((posting) => posting.company)).size },
+            { label: "岗位方向", value: new Set(publishedPostings.map((posting) => posting.jobId)).size },
+            { label: "能力维度", value: dimensions.length },
+          ]}
+          actions={[
+            { label: "浏览岗位机会", onClick: () => scrollToSection("employment-browser") },
+            { label: "查看能力画像", href: "/platform/learning/portrait", secondary: true },
+          ]}
+        />
+        <div className="ep-toolbar" id="employment-browser"><h2>让实战成果连接岗位机会</h2><label className="ep-search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索岗位" /></label></div>
         <div className="ep-grid">
-          {state.jobPostings.filter((item) => item.status === "已发布" && item.name.includes(query)).map((posting) => {
+          {publishedPostings.filter((item) => item.name.includes(query)).map((posting) => {
             const job = jobById(posting.jobId);
             const match = job ? jobMatch(state, job) : { match: 0, missing: [], ready: false };
             const eligibility = jobPostingEligibility(state, posting);
