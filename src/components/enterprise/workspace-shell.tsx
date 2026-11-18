@@ -393,8 +393,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
             </aside>
           )}
           <main className="ep-main">
-            <div className="ep-breadcrumb">场景化产教融合平台 <ChevronRight size={12} /> {title}</div>
-            {!["industry", "learning"].includes(page) && (
+            {page !== "resources" && <div className="ep-breadcrumb">场景化产教融合平台 <ChevronRight size={12} /> {title}</div>}
+            {!["industry", "learning", "resources"].includes(page) && (
               <div className="ep-pageheading">
                 <h1>{title}</h1>
                 <span>2026 学年 · 企业版</span>
@@ -716,9 +716,166 @@ function WorkspaceShell({ path }: { path: string[] }) {
       .filter((job) => jobTrainingReadiness(state, job.id).ready && !trainings.some((training) => training.jobId === job.id))
       .map((job) => trainingById(`path-${job.id}`))
       .filter((item): item is TrainingProfile => Boolean(item));
+    const resourceOverview = [
+      { label: "岗位", value: jobs.filter((item) => resourceVisible(state, item.id)).length },
+      { label: "场景", value: scenes.filter((item) => resourceVisible(state, item.id)).length },
+      { label: "课程", value: courses.filter((item) => resourceVisible(state, item.id)).length },
+      { label: "短训", value: trainings.filter((item) => resourceVisible(state, item.sceneId)).length + generatedPaths.length },
+    ];
+    const resourceChainLabels = ["能力标准", "真实任务", "方法内容", "学习路径"];
+    const maxResourceCount = Math.max(1, ...resourceOverview.map((item) => item.value));
+    const browseResources = (nextTab: string) => {
+      setTab(nextTab);
+      setFilter("全部");
+      setQuery("");
+      window.requestAnimationFrame(() => {
+        const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+        document.getElementById("resource-browser")?.scrollIntoView({ behavior, block: "start" });
+      });
+    };
     return (
       <>
-        <div className="ep-toolbar">
+        <section className="ep-resource-hero">
+          <svg className="ep-resource-hero-geometry" viewBox="0 0 1440 520" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M-70 448 224 274V72l280 158" />
+            <path d="M-70 448 238 482 518 314" />
+            <path d="M1184 112 1388 228v236l-206-119Z" />
+            <path d="M1078 0 1388 176" />
+            <path d="M1030 520 1388 303" />
+          </svg>
+          <div className="ep-resource-hero-inner">
+            <div className="ep-resource-hero-copy">
+              <h2>把产业现场，<em>变成学习现场</em></h2>
+              <p>从岗位标准到场景实训，连接可教、可练、可评价的产业资源。</p>
+              <div className="ep-resource-hero-actions">
+                <button type="button" className="ep-resource-hero-primary" onClick={() => browseResources("岗位")}>
+                  浏览岗位资源<ArrowUpRight size={16} />
+                </button>
+                <button type="button" className="ep-resource-hero-secondary" onClick={() => browseResources("资源图谱")}>
+                  打开资源图谱<Network size={16} />
+                </button>
+              </div>
+              <div className="ep-resource-hero-metrics" aria-label="资源概览">
+                {resourceOverview.map((item, index) => (
+                  <div key={item.label} className={`ep-resource-metric metric-${index}`}>
+                    <span className="ep-resource-metric-icon">
+                      {index === 0 && <BriefcaseBusiness size={15} />}
+                      {index === 1 && <Activity size={15} />}
+                      {index === 2 && <BookOpen size={15} />}
+                      {index === 3 && <GraduationCap size={15} />}
+                    </span>
+                    <span className="ep-resource-metric-copy">
+                      <small>{item.label}</small>
+                      <strong>{String(item.value).padStart(2, "0")}</strong>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="ep-resource-hero-stage" aria-hidden="true">
+              <div className="ep-resource-scene">
+                <div className="ep-resource-stage-grid" />
+                <div className="ep-resource-stage-glow" />
+                <svg className="ep-resource-stage-links" viewBox="0 0 760 520" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="resource-link-gradient" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stopColor="#fff" stopOpacity=".16" />
+                      <stop offset=".52" stopColor="#ddeeff" stopOpacity=".7" />
+                      <stop offset="1" stopColor="#79d2c6" stopOpacity=".58" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M260 128C306 124 327 145 354 192" />
+                  <path d="M522 175C495 180 474 202 448 231" />
+                  <path d="M360 372C369 341 382 319 404 295" />
+                  <path className="is-ghost" d="M55 351C175 277 274 302 363 352S550 412 708 300" />
+                  <circle cx="354" cy="192" r="4" />
+                  <circle cx="448" cy="231" r="4" />
+                  <circle cx="404" cy="295" r="4" />
+                </svg>
+                <div className="ep-resource-stage-orbit"><span /><span /><span /></div>
+
+                <article className="ep-resource-card ep-resource-card-capability">
+                  <header className="ep-resource-card-head">
+                    <div><strong>岗位能力图谱</strong><small>真实业务任务</small></div>
+                    <Network size={18} />
+                  </header>
+                  <div className="ep-resource-mini-map">
+                    <svg viewBox="0 0 320 154" preserveAspectRatio="none">
+                      <path d="M52 72 125 34 198 62 269 38 267 112 178 125 91 116Z" />
+                      <path d="M52 72 136 88 198 62M136 88 178 125M136 88 267 112M125 34 136 88M91 116 198 62" />
+                      <circle cx="52" cy="72" r="5" />
+                      <circle cx="125" cy="34" r="5" />
+                      <circle cx="198" cy="62" r="5" />
+                      <circle cx="269" cy="38" r="4" />
+                      <circle cx="267" cy="112" r="5" />
+                      <circle cx="178" cy="125" r="4" />
+                      <circle cx="91" cy="116" r="5" />
+                      <circle className="is-core" cx="136" cy="88" r="9" />
+                    </svg>
+                    <span className="map-label label-collect">采集</span>
+                    <span className="map-label label-analyze">分析</span>
+                    <span className="map-label label-locate">定位</span>
+                    <span className="map-label label-deliver">交付</span>
+                  </div>
+                </article>
+
+                <article className="ep-resource-card ep-resource-card-composition">
+                  <header className="ep-resource-card-head">
+                    <div><strong>资源构成</strong><small>岗位到评价</small></div>
+                    <Layers size={18} />
+                  </header>
+                  <div className="ep-resource-composition">
+                    {resourceOverview.map((item, index) => (
+                      <div className="ep-resource-composition-row" key={item.label}>
+                        <div><b>{item.label}</b><small>{resourceChainLabels[index]}</small></div>
+                        <i><span style={{ width: `${Math.max(24, Math.round(item.value / maxResourceCount * 100))}%` }} /></i>
+                        <strong>{String(item.value).padStart(2, "0")}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+
+                <article className="ep-resource-card ep-resource-card-path">
+                  <header className="ep-resource-card-head">
+                    <div><strong>教学转化</strong><small>任务形成能力证据</small></div>
+                    <GraduationCap size={18} />
+                  </header>
+                  <div className="ep-resource-path">
+                    {["真实任务", "实训过程", "能力评价"].map((item, index) => (
+                      <div className="ep-resource-path-step" key={item}>
+                        <span>{index + 1}</span><b>{item}</b>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+
+                <div className="ep-resource-core">
+                  <div className="ep-resource-core-float">
+                    <div className="ep-resource-core-cube">
+                      <span className="cube-face cube-face-front"><i>资源</i></span>
+                      <span className="cube-face cube-face-back"><i>评价</i></span>
+                      <span className="cube-face cube-face-right"><i>教学</i></span>
+                      <span className="cube-face cube-face-left"><i>岗位</i></span>
+                      <span className="cube-face cube-face-top"><i>产业</i></span>
+                      <span className="cube-face cube-face-bottom"><i>场景</i></span>
+                    </div>
+                    <span className="ep-resource-core-ring" />
+                  </div>
+                  <span className="ep-resource-core-label"><ShieldCheck size={13} />资源中枢</span>
+                </div>
+
+                <span className="ep-resource-scene-node scene-node-one"><i /></span>
+                <span className="ep-resource-scene-node scene-node-two"><i /></span>
+                <span className="ep-resource-scene-node scene-node-three"><i /></span>
+              </div>
+            </div>
+          </div>
+        </section>
+        <div className="ep-pageheading ep-resource-pageheading">
+          <h1>岗位与场景资源馆</h1>
+          <span>2026 学年 · 企业版</span>
+        </div>
+        <div className="ep-toolbar" id="resource-browser">
           <div className="ep-tabs">
             {tabs.map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => { setTab(item); setFilter("全部"); }}>{item}</button>)}
           </div>
