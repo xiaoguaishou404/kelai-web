@@ -80,6 +80,7 @@ import {
 import { ResourceBuilder, ResourcePreview } from "@/components/enterprise/resource-builders";
 import { IndustryHero } from "@/components/enterprise/industry-hero";
 import { ChannelHero } from "@/components/enterprise/channel-hero";
+import { CompanyEntry, CompanyProfile } from "@/components/enterprise/company-profile";
 
 const channels = [
   ["industry", "产业链分析"],
@@ -118,6 +119,7 @@ const management = [
 ];
 
 const channelHeroPages = new Set(["courses", "assessment", "projects", "employment"]);
+const fullBleedPages = new Set(["industry", "resources", ...channelHeroPages, "industry/company"]);
 
 const radarKeys = ["deploy", "listen", "path", "locate", "alert", "report"] as const;
 
@@ -186,7 +188,7 @@ function History({ items }: { items: { at: string; actor: string; action: string
 }
 
 function pageTitle(page: string) {
-  return [...channels, ...studentNav, ...teacherNav, ...management].find(([url]) => url === page)?.[1] ?? ({
+  const detailTitles = {
     job: "岗位详情",
     scene: "场景实训",
     training: "短训学习地图",
@@ -195,8 +197,13 @@ function pageTitle(page: string) {
     resource: "资源详情",
     standard: "岗位评价标准",
     project: "项目详情",
+    "industry/company": "关于科来",
     login: "身份选择",
-  } as Record<string, string>)[page.split("/")[0]] ?? "岗位培养";
+  } as Record<string, string>;
+  return [...channels, ...studentNav, ...teacherNav, ...management].find(([url]) => url === page)?.[1]
+    ?? detailTitles[page]
+    ?? detailTitles[page.split("/")[0]]
+    ?? "岗位培养";
 }
 
 export default function Platform({ path = [] }: { path?: string[] }) {
@@ -250,6 +257,14 @@ function WorkspaceShell({ path }: { path: string[] }) {
   const publishedStandardList = publishedStandards(state);
   const accessibleAssessmentList = publishedAssessmentList.filter((item) => state.role === "manage" || resourceVisible(state, item.id));
   const accessibleStandardList = publishedStandardList.filter((item) => state.role === "manage" || resourceVisible(state, item.id));
+  const companyResources = {
+    jobs: jobs.filter((item) => state.role === "manage" || resourceVisible(state, item.id)).length,
+    scenes: scenes.filter((item) => state.role === "manage" || resourceVisible(state, item.id)).length,
+    courses: courses.filter((item) => state.role === "manage" || resourceVisible(state, item.id)).length,
+    assessments: accessibleAssessmentList.length,
+    projects: state.projects.filter((item) => item.status === "已发布").length,
+    openings: state.jobPostings.filter((item) => item.status === "已发布").length,
+  };
   const jobById = (id: string) => jobs.find((item) => item.id === id);
   const sceneById = (id: string) => scenes.find((item) => item.id === id);
   const courseById = (id: string) => courses.find((item) => item.id === id);
@@ -382,7 +397,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
       {page !== "login" && (
         <nav className="ep-nav">
           {channels.map(([url, label]) => (
-            <Link key={url} className={page === url ? "active" : ""} href={`/platform/${url}`}>
+            <Link key={url} className={page === url || page.startsWith(`${url}/`) ? "active" : ""} href={`/platform/${url}`}>
               {label}
             </Link>
           ))}
@@ -401,8 +416,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
             </aside>
           )}
           <main className="ep-main">
-            {!["industry", "resources", ...channelHeroPages].includes(page) && <div className="ep-breadcrumb">场景化产教融合平台 <ChevronRight size={12} /> {title}</div>}
-            {!["industry", "learning", "resources", ...channelHeroPages].includes(page) && (
+            {!fullBleedPages.has(page) && <div className="ep-breadcrumb">场景化产教融合平台 <ChevronRight size={12} /> {title}</div>}
+            {!fullBleedPages.has(page) && page !== "learning" && (
               <div className="ep-pageheading">
                 <h1>{title}</h1>
                 <span>2026 学年 · 企业版</span>
@@ -477,6 +492,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
 
   function renderPage(): ReactNode {
     if (page === "login") return <LoginView />;
+    if (page === "industry/company") return <CompanyProfile resources={companyResources} />;
     if (page === "industry") return <IndustryView />;
     if (page === "resources") return <ResourcesView />;
     if (page === "courses") return <CoursesView />;
@@ -600,6 +616,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
           ]}
           onViewGroups={viewMajorGroups}
         />
+        <CompanyEntry />
         <div className="ep-chain industry">
           {[["采集基础设施", "TAP · 镜像采集 · 环境部署", Network], ["分析研判", "协议分析 · 性能诊断 · 安全研判", Activity], ["技术服务", "方案验证 · 现场交付 · 业务运维", ShieldCheck]].map(([name, desc, Icon]) => {
             const Comp = Icon as typeof Network;
