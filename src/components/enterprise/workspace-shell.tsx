@@ -78,6 +78,7 @@ import {
   WorkspaceProvider,
 } from "@/components/enterprise/workspace-store";
 import { ResourceBuilder, ResourcePreview } from "@/components/enterprise/resource-builders";
+import { IndustryHero } from "@/components/enterprise/industry-hero";
 
 const channels = [
   ["industry", "产业链分析"],
@@ -137,8 +138,8 @@ function Btn({
   );
 }
 
-function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={"ep-card " + className}>{children}</section>;
+function Card({ children, className = "", id }: { children: ReactNode; className?: string; id?: string }) {
+  return <section id={id} className={"ep-card " + className}>{children}</section>;
 }
 
 function Tag({ children, tone = "" }: { children: ReactNode; tone?: string }) {
@@ -393,7 +394,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
             </aside>
           )}
           <main className="ep-main">
-            {page !== "resources" && <div className="ep-breadcrumb">场景化产教融合平台 <ChevronRight size={12} /> {title}</div>}
+            {!["industry", "resources"].includes(page) && <div className="ep-breadcrumb">场景化产教融合平台 <ChevronRight size={12} /> {title}</div>}
             {!["industry", "learning", "resources"].includes(page) && (
               <div className="ep-pageheading">
                 <h1>{title}</h1>
@@ -577,18 +578,21 @@ function WorkspaceShell({ path }: { path: string[] }) {
       notify("专业群适配已更新");
       setEditingGroupId(null);
     };
+    const viewMajorGroups = () => {
+      const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+      document.getElementById("major-groups")?.scrollIntoView({ behavior, block: "start" });
+    };
     return (
       <>
-        <div className="ep-stats">
-          <Metric label="产业链环节" value={3} />
-          <Metric label="科来适配岗位" value={jobs.filter((item) => resourceAvailable(item.id)).length} />
-          <Metric label="适配专业群" value={state.majorGroups.length} />
-          <Metric label="已确权资源" value={`${rights.confirmed}/${state.resources.length}`} />
-        </div>
-        <div className="ep-section-title">
-          <div><Tag>INDUSTRY LANDSCAPE</Tag><h1>从产业链到专业群</h1><p>连接科来岗位能力、院校专业群与可确权教学资源</p></div>
-          <Link className="ep-button" href="/platform/resources">探索岗位与场景 <ArrowUpRight size={16} /></Link>
-        </div>
+        <IndustryHero
+          metrics={[
+            { label: "产业链环节", value: 3 },
+            { label: "适配岗位", value: jobs.filter((item) => resourceAvailable(item.id)).length },
+            { label: "适配专业群", value: state.majorGroups.length },
+            { label: "已确权资源", value: `${rights.confirmed}/${state.resources.length}` },
+          ]}
+          onViewGroups={viewMajorGroups}
+        />
         <div className="ep-chain industry">
           {[["采集基础设施", "TAP · 镜像采集 · 环境部署", Network], ["分析研判", "协议分析 · 性能诊断 · 安全研判", Activity], ["技术服务", "方案验证 · 现场交付 · 业务运维", ShieldCheck]].map(([name, desc, Icon]) => {
             const Comp = Icon as typeof Network;
@@ -612,7 +616,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
             );
           })}
         </div>
-        <Card className="ep-major-matrix">
+        <Card className="ep-major-matrix" id="major-groups">
           <div className="ep-section-title">
             <div><Tag>MAJOR GROUP FIT</Tag><h2>科来适配的专业群</h2></div>
             <button className="ep-button secondary" onClick={() => setGroupFilter("全部")}>全部专业群</button>
