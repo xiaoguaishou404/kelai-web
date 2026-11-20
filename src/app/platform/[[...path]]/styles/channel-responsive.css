@@ -1,0 +1,232 @@
+
+@media (max-width: 1400px) {
+  .ep .ep-channel-hero-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .ep .ep-channel-hero-stage {
+    --scale-base: calc(100vw / 1680);
+  }
+}
+
+@media (max-width: 1120px) {
+  .ep .ep-channel-hero-inner {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .ep .ep-channel-hero-copy {
+    max-width: calc(var(--scale-base) * 780);
+    padding-top: calc(var(--scale-base) * 54);
+    padding-bottom: calc(var(--scale-base) * 50);
+  }
+
+  .ep .ep-channel-hero-stage {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .ep .ep-channel-hero-copy {
+    padding-right: calc(var(--scale-base) * 20);
+    padding-left: calc(var(--scale-base) * 20);
+  }
+
+  .ep .ep-channel-hero-copy h1 {
+    font-size: calc(var(--scale-base) * 46);
+  }
+
+  .ep .ep-channel-hero-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ep .ep-channel-hero-metrics li:nth-child(3) {
+    border-left: 0;
+  }
+
+  .ep .ep-channel-hero-metrics li:nth-child(n+3) {
+    border-top: calc(var(--scale-base) * 1) solid rgb(255 255 255 / 16%);
+  }
+}
+
+@media (max-width: 600px) {
+  .ep .ep-channel-hero-actions>a,
+  .ep .ep-channel-hero-actions>button {
+    width: 100%;
+  }
+
+  .ep .ep-channel-hero-copy h1 {
+    font-size: calc(var(--scale-base) * 43);
+  }
+}
+
+@keyframes ep-channel-grid-drift {
+  to {
+    background-position: calc(var(--scale-base) * 57) calc(var(--scale-base) * 57);
+  }
+}
+
+@keyframes ep-channel-link-flow {
+  to {
+    stroke-dashoffset: calc(var(--scale-base) * -64);
+  }
+}
+
+@keyframes ep-channel-dash-flow {
+  to {
+    stroke-dashoffset: -72;
+  }
+}
+
+@keyframes ep-channel-grid-line {
+  to {
+    stroke-dashoffset: -60;
+  }
+}
+
+@keyframes ep-channel-node-breathe {
+  0%, 100% {
+    opacity: .52;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes ep-channel-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ep-channel-card-float {
+  0%, 100% {
+    transform: translate3d(0, 0, var(--card-z));
+  }
+  50% {
+    transform: translate3d(0, calc(var(--scale-base) * -5), var(--card-z));
+  }
+}
+
+@keyframes ep-channel-core-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(calc(var(--scale-base) * -6));
+  }
+}
+
+@keyframes ep-channel-core-ring {
+  to {
+    transform: translate(-50%, -50%) rotateX(69deg) rotateZ(360deg);
+  }
+}
+
+@keyframes ep-channel-node-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(calc(var(--scale-base) * -4));
+  }
+}
+
+@keyframes ep-channel-station-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes ep-channel-ring-breathe {
+  0%, 100% {
+    opacity: .42;
+    transform: scale(.985);
+  }
+  50% {
+    opacity: .9;
+    transform: scale(1.018);
+  }
+}
+
+@keyframes ep-channel-token-travel {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@keyframes ep-channel-shards-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes ep-channel-score {
+  0%, 100% {
+    stroke-dashoffset: 54;
+    opacity: .58;
+  }
+  50% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes ep-channel-match {
+  0%, 100% {
+    stroke-dashoffset: 44;
+    opacity: .6;
+  }
+  50% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes ep-employment-node-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ep .ep-channel-hero-grid,
+  .ep .ep-channel-stage-links path,
+  .ep .ep-channel-stage-links circle,
+  .ep .ep-channel-orbit,
+  .ep .ep-channel-card,
+  .ep .ep-channel-core-float,
+  .ep .ep-channel-core-ring,
+  .ep .ep-channel-scene-node,
+  .ep .ep-path-ambient ellipse,
+  .ep .ep-path-ambient path,
+  .ep .ep-path-base .base-grid path,
+  .ep .ep-assessment-route,
+  .ep .ep-employment-route,
+  .ep .ep-employment-branch,
+  .ep .ep-assessment-stations .station-object,
+  .ep .ep-employment-profile .profile-object,
+  .ep .ep-employment-jobs .job-object,
+  .ep .object-signal,
+  .ep .job-signal,
+  .ep .ep-assessment-core .score-arc,
+  .ep .ep-assessment-core .score-node,
+  .ep .ep-employment-match .match-arc,
+  .ep .ep-employment-match .match-node,
+  .ep .ep-path-tokens circle,
+  .ep .ep-path-shards {
+    animation: none !important;
+  }
+}

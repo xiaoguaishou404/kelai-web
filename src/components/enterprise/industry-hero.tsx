@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  Activity,
   ArrowDown,
   ArrowUpRight,
   BriefcaseBusiness,
@@ -19,33 +18,56 @@ export type IndustryHeroMetric = {
 type IndustryHeroProps = {
   metrics: IndustryHeroMetric[];
   onViewGroups: () => void;
+  copy?: {
+    kicker: string;
+    title: string;
+    highlight: string;
+    description: string;
+    primaryLabel: string;
+    secondaryLabel: string;
+  };
+  showStageLabels?: boolean;
 };
 
 const metricIcons = [Network, BriefcaseBusiness, GraduationCap, ShieldCheck];
 
-export function IndustryHero({ metrics, onViewGroups }: IndustryHeroProps) {
+export function IndustryHero({
+  metrics,
+  onViewGroups,
+  copy,
+  showStageLabels = true,
+}: IndustryHeroProps) {
+  const content = copy ?? {
+    kicker: "INDUSTRY CHAIN",
+    title: "沿着产业链，",
+    highlight: "找到专业群的位置",
+    description: "从采集基础设施、分析研判到技术服务，连接科来岗位能力与院校专业群。",
+    primaryLabel: "探索岗位与场景",
+    secondaryLabel: "查看适配专业群",
+  };
+  const hasLongTitle = content.title.length > 14;
   return (
-    <section className="ep-industry-hero" aria-labelledby="industry-hero-title">
+    <section className={`ep-industry-hero ep-full-bleed${hasLongTitle ? " has-long-title" : ""}`} aria-labelledby="industry-hero-title">
       <div className="ep-industry-hero-grid" aria-hidden="true" />
       <div className="ep-industry-hero-halo" aria-hidden="true" />
       <div className="ep-industry-hero-inner">
         <div className="ep-industry-hero-copy">
           <span className="ep-industry-hero-kicker">
             <i aria-hidden="true" />
-            INDUSTRY CHAIN
+            {content.kicker}
           </span>
           <h1 id="industry-hero-title">
-            沿着产业链，
-            <span>找到专业群的位置</span>
+            {content.title}
+            <span>{content.highlight}</span>
           </h1>
-          <p>从采集基础设施、分析研判到技术服务，连接科来岗位能力与院校专业群。</p>
+          <p>{content.description}</p>
           <div className="ep-industry-hero-actions">
             <Link className="ep-industry-hero-primary" href="/platform/resources">
-              探索岗位与场景
+              {content.primaryLabel}
               <ArrowUpRight size={16} aria-hidden="true" />
             </Link>
             <button className="ep-industry-hero-secondary" type="button" onClick={onViewGroups}>
-              查看适配专业群
+              {content.secondaryLabel}
               <ArrowDown size={16} aria-hidden="true" />
             </button>
           </div>
@@ -162,7 +184,7 @@ export function IndustryHero({ metrics, onViewGroups }: IndustryHeroProps) {
               <circle cx="542" cy="131" r="3" />
               <circle cx="581" cy="173" r="3" />
             </g>
-            <g className="ep-industry-outcomes">
+            {showStageLabels && <g className="ep-industry-outcomes">
               <g className="ep-industry-outcome outcome-jobs">
                 <path d="M558 89 602 66 646 89 602 112Z" />
                 <text x="602" y="93" textAnchor="middle">岗位能力</text>
@@ -171,7 +193,7 @@ export function IndustryHero({ metrics, onViewGroups }: IndustryHeroProps) {
                 <path d="M666 170 710 147 754 170 710 193Z" />
                 <text x="710" y="174" textAnchor="middle">专业群适配</text>
               </g>
-            </g>
+            </g>}
 
             <g className="ep-industry-stations">
               <g className="ep-industry-station station-collect">
@@ -191,7 +213,7 @@ export function IndustryHero({ metrics, onViewGroups }: IndustryHeroProps) {
                   <circle className="collector-signal signal-three" cx="270" cy="192" r="24" />
                   <path className="collector-link" d="M270 217 231 238M270 217 309 238" />
                 </g>
-                <text className="scene-label" x="198" y="390">01　采集基础设施</text>
+                {showStageLabels && <text className="scene-label" x="198" y="390">01　采集基础设施</text>}
               </g>
 
               <g className="ep-industry-station station-analyze">
@@ -208,7 +230,7 @@ export function IndustryHero({ metrics, onViewGroups }: IndustryHeroProps) {
                   <path className="core-beam" d="M430 164V82" />
                   <circle className="core-signal" cx="430" cy="76" r="4" />
                 </g>
-                <text className="scene-label analyze-label" x="350" y="338">02　分析研判</text>
+                {showStageLabels && <text className="scene-label analyze-label" x="350" y="338">02　分析研判</text>}
               </g>
 
               <g className="ep-industry-station station-service">
@@ -225,7 +247,7 @@ export function IndustryHero({ metrics, onViewGroups }: IndustryHeroProps) {
                   <path className="service-path" d="M620 285c28 16 55 30 82 46" />
                   <circle className="service-node" cx="706" cy="334" r="4" />
                 </g>
-                <text className="scene-label service-label" x="518" y="390">03　技术服务</text>
+                {showStageLabels && <text className="scene-label service-label" x="518" y="390">03　技术服务</text>}
               </g>
             </g>
 

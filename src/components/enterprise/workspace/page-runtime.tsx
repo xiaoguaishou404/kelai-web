@@ -1,0 +1,233 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  certificateEligibility,
+  completedDays,
+  examQuestions,
+  generatedCertificateNumber,
+  publishedAssessments,
+  publishedCourses,
+  publishedJobs,
+  publishedScenes,
+  publishedStandards,
+  resourceRightsBlockedReason,
+  resourceVisible,
+  taskCompletionFor,
+  trainings,
+  type AssessmentProfile,
+  type StandardProfile,
+  type TaskSubmission,
+  type TrainingProfile,
+} from "@/lib/enterprise-workspace";
+import { buildApplication, useWorkspace } from "@/components/enterprise/workspace-store";
+import { useWorkspaceRuntime } from "@/components/enterprise/workspace/runtime";
+
+export function useWorkspacePage() {
+  const store = useWorkspace();
+  const { state, toggleFavorite, completeDay, apply, resourceAction, issueCertificate } = store;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const runtime = useWorkspaceRuntime();
+  const { notify } = runtime;
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("全部");
+  const [tab, setTab] = useState("岗位");
+  const [selected, setSelected] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [sceneTab, setSceneTab] = useState("overview");
+  const [sceneTaskIndex, setSceneTaskIndex] = useState(0);
+  const [resourceType, setResourceType] = useState<import("@/lib/enterprise-workspace").Resource["type"]>("岗位");
+  const [creatingResource, setCreatingResource] = useState(false);
+
+  const catalog = useMemo(() => {
+    const jobs = publishedJobs(state);
+    const scenes = publishedScenes(state);
+    const courses = publishedCourses(state);
+    const publishedAssessmentList = publishedAssessments(state);
+    const publishedStandardList = publishedStandards(state);
+    const accessibleAssessmentList = publishedAssessmentList.filter(
+      (item) => state.role === "manage" || resourceVisible(state, item.id),
+    );
+    const accessibleStandardList = publishedStandardList.filter(
+      (item) => state.role === "manage" || resourceVisible(state, item.id),
+    );
+    const jobById = (id: string) => jobs.find((item) => item.id === id);
+    const sceneById = (id: string) => scenes.find((item) => item.id === id);
+    const courseById = (id: string) => courses.find((item) => item.id === id);
+    const trainingById = (id: string): TrainingProfile | undefined => {
+      const base = trainings.find((item) => item.id === id);
+      if (base) return base;
+      if (!id.startsWith("path-")) return undefined;
+      const job = jobById(id.slice(5));
+      if (!job) return undefined;
+      const relatedScenes = scenes.filter((scene) => (job.sceneIds ?? []).includes(scene.id));
+      const relatedCourses = courses.filter((course) => (job.courseIds ?? []).includes(course.id));
+      const planItems = [
+        { title: `${job.name}岗位认知`, courseId: relatedCourses[0]?.id ?? "", sceneId: undefined as string | undefined },
+        ...relatedCourses.slice(0, 3).map((course) => ({ title: course.name, courseId: course.id, sceneId: undefined as string | undefined })),
+        ...relatedScenes.map((scene) => ({ title: scene.name, courseId: relatedCourses[0]?.id ?? "", sceneId: scene.id })),
+      ];
+      return {
+        id,
+        name: `${job.name}岗位学习路径`,
+        days: planItems.length,
+        jobId: job.id,
+        sceneId: relatedScenes[0]?.id ?? "",
+        dayPlans: planItems.map((item, index) => ({
+          day: index + 1,
+          title: item.title,
+          courseId: item.courseId,
+          sceneId: item.sceneId,
+          activity: item.sceneId ? "完成场景分析并提交成果" : "完成课程节点并记录方法要点",
+        })),
+      };
+    };
+    const currentTrainingDay = (workspaceState: typeof state, id = "network") => {
+      const training = trainingById(id);
+      if (!training) return undefined;
+      const done = completedDays(workspaceState, id);
+      return training.dayPlans.find((item) => !done.includes(item.day)) ?? training.dayPlans[training.dayPlans.length - 1];
+    };
+    const assessment: AssessmentProfile =
+      accessibleAssessmentList.find((item) => item.jobId === "service") ??
+      accessibleAssessmentList[0] ??
+      {
+        id: "assessment-service",
+        name: "技术服务岗位综合测评",
+        jobId: "service",
+        durationMinutes: 30,
+        passScore: 80,
+        questions: examQuestions,
+      };
+    const evaluationStandard: StandardProfile =
+      accessibleStandardList.find((item) => item.jobId === "service") ??
+      accessibleStandardList[0] ??
+      {
+        id: "standard-service",
+        name: "技术服务工程师能力评价标准",
+        jobId: "service",
+        abilityPointWeights: [],
+        levelBands: [],
+        recognitionRule: "",
+        evidenceWeight: 40,
+        reasoningWeight: 40,
+        deliveryWeight: 20,
+        passScore: 60,
+        goodScore: 80,
+        excellentScore: 90,
+      };
+    return {
+      jobs,
+      scenes,
+      courses,
+      publishedAssessmentList,
+      publishedStandardList,
+      accessibleAssessmentList,
+      accessibleStandardList,
+      jobById,
+      sceneById,
+      courseById,
+      trainingById,
+      currentTrainingDay,
+      assessment,
+      evaluationStandard,
+    };
+  }, [state]);
+
+  const taskStatus = (submission?: TaskSubmission, sceneId?: string, taskId?: string) => {
+    if (sceneId && taskId) return taskCompletionFor(state, sceneId, taskId).status;
+    return submission?.status ?? "未开始";
+  };
+  const taskStatusTone = (status: string) => {
+    if (status === "已通过") return "success";
+    if (status === "已退回") return "danger";
+    if (status === "待评价" || status === "进行中") return "warning";
+    return "muted";
+  };
+  const claimCertificate = () => {
+    const eligibility = certificateEligibility(state);
+    if (!eligibility.eligible) return notify("尚未满足结业凭证条件");
+    issueCertificate();
+    notify(`结业凭证 ${generatedCertificateNumber(state)} 已生成`);
+  };
+  const toggleFavoriteWithNotice = (id: string, noun = "岗位") => {
+    toggleFavorite(id);
+    notify(state.favorites.includes(id) ? "已取消收藏" : `${noun}已收藏`);
+  };
+  const completeDayWithNotice = (trainingId: string, day: number) => {
+    const current = catalog.currentTrainingDay(state, trainingId);
+    if (!current || current.day !== day) return notify(`当前开放 DAY ${String(current?.day ?? 1).padStart(2, "0")}`);
+    completeDay(day, trainingId);
+    notify(`DAY ${String(day).padStart(2, "0")} 已完成`);
+  };
+  const applyWithNotice = (input: { kind: "project" | "job"; targetId: string; name: string; company: string }) => {
+    if (state.applications.some((item) => item.kind === input.kind && item.targetId === input.targetId)) {
+      return notify("已提交，请勿重复申请");
+    }
+    apply(buildApplication({ state, ...input }));
+    notify(input.kind === "project" ? "项目申请已提交" : "简历已投递");
+  };
+  const resourceActionWithNotice = (
+    id: string,
+    action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize" | "confirm-rights" | "reject-rights" | "revoke-rights",
+    note: string,
+  ) => {
+    const currentlyAuthorized = state.authorizations.some(
+      (item) => item.resourceId === id && item.schoolId === state.activeSchoolId && item.status === "有效",
+    );
+    const rightsReason = action === "publish" || (action === "authorize" && !currentlyAuthorized)
+      ? resourceRightsBlockedReason(state, id, "教学使用")
+      : "";
+    if (rightsReason) return notify(rightsReason);
+    resourceAction(id, action, note);
+    notify(
+      action === "publish" ? "资源已发布"
+        : action === "reject" ? "资源已驳回"
+          : action === "authorize" ? "院校授权已更新"
+            : action === "confirm-rights" ? "资源权属已确认"
+              : action === "reject-rights" ? "资源权属已驳回"
+                : action === "revoke-rights" ? "资源权属已撤回"
+                  : "资源状态已更新",
+    );
+  };
+  const scrollToSection = (id: string) => {
+    const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    document.getElementById(id)?.scrollIntoView({ behavior, block: "start" });
+  };
+
+  return {
+    ...store,
+    router,
+    searchParams,
+    ...runtime,
+    ...catalog,
+    query,
+    setQuery,
+    filter,
+    setFilter,
+    tab,
+    setTab,
+    selected,
+    setSelected,
+    answers,
+    setAnswers,
+    sceneTab,
+    setSceneTab,
+    sceneTaskIndex,
+    setSceneTaskIndex,
+    resourceType,
+    setResourceType,
+    creatingResource,
+    setCreatingResource,
+    scrollToSection,
+    taskStatus,
+    taskStatusTone,
+    claimCertificate,
+    toggleFavoriteWithNotice,
+    completeDayWithNotice,
+    applyWithNotice,
+    resourceActionWithNotice,
+  };
+}

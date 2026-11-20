@@ -36,7 +36,7 @@ type ChannelHeroProps = {
   highlight: string;
   description: string;
   metrics: ChannelHeroMetric[];
-  actions: ChannelHeroAction[];
+  actions?: ChannelHeroAction[];
 };
 
 const metricIcons: Record<ChannelHeroVariant, ReactNode[]> = {
@@ -86,7 +86,7 @@ export function ChannelHero({
   const scene = sceneTypes[variant];
 
   return (
-    <section className={`ep-channel-hero is-${variant}`} aria-labelledby={titleId}>
+    <section className={`ep-channel-hero ep-full-bleed is-${variant}`} aria-labelledby={titleId}>
       <div className="ep-channel-hero-grid" aria-hidden="true" />
       <div className="ep-channel-hero-orbit" aria-hidden="true" />
       <div className="ep-channel-hero-inner">
@@ -100,7 +100,7 @@ export function ChannelHero({
             <span>{highlight}</span>
           </h1>
           <p>{description}</p>
-          <div className="ep-channel-hero-actions">
+          {!!actions?.length && <div className="ep-channel-hero-actions">
             {actions.map((action) => {
               const content = (
                 <>
@@ -133,7 +133,7 @@ export function ChannelHero({
                 </button>
               );
             })}
-          </div>
+          </div>}
           <ul className="ep-channel-hero-metrics" aria-label="频道概览">
             {metrics.map((metric, index) => (
               <li key={metric.label}>
@@ -306,19 +306,19 @@ function ProjectCards() {
       <article className="ep-channel-card ep-channel-card-main project-card-brief">
         <header className="ep-channel-card-head">
           <div>
-            <strong>真实课题</strong>
+            <strong>待接单工单</strong>
             <small>银行网点交易异常复盘</small>
           </div>
           <BriefcaseBusiness size={18} />
         </header>
         <div className="project-brief-meta">
           <span>
-            <small>任务来源</small>
-            <b>科来网络</b>
+            <small>项目激励</small>
+            <b>3,000 元/组</b>
           </span>
           <span>
-            <small>交付要求</small>
-            <b>3 项</b>
+            <small>团队规模</small>
+            <b>4 人</b>
           </span>
         </div>
         <div className="project-brief-tags">
@@ -331,16 +331,17 @@ function ProjectCards() {
       <article className="ep-channel-card project-card-flow">
         <header className="ep-channel-card-head">
           <div>
-            <strong>交付路径</strong>
+            <strong>工单流转</strong>
             <small>从接单到验收</small>
           </div>
           <Network size={18} />
         </header>
         <div className="project-flow-list">
           {[
-            ["01", "领取任务", "is-active"],
-            ["02", "提交证据", ""],
-            ["03", "验收反馈", ""],
+            ["01", "企业发布", "is-active"],
+            ["02", "学生接单", ""],
+            ["03", "执行交付", ""],
+            ["04", "企业验收", ""],
           ].map(([index, label, state]) => (
             <div className={state} key={index}>
               <i>{index}</i>
@@ -353,8 +354,8 @@ function ProjectCards() {
       <article className="ep-channel-card project-card-acceptance">
         <header className="ep-channel-card-head">
           <div>
-            <strong>验收关注</strong>
-            <small>业务交付标准</small>
+            <strong>交付验收</strong>
+            <small>按业务标准结项</small>
           </div>
           <ShieldCheck size={18} />
         </header>
@@ -583,7 +584,10 @@ function EmploymentPathScene() {
             <circle cx="214" cy="218" r="12" className="profile-avatar" />
             <path d="M190 252h13M190 262h18M190 272h10M226 252h17M226 262h12" className="profile-lines" />
           </g>
-          <text x="151" y="357">能力画像</text>
+          <g className="employment-label">
+            <rect x="148" y="342" width="72" height="22" rx="7" />
+            <text x="184" y="357" textAnchor="middle">能力画像</text>
+          </g>
         </g>
 
         <g className="ep-employment-match">
@@ -608,7 +612,10 @@ function EmploymentPathScene() {
               <polygon points="674,251 713,232 713,282 674,301" className="object-right" />
               <path d="M647 249h12M647 258h18M685 244l13-7" className="job-lines" />
             </g>
-            <text x="620" y="356">技术服务</text>
+            <g className="employment-label">
+              <rect x="610" y="226" width="88" height="22" rx="7" />
+              <text x="654" y="241" textAnchor="middle">技术服务</text>
+            </g>
           </g>
           <g className="job-platform job-secondary">
             <polygon points="624,369 677,343 730,369 677,395" className="pad-top" />
@@ -620,7 +627,10 @@ function EmploymentPathScene() {
               <polygon points="677,348 707,334 707,369 677,383" className="object-right" />
               <circle cx="677" cy="338" r="6" className="job-signal" />
             </g>
-            <text x="637" y="422">安全分析</text>
+            <g className="employment-label">
+              <rect x="626" y="408" width="78" height="22" rx="7" />
+              <text x="665" y="423" textAnchor="middle">安全分析</text>
+            </g>
           </g>
           <g className="job-platform job-tertiary">
             <polygon points="579,196 629,172 679,196 629,220" className="pad-top" />
@@ -632,7 +642,10 @@ function EmploymentPathScene() {
               <polygon points="629,178 655,165 655,196 629,209" className="object-right" />
               <path d="M614 176h10M614 183h7" className="job-lines" />
             </g>
-            <text x="592" y="247">可观测性</text>
+            <g className="employment-label">
+              <rect x="573" y="130" width="84" height="22" rx="7" />
+              <text x="615" y="145" textAnchor="middle">可观测性</text>
+            </g>
           </g>
         </g>
 

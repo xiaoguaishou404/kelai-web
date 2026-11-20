@@ -1,41 +1,41 @@
 "use client";
 
 import {
-  createContext,
-  useContext,
-  useEffect,
-  useReducer,
-  useState,
-  type ReactNode,
-} from "react";
-import {
-  WORKSPACE_STORAGE_KEY,
-  LEGACY_WORKSPACE_STORAGE_KEY,
   createAudit,
-  createResourceRights,
   generatedCertificateNumber,
-  jobById,
   nowLabel,
   orderRightsBlockers,
-  projectEligibility,
   resourceRightsBlockedReason,
+  sceneProgressFor,
   seedWorkspace,
+  taskReviewBlockers,
   type Application,
   type ApplicationStatus,
   type EnterpriseWorkspaceState,
+  type JobLearningPath,
   type JobProfile,
   type JobPosting,
   type MajorGroup,
   type OrderStatus,
+  type OfflineSession,
   type ProjectPosting,
   type Resource,
   type Resume,
   type Review,
   type Role,
+  type TaskAssessmentResult,
+  type TaskReview,
+  type TaskSubmission,
   type Work,
 } from "@/lib/enterprise-workspace";
+import {
+  type ApprovalIdentity,
+  type CertificateEnrollment,
+  type PlatformAdminState,
+  type PlatformRecord,
+} from "@/lib/platform-admin";
 
-type Action =
+export type Action =
   | { type: "hydrate"; state: EnterpriseWorkspaceState }
   | { type: "reset" }
   | { type: "role"; role: Role }
@@ -46,7 +46,24 @@ type Action =
   | { type: "complete-day"; day: number; trainingId: string }
   | { type: "submit-work"; work: Work }
   | { type: "review-work"; workId: string; review: Review }
-  | { type: "exam"; score: number; answers: number[]; jobId: string; assessmentId: string }
+  | { type: "task-save"; submission: TaskSubmission }
+  | { type: "task-submit"; submission: TaskSubmission }
+  | { type: "task-review"; submissionId: string; review: TaskReview }
+  | { type: "assessment-result"; sceneId: string; taskId: string; result: TaskAssessmentResult; studentId?: string }
+  | { type: "offline-checkin"; sessionId: string }
+  | { type: "offline-session-status"; id: string; status: "待开始" | "进行中" | "已结束" }
+  | { type: "attendance-mark"; sessionId: string; studentId: string; status: "已签到" | "迟到" | "缺席" }
+  | { type: "offline-session-create"; session: OfflineSession }
+  | {
+      type: "exam";
+      score: number;
+      answers: number[];
+      jobId: string;
+      assessmentId: string;
+      assessmentName: string;
+      assessmentKind: "题库" | "试卷";
+      passScore: number;
+    }
   | { type: "certificate" }
   | { type: "new-resource"; resource: Resource }
   | { type: "update-resource"; id: string; patch: Partial<Resource>; actor: string }
@@ -60,7 +77,13 @@ type Action =
   | { type: "apply"; application: Application }
   | { type: "process-application"; id: string; status: ApplicationStatus; feedback?: string }
   | { type: "deliver"; id: string; text: string }
-  | { type: "order"; id: string; status: OrderStatus; note: string };
+  | { type: "order"; id: string; status: OrderStatus; note: string }
+  | { type: "course-progress"; courseId: string; chapterIndex: number }
+  | { type: "save-learning-path"; path: JobLearningPath }
+  | { type: "platform-admin"; state: PlatformAdminState }
+  | { type: "approval-identity"; identity: ApprovalIdentity }
+  | { type: "platform-record"; record: PlatformRecord }
+  | { type: "certificate-enroll"; enrollment: CertificateEnrollment };
 
 function audit(state: EnterpriseWorkspaceState, event: ReturnType<typeof createAudit>) {
   return { ...state, auditEvents: [event, ...state.auditEvents].slice(0, 120) };
@@ -76,7 +99,30 @@ function syncMajorGroupsForJob(groups: MajorGroup[], job: JobProfile) {
   });
 }
 
-function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWorkspaceState {
+function syncSceneCompletion(state: EnterpriseWorkspaceState, sceneId: string, studentId: string) {
+  const progress = sceneProgressFor(state, sceneId, studentId);
+  const existing = state.sceneCompletions.find(
+    (item) => item.studentId === studentId && item.sceneId === sceneId,
+  );
+  const record = {
+    id: existing?.id ?? crypto.randomUUID(),
+    studentId,
+    sceneId,
+    status: progress.status,
+    completedTaskIds: progress.completedTaskIds,
+    requiredTaskIds: progress.requiredTaskIds,
+    score: progress.score,
+    completedAt: progress.status === "已完成"
+      ? existing?.completedAt ?? nowLabel()
+      : undefined,
+    updatedAt: nowLabel(),
+  };
+  return existing
+    ? state.sceneCompletions.map((item) => item.id === existing.id ? record : item)
+    : [record, ...state.sceneCompletions];
+}
+
+export function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWorkspaceState {
   switch (action.type) {
     case "hydrate":
       return action.state;
@@ -157,14 +203,264 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
         ),
       );
     }
+    case "task-save":
+    case "task-submit": {
+      const existing = state.taskSubmissions.find(
+        (item) =>
+          item.studentId === action.submission.studentId &&
+          item.sceneId === action.submission.sceneId &&
+          item.taskId === action.submission.taskId,
+      );
+      const at = nowLabel();
+      const submission: TaskSubmission = {
+        ...action.submission,
+        id: existing?.id ?? action.submission.id,
+        status: action.type === "task-submit" ? "待评价" : "草稿",
+        submittedAt: action.type === "task-submit" ? at : existing?.submittedAt,
+        updatedAt: at,
+        reviews: existing?.reviews ?? action.submission.reviews,
+        history: [
+          createAudit(
+            action.submission.studentName,
+            action.type === "task-submit"
+              ? existing?.status === "已退回" ? "重新提交任务成果" : "提交任务成果"
+              : "保存任务草稿",
+            action.submission.taskId,
+            action.type === "task-submit" ? "任务成果进入教师评价" : "任务过程记录已保存",
+          ),
+          ...(existing?.history ?? action.submission.history),
+        ],
+      };
+      const nextState = {
+        ...state,
+        taskSubmissions: existing
+          ? state.taskSubmissions.map((item) => item.id === existing.id ? submission : item)
+          : [submission, ...state.taskSubmissions],
+      };
+      return audit(
+        {
+          ...nextState,
+          sceneCompletions: syncSceneCompletion(
+            nextState,
+            submission.sceneId,
+            submission.studentId,
+          ),
+        },
+        submission.history[0],
+      );
+    }
+    case "task-review": {
+      const target = state.taskSubmissions.find((item) => item.id === action.submissionId);
+      if (!target) return state;
+      if (
+        action.review.decision === "passed" &&
+        taskReviewBlockers(state, target.sceneId, target.taskId, target.studentId).length > 0
+      ) {
+        return state;
+      }
+      const reviewed: TaskSubmission = {
+        ...target,
+        status: action.review.decision === "passed" ? "已通过" : "已退回",
+        reviews: [...target.reviews, action.review],
+        updatedAt: action.review.reviewedAt,
+        history: [
+          createAudit(
+            action.review.reviewer,
+            action.review.decision === "passed" ? "通过任务成果" : "退回任务成果",
+            target.taskId,
+            action.review.comment,
+          ),
+          ...target.history,
+        ],
+      };
+      const nextState = {
+        ...state,
+        taskSubmissions: state.taskSubmissions.map((item) =>
+          item.id === target.id ? reviewed : item,
+        ),
+      };
+      const before = sceneProgressFor(state, target.sceneId, target.studentId).status;
+      const completions = syncSceneCompletion(nextState, target.sceneId, target.studentId);
+      const after = sceneProgressFor(nextState, target.sceneId, target.studentId).status;
+      return audit(
+        { ...nextState, sceneCompletions: completions },
+        createAudit(
+          action.review.reviewer,
+          before !== "已完成" && after === "已完成" ? "完成场景学习" : "处理任务评价",
+          target.sceneId,
+          after === "已完成" ? "全部必做任务已通过" : action.review.comment,
+        ),
+      );
+    }
+    case "assessment-result": {
+      const studentId = action.studentId ?? state.activeStudentId;
+      const studentName =
+        studentId === state.activeStudentId
+          ? state.resume.name
+          : state.classmates.find((item) => item.id === studentId)?.name ?? studentId;
+      const existing = state.taskSubmissions.find(
+        (item) =>
+          item.studentId === studentId &&
+          item.sceneId === action.sceneId &&
+          item.taskId === action.taskId,
+      );
+      const at = nowLabel();
+      const submission: TaskSubmission = existing
+        ? {
+            ...existing,
+            assessmentResults: [
+              ...existing.assessmentResults.filter((item) => item.methodId !== action.result.methodId),
+              action.result,
+            ],
+            status: existing.status,
+            updatedAt: at,
+            history: [
+              createAudit(
+                studentName,
+                `完成考核 · ${action.result.type}`,
+                action.taskId,
+                action.result.comment,
+              ),
+              ...existing.history,
+            ],
+          }
+        : {
+            id: crypto.randomUUID(),
+            studentId,
+            studentName,
+            sceneId: action.sceneId,
+            taskId: action.taskId,
+            status: "草稿",
+            evidenceIds: [],
+            worksheet: "",
+            answer: "",
+            analysis: "",
+            nextStep: "",
+            boundaryAcknowledged: false,
+            updatedAt: at,
+            reviews: [],
+            assessmentResults: [action.result],
+            history: [
+              createAudit(
+                studentName,
+                `完成考核 · ${action.result.type}`,
+                action.taskId,
+                action.result.comment,
+              ),
+            ],
+          };
+      const nextState = {
+        ...state,
+        taskSubmissions: existing
+          ? state.taskSubmissions.map((item) => item.id === existing.id ? submission : item)
+          : [submission, ...state.taskSubmissions],
+      };
+      return audit(
+        {
+          ...nextState,
+          sceneCompletions: syncSceneCompletion(nextState, action.sceneId, studentId),
+        },
+        submission.history[0],
+      );
+    }
+    case "offline-checkin": {
+      const session = state.offlineSessions.find((item) => item.id === action.sessionId);
+      if (!session) return state;
+      if (
+        state.attendanceRecords.some(
+          (item) => item.sessionId === session.id && item.studentId === state.activeStudentId,
+        )
+      ) {
+        return state;
+      }
+      const event = createAudit(
+        state.resume.name,
+        "课堂签到",
+        session.title,
+        `${session.location} · ${nowLabel()}`,
+      );
+      const nextState = {
+        ...state,
+        attendanceRecords: [
+          {
+            id: crypto.randomUUID(),
+            sessionId: session.id,
+            studentId: state.activeStudentId,
+            status: "已签到" as const,
+            checkedAt: nowLabel(),
+          },
+          ...state.attendanceRecords,
+        ],
+      };
+      return audit(
+        {
+          ...nextState,
+          sceneCompletions: session.taskId
+            ? syncSceneCompletion(nextState, session.sceneId, state.activeStudentId)
+            : state.sceneCompletions,
+        },
+        event,
+      );
+    }
+    case "offline-session-status":
+      return audit(
+        {
+          ...state,
+          offlineSessions: state.offlineSessions.map((item) =>
+            item.id === action.id ? { ...item, status: action.status } : item,
+          ),
+        },
+        createAudit("周启明", `课堂状态 · ${action.status}`, action.id, "线下课堂状态已更新"),
+      );
+    case "attendance-mark": {
+      const exists = state.attendanceRecords.find(
+        (item) => item.sessionId === action.sessionId && item.studentId === action.studentId,
+      );
+      const record = {
+        id: exists?.id ?? crypto.randomUUID(),
+        sessionId: action.sessionId,
+        studentId: action.studentId,
+        status: action.status,
+        checkedAt: nowLabel(),
+      };
+      const session = state.offlineSessions.find((item) => item.id === action.sessionId);
+      const nextState = {
+        ...state,
+        attendanceRecords: exists
+          ? state.attendanceRecords.map((item) => item.id === exists.id ? record : item)
+          : [record, ...state.attendanceRecords],
+      };
+      return audit(
+        {
+          ...nextState,
+          sceneCompletions:
+            session?.taskId && session.sceneId
+              ? syncSceneCompletion(nextState, session.sceneId, action.studentId)
+              : state.sceneCompletions,
+        },
+        createAudit("周启明", "记录课堂考勤", action.sessionId, `${action.studentId} · ${action.status}`),
+      );
+    }
+    case "offline-session-create":
+      return audit(
+        {
+          ...state,
+          offlineSessions: [action.session, ...state.offlineSessions],
+        },
+        createAudit("周启明", "新建场景课堂", action.session.title, `${action.session.startAt} · ${action.session.location}`),
+      );
     case "exam": {
       const attempt = {
         id: crypto.randomUUID(),
         studentId: state.activeStudentId,
         jobId: action.jobId,
+        assessmentId: action.assessmentId,
+        assessmentName: action.assessmentName,
+        assessmentKind: action.assessmentKind,
         answers: action.answers,
         score: action.score,
-        passed: action.score >= 80,
+        passScore: action.passScore,
+        passed: action.score >= action.passScore,
         submittedAt: nowLabel(),
       };
       return audit(
@@ -290,6 +586,39 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
           createAudit("科来运营", confirmed ? "确认资源权属" : revoked ? "撤回资源权属" : "驳回资源权属", target.name, action.note || target.rights.agreementNo),
         );
       }
+      const approvalPlatform =
+        target.type === "岗位" ? "career" :
+          target.type === "场景" ? "scene" :
+            target.type === "课程" || target.type === "教材" ? "course" :
+              "ability";
+      const approvalFlow = state.platformAdmin.workflows.find((item) => item.platformId === approvalPlatform);
+      const approvalBatch = state.platformAdmin.batches.find((item) => item.platformId === approvalPlatform);
+      const shouldCreateApproval =
+        action.action === "submit" &&
+        Boolean(approvalFlow) &&
+        !state.platformAdmin.approvals.some(
+          (item) => item.resourceId === target.id && item.status === "审批中",
+        );
+      const pendingApproval = shouldCreateApproval && approvalFlow
+        ? {
+            id: crypto.randomUUID(),
+            resourceId: target.id,
+            platformId: approvalPlatform,
+            title: target.name,
+            code: target.code ?? target.id,
+            batchId: approvalBatch?.id,
+            flowId: approvalFlow.id,
+            submittedBy: "科来运营",
+            submittedAt: event.at,
+            status: "审批中" as const,
+            currentStep: 0,
+            steps: approvalFlow.steps.map((step, index) => ({
+              id: `${target.id}-step-${index}`,
+              ...step,
+              state: "pending" as const,
+            })),
+          }
+        : null;
       return audit(
         {
           ...state,
@@ -304,7 +633,14 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
                     history: [createAudit("科来运营", "提交资源审核", item.name, "资源内容与权属材料进入审核"), ...item.rights.history],
                   }
                 : item.rights;
-              return { ...item, status: "待审核", rights, updatedAt: nowLabel(), reviewNote: undefined, reviewHistory: [{ ...event, action: "提交审核" as const }, ...item.reviewHistory] };
+              return {
+                ...item,
+                status: "待审核",
+                rights,
+                updatedAt: nowLabel(),
+                reviewNote: undefined,
+                reviewHistory: [{ ...event, action: "提交审核" as const }, ...item.reviewHistory],
+              };
             }
             if (action.action === "publish") return {
               ...item,
@@ -365,6 +701,12 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
                     : state.authorizations;
                 })()
               : state.authorizations,
+          platformAdmin: pendingApproval
+            ? {
+                ...state.platformAdmin,
+                approvals: [pendingApproval, ...state.platformAdmin.approvals],
+              }
+            : state.platformAdmin,
         },
         createAudit("科来运营", "资源流转", action.id, action.action),
       );
@@ -516,6 +858,98 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
         event,
       );
     }
+    case "course-progress": {
+      const current = state.courseProgress[action.courseId] ?? [];
+      if (current.includes(action.chapterIndex)) return state;
+      return audit(
+        {
+          ...state,
+          courseProgress: {
+            ...state.courseProgress,
+            [action.courseId]: [...current, action.chapterIndex].sort((a, b) => a - b),
+          },
+        },
+        createAudit(
+          state.resume.name,
+          "完成课程章节",
+          action.courseId,
+          `第 ${action.chapterIndex + 1} 章已记录`,
+        ),
+      );
+    }
+    case "save-learning-path": {
+      const exists = state.learningPaths.some((item) => item.id === action.path.id);
+      return audit(
+        {
+          ...state,
+          learningPaths: exists
+            ? state.learningPaths.map((item) => item.id === action.path.id ? action.path : item)
+            : [action.path, ...state.learningPaths],
+        },
+        createAudit(
+          "院校管理员",
+          exists ? "更新岗位学习路径" : "新建岗位学习路径",
+          action.path.name,
+          `${action.path.sceneNodes.length} 个场景节点`,
+        ),
+      );
+    }
+    case "platform-admin":
+      return { ...state, platformAdmin: action.state };
+    case "approval-identity":
+      return {
+        ...state,
+        platformAdmin: {
+          ...state.platformAdmin,
+          reviewerIdentity: action.identity,
+        },
+      };
+    case "platform-record": {
+      const exists = state.platformAdmin.records.some((item) => item.id === action.record.id);
+      return audit(
+        {
+          ...state,
+          platformAdmin: {
+            ...state.platformAdmin,
+            records: exists
+              ? state.platformAdmin.records.map((item) => item.id === action.record.id ? action.record : item)
+              : [action.record, ...state.platformAdmin.records],
+          },
+        },
+        createAudit(
+          "院校管理员",
+          exists ? "更新业务记录" : "新建业务记录",
+          action.record.name,
+          `${action.record.platformId}/${action.record.pageId}`,
+        ),
+      );
+    }
+    case "certificate-enroll": {
+      if (
+        state.platformAdmin.enrollments.some(
+          (item) =>
+            item.certificateId === action.enrollment.certificateId &&
+            item.studentId === action.enrollment.studentId,
+        )
+      ) {
+        return state;
+      }
+      return audit(
+        {
+          ...state,
+          platformAdmin: {
+            ...state.platformAdmin,
+            enrollments: [action.enrollment, ...state.platformAdmin.enrollments],
+          },
+        },
+        createAudit(
+          state.resume.name,
+          "提交证书报名",
+          action.enrollment.certificateId,
+          action.enrollment.note,
+        ),
+      );
+    }
     default:
       return state;
   }
@@ -524,338 +958,4 @@ function reducer(state: EnterpriseWorkspaceState, action: Action): EnterpriseWor
 function bumpVersion(version: string) {
   const value = Number(version.replace(/[^\d.]/g, "")) || 1;
   return `V${(value + 0.1).toFixed(1)}`;
-}
-
-interface StoreValue {
-  state: EnterpriseWorkspaceState;
-  hydrated: boolean;
-  setRole: (role: Role) => void;
-  markGuideSeen: () => void;
-  saveResume: (resume: Resume) => void;
-  toggleFavorite: (jobId: string) => void;
-  assignTraining: (trainingId: string) => void;
-  completeDay: (day: number, trainingId?: string) => void;
-  submitWork: (work: Work) => void;
-  reviewWork: (workId: string, review: Review) => void;
-  submitExam: (score: number, answers: number[], jobId?: string, assessmentId?: string) => void;
-  issueCertificate: () => void;
-  createResource: (resource: Resource) => void;
-  updateResource: (id: string, patch: Partial<Resource>, actor: string) => void;
-  resourceAction: (
-    id: string,
-    action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize" | "confirm-rights" | "reject-rights" | "revoke-rights",
-    note?: string,
-  ) => void;
-  updateMajorGroup: (id: string, patch: Pick<MajorGroup, "majors" | "jobIds">) => void;
-  saveStandard: (weights: number[]) => void;
-  publishProject: (project: ProjectPosting) => void;
-  toggleProject: (id: string) => void;
-  publishJob: (posting: JobPosting) => void;
-  toggleJob: (id: string) => void;
-  apply: (application: Application) => void;
-  processApplication: (id: string, status: ApplicationStatus, feedback?: string) => void;
-  submitDelivery: (id: string, text: string) => void;
-  advanceOrder: (id: string, status: OrderStatus, note: string) => void;
-  reset: () => void;
-}
-
-const StoreContext = createContext<StoreValue | null>(null);
-
-export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, seedWorkspace);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as EnterpriseWorkspaceState;
-        if (parsed.schemaVersion === 4) dispatch({ type: "hydrate", state: { ...seedWorkspace(), ...parsed } });
-      } else {
-        const legacyV3 = window.localStorage.getItem(LEGACY_WORKSPACE_STORAGE_KEY);
-        if (legacyV3) {
-          dispatch({ type: "hydrate", state: migrateV3(JSON.parse(legacyV3)) });
-        } else {
-          const legacy = window.localStorage.getItem("colasoft-enterprise-v2");
-          if (legacy) dispatch({ type: "hydrate", state: migrateV2(JSON.parse(legacy)) });
-        }
-      }
-    } finally {
-      setHydrated(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      window.localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // The UI remains usable when storage is unavailable.
-    }
-  }, [state, hydrated]);
-
-  const value: StoreValue = {
-    state,
-    hydrated,
-    setRole: (role) => dispatch({ type: "role", role }),
-    markGuideSeen: () => dispatch({ type: "guide" }),
-    saveResume: (resume) => dispatch({ type: "resume", resume }),
-    toggleFavorite: (jobId) => dispatch({ type: "favorite", jobId }),
-    assignTraining: (trainingId) => dispatch({ type: "assign-training", trainingId }),
-    completeDay: (day, trainingId = "network") => dispatch({ type: "complete-day", day, trainingId }),
-    submitWork: (work) => dispatch({ type: "submit-work", work }),
-    reviewWork: (workId, review) => dispatch({ type: "review-work", workId, review }),
-    submitExam: (score, answers, jobId = "service", assessmentId = "assessment-service") => dispatch({ type: "exam", score, answers, jobId, assessmentId }),
-    issueCertificate: () => dispatch({ type: "certificate" }),
-    createResource: (resource) => dispatch({ type: "new-resource", resource }),
-    updateResource: (id, patch, actor) => dispatch({ type: "update-resource", id, patch, actor }),
-    resourceAction: (id, resourceAction, note) => dispatch({ type: "resource-action", id, action: resourceAction, note }),
-    updateMajorGroup: (id, patch) => dispatch({ type: "update-major-group", id, patch }),
-    saveStandard: (weights) => dispatch({ type: "standard", weights }),
-    publishProject: (project) => dispatch({ type: "publish-project", project }),
-    toggleProject: (id) => dispatch({ type: "toggle-project", id }),
-    publishJob: (posting) => dispatch({ type: "publish-job", posting }),
-    toggleJob: (id) => dispatch({ type: "toggle-job", id }),
-    apply: (application) => dispatch({ type: "apply", application }),
-    processApplication: (id, status, feedback) => dispatch({ type: "process-application", id, status, feedback }),
-    submitDelivery: (id, text) => dispatch({ type: "deliver", id, text }),
-    advanceOrder: (id, status, note) => dispatch({ type: "order", id, status, note }),
-    reset: () => {
-      window.localStorage.removeItem(WORKSPACE_STORAGE_KEY);
-      window.localStorage.removeItem(LEGACY_WORKSPACE_STORAGE_KEY);
-      window.localStorage.removeItem("colasoft-enterprise-v2");
-      dispatch({ type: "reset" });
-    },
-  };
-
-  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
-}
-
-function migrateV3(
-  legacy: Partial<EnterpriseWorkspaceState> & { schemaVersion?: number; resources?: Resource[] },
-): EnterpriseWorkspaceState {
-  const seed = seedWorkspace();
-  const resources = (legacy.resources?.length ? legacy.resources : seed.resources).map((resource) => {
-    const seeded = seed.resources.find((item) => item.id === resource.id);
-    const fallback = seeded?.rights ?? createResourceRights(resource.id, {
-      ownership: "科来自有",
-      ownerName: "待补录权属人",
-      sourceNote: "历史资源迁移，需补录来源与授权说明。",
-      desensitizationNote: "尚未确认脱敏范围。",
-      agreementNo: "",
-      evidenceName: "",
-      useScopes: [],
-      status: "待确权",
-      reviewNote: "历史资源需补录权属信息",
-    });
-    return {
-      ...resource,
-      rights: resource.rights ?? fallback,
-    };
-  });
-  const existingIds = new Set(resources.map((item) => item.id));
-  resources.push(...seed.resources.filter((item) => !existingIds.has(item.id)));
-  return {
-    ...seed,
-    ...legacy,
-    schemaVersion: 4,
-    resources,
-    majorGroups: seed.majorGroups,
-    authorizations: (legacy.authorizations ?? seed.authorizations).map((authorization) => ({
-      ...authorization,
-      majorGroupIds: authorization.majorGroupIds ?? ["major-network", "major-security"],
-    })),
-    orders: (legacy.orders ?? seed.orders).map((order) => ({
-      ...order,
-      majorGroupIds: order.majorGroupIds ?? ["major-network", "major-security"],
-    })),
-  } as EnterpriseWorkspaceState;
-}
-
-function migrateV2(legacy: Partial<EnterpriseWorkspaceState> & { resources?: Array<Record<string, unknown>> }): EnterpriseWorkspaceState {
-  const seed = seedWorkspace();
-  const legacyResources: Resource[] = (legacy.resources ?? [])
-    .filter((item) => !seed.resources.some((resource) => resource.id === item.id))
-    .flatMap((item) => {
-      const id = String(item.id ?? crypto.randomUUID());
-      const type = String(item.type ?? "岗位") as Resource["type"];
-      const name = String(item.name ?? "待完善资源");
-      const description = String(item.description ?? "");
-      const relatedIds = Array.isArray(item.relatedIds) ? item.relatedIds.map(String) : [];
-      const content = (() => {
-        if (type === "场景") {
-          return {
-            kind: "scene" as const,
-            data: {
-              id,
-              name,
-              industry: "待完善",
-              jobId: "",
-              difficulty: "进阶",
-              description,
-              required: false,
-              tasks: [],
-              evidence: [],
-              answer: "",
-              abilityWeights: [0, 0, 0, 0, 0, 0],
-              courseIds: [],
-              trainingIds: [],
-            },
-          };
-        }
-        if (type === "课程") {
-          return { kind: "course" as const, data: { id, name, jobId: "", sceneId: "", chapters: [] } };
-        }
-        if (type === "测评") {
-          return { kind: "assessment" as const, data: { id, name, jobId: "", durationMinutes: 30, passScore: 60, questions: [] } };
-        }
-        if (type === "评价标准") {
-          return {
-            kind: "standard" as const,
-            data: { id, name, jobId: "", abilityPointWeights: [], levelBands: [], recognitionRule: "" },
-          };
-        }
-        return {
-          kind: "job" as const,
-          data: {
-            id,
-            name,
-            category: "待完善",
-            stage: "技术服务",
-            industry: "待完善",
-            description,
-            skills: [],
-            target: [0, 0, 0, 0, 0, 0],
-            requiredDimensions: [],
-          },
-        };
-      })();
-      return [{
-        id,
-        name,
-        type,
-        status: "草稿" as const,
-        description,
-        version: String(item.version ?? "V1.0"),
-        packageId: String(item.packageId ?? "renewal"),
-        authorizedTo: [],
-        relatedIds,
-        updatedAt: String(item.updatedAt ?? nowLabel()),
-        draftContent: content,
-        reviewHistory: [],
-        rights: createResourceRights(id, {
-          ownerName: "待补录权属人",
-          sourceNote: "历史资源迁移，需补录来源与授权说明。",
-          agreementNo: "",
-          evidenceName: "",
-          useScopes: [],
-          status: "待确权",
-          reviewNote: "历史资源需补录权属信息",
-        }),
-      }];
-    });
-  const v3 = {
-    ...seed,
-    role: legacy.role ?? null,
-    teacherGuideSeen: legacy.teacherGuideSeen ?? false,
-    works: legacy.works ?? seed.works,
-    completedDays: legacy.completedDays ?? seed.completedDays,
-    trainingProgress: {
-      ...seed.trainingProgress,
-      network: legacy.completedDays ?? seed.completedDays,
-    },
-    examAttempts: legacy.examAttempts ?? seed.examAttempts,
-    certificates: legacy.certificates ?? seed.certificates,
-    applications: legacy.applications ?? seed.applications,
-    resume: legacy.resume ?? seed.resume,
-    favorites: legacy.favorites ?? seed.favorites,
-    auditEvents: legacy.auditEvents ?? seed.auditEvents,
-    resources: [...seed.resources, ...legacyResources],
-    orders: legacy.orders ?? seed.orders,
-  } as EnterpriseWorkspaceState;
-  return migrateV3(v3);
-}
-
-export function useWorkspace() {
-  const value = useContext(StoreContext);
-  if (!value) throw new Error("useWorkspace must be used inside WorkspaceProvider");
-  return value;
-}
-
-export function buildWork(input: {
-  state: EnterpriseWorkspaceState;
-  sceneId: string;
-  analysis: string;
-  nextStep: string;
-  evidenceIds: string[];
-  boundaryAcknowledged: boolean;
-}) {
-  const old = input.state.works.find((item) => item.studentId === input.state.activeStudentId && item.sceneId === input.sceneId);
-  const at = nowLabel();
-  return {
-    id: old?.id ?? crypto.randomUUID(),
-    studentId: input.state.activeStudentId,
-    studentName: input.state.resume.name,
-    sceneId: input.sceneId,
-    status: "待评价" as const,
-    analysis: input.analysis,
-    nextStep: input.nextStep,
-    evidenceIds: input.evidenceIds,
-    boundaryAcknowledged: input.boundaryAcknowledged,
-    submittedAt: at,
-    updatedAt: at,
-    reviews: old?.reviews ?? [],
-    history: old?.history ?? [],
-  };
-}
-
-export function buildApplication(input: {
-  state: EnterpriseWorkspaceState;
-  kind: "project" | "job";
-  targetId: string;
-  name: string;
-  company: string;
-}): Application {
-  const at = nowLabel();
-  const event = createAudit(input.state.resume.name, input.kind === "project" ? "申请项目" : "投递岗位", input.name, input.company);
-  return {
-    id: crypto.randomUUID(),
-    kind: input.kind,
-    targetId: input.targetId,
-    name: input.name,
-    company: input.company,
-    studentId: input.state.activeStudentId,
-    studentName: input.state.resume.name,
-    status: "待审核",
-    resumeSnapshot: { ...input.state.resume },
-    createdAt: at,
-    updatedAt: at,
-    history: [event],
-  };
-}
-
-export function projectStatusOptions(application: Application) {
-  if (application.kind !== "project") return [];
-  if (application.status === "待审核") return ["已接单", "已驳回"] as ApplicationStatus[];
-  if (application.status === "待验收") return ["已验收", "已退回"] as ApplicationStatus[];
-  return [];
-}
-
-export function jobStatusOptions(application: Application) {
-  if (application.kind !== "job") return [];
-  if (application.status === "待审核") return ["待面试", "未通过"] as ApplicationStatus[];
-  if (application.status === "待面试") return ["已录用", "未通过"] as ApplicationStatus[];
-  return [];
-}
-
-export function applicationJobScore(state: EnterpriseWorkspaceState, application: Application) {
-  const job =
-    application.kind === "project"
-      ? jobById(state.projects.find((item) => item.id === application.targetId)?.jobId ?? "")
-      : jobById(state.jobPostings.find((item) => item.id === application.targetId)?.jobId ?? "");
-  return job?.name ?? "岗位能力";
-}
-
-export function canApplyProject(state: EnterpriseWorkspaceState, project: ProjectPosting) {
-  return projectEligibility(state, project);
 }
