@@ -92,7 +92,7 @@ export function CourseView({ id }: { id?: string }) {
   const course = courseById(id ?? "course-0");
   if (!course) return <Empty>课程不存在。</Empty>;
   if (!resourceVisible(state, course.id) && state.role !== "manage" && state.role !== "schoolAdmin") {
-    return <Empty>{resourceRightsBlockedReason(state, course.id, "教学使用") || "课程尚未授权给当前院校。"}</Empty>;
+    return <Empty>{resourceRightsBlockedReason(state, course.id, "教学使用") || "课程当前不可用于教学。"}</Empty>;
   }
   const chapterIndex = Math.min(selected, Math.max(0, course.chapters.length - 1));
   const chapter = enrichChapter(course.chapters[chapterIndex] ?? course.chapters[0], course, chapterIndex);

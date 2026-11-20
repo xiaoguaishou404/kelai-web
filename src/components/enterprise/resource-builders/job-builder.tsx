@@ -64,7 +64,6 @@ export function JobBuilder({ resource, initial, notify, onClose }: BuilderProps 
       name: draft.name || "未命名岗位",
       description: draft.description || "岗位草稿待完善",
       relatedIds: [...(draft.sceneIds ?? []), ...(draft.courseIds ?? []), ...(draft.assessmentIds ?? []), ...(draft.standardIds ?? [])],
-      packageId: "renewal",
       rights,
     }, submit);
     notify(submit ? "岗位已提交审核" : "岗位草稿已保存");

@@ -23,7 +23,7 @@ export function StandardBuilder({ resource, initial, notify, onClose }: BuilderP
   const missing = [!draft.name.trim() ? "标准名称" : "", !draft.jobId ? "关联岗位" : "", total !== 100 ? "能力权重须为 100%" : "", ...rightsMissing(rights)].filter(Boolean);
   const save = (submit: boolean) => {
     if (submit && missing.length) return notify(missing.join("；"));
-    persist({ kind: "standard", data: draft }, { name: draft.name || "未命名评价标准", description: "岗位能力等级与认定规则", relatedIds: [draft.jobId], packageId: "renewal", rights }, submit);
+    persist({ kind: "standard", data: draft }, { name: draft.name || "未命名评价标准", description: "岗位能力等级与认定规则", relatedIds: [draft.jobId], rights }, submit);
     notify(submit ? "评价标准已提交审核" : "评价标准草稿已保存");
     onClose();
   };

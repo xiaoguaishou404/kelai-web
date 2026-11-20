@@ -23,6 +23,22 @@ export type LegacyWorkspaceMigration = Partial<EnterpriseWorkspaceState> & Legac
   classmates?: LegacyLearner[];
 };
 
+function stripRemovedCommerceData<T extends object>(legacy: T): T {
+  const cleaned = { ...legacy } as Record<string, unknown>;
+  delete cleaned.orders;
+  delete cleaned.authorizations;
+  if (Array.isArray(cleaned.resources)) {
+    cleaned.resources = cleaned.resources.map((item) => {
+      if (!item || typeof item !== "object") return item;
+      const resource = { ...(item as Record<string, unknown>) };
+      delete resource.packageId;
+      delete resource.authorizedTo;
+      return resource;
+    });
+  }
+  return cleaned as T;
+}
+
 export function stripTrainingData<T extends LegacyWorkspaceMigration>(legacy: T): T {
   const cleaned = { ...legacy };
   delete cleaned.completedDays;
@@ -42,5 +58,5 @@ export function stripTrainingData<T extends LegacyWorkspaceMigration>(legacy: T)
     });
   }
 
-  return cleaned;
+  return stripRemovedCommerceData(cleaned);
 }

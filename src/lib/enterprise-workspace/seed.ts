@@ -81,13 +81,6 @@ function seededResource(
 }
 
 function initialResources(): Resource[] {
-  const baseIds = [
-    ...jobs.map((item) => item.id),
-    ...scenes.filter((item) => item.id !== "factory").map((item) => item.id),
-    ...courses.map((item) => item.id),
-    ...assessments.filter((item) => item.id !== "bank-presales-restricted").map((item) => item.id),
-    ...evaluationStandards.map((item) => item.id),
-  ];
   const values: Resource[] = [
     ...jobs.map((job, jobIndex) => {
       const relatedScenes = scenes.filter((scene) => scene.jobId === job.id);
@@ -133,8 +126,6 @@ function initialResources(): Resource[] {
           status: "已发布",
           description: job.description,
           version: "V1.0",
-          packageId: "base",
-          authorizedTo: ["school-1"],
           relatedIds: [...relatedScenes.map((scene) => scene.id), ...relatedCourses.map((course) => course.id)],
           updatedAt: createdAt,
         },
@@ -150,8 +141,6 @@ function initialResources(): Resource[] {
           status: "已发布",
           description: scene.description,
           version: "V1.0",
-          packageId: scene.id === "factory" ? "renewal" : "base",
-          authorizedTo: scene.id === "factory" ? [] : ["school-1"],
           relatedIds: [scene.jobId, ...scene.courseIds],
           updatedAt: createdAt,
         },
@@ -167,8 +156,6 @@ function initialResources(): Resource[] {
           status: "已发布",
           description: `${course.chapters.length} 个章节 · 关联 ${scenes.find((scene) => scene.id === course.sceneId)?.name ?? "岗位实训"}`,
           version: "V1.0",
-          packageId: "base",
-          authorizedTo: ["school-1"],
           relatedIds: [course.jobId, course.sceneId],
           updatedAt: createdAt,
         },
@@ -192,8 +179,6 @@ function initialResources(): Resource[] {
           status: "已发布",
           description: `${item.questions.length} 题理论核验，${item.passScore} 分合格`,
           version: "V1.0",
-          packageId: item.id === "bank-presales-restricted" ? "renewal" : "base",
-          authorizedTo: item.id === "bank-presales-restricted" ? [] : ["school-1"],
           relatedIds: [item.jobId, item.standardId ?? ""].filter(Boolean),
           updatedAt: createdAt,
         },
@@ -209,8 +194,6 @@ function initialResources(): Resource[] {
           status: "已发布",
           description: "证据 40% · 推理 40% · 交付 20%",
           version: "V1.0",
-          packageId: "base",
-          authorizedTo: ["school-1"],
           relatedIds: [standard.jobId, ...scenes.filter((scene) => scene.jobId === standard.jobId).map((scene) => scene.id)],
           updatedAt: createdAt,
         },
@@ -218,10 +201,7 @@ function initialResources(): Resource[] {
       ),
     ),
   ];
-  return values.map((resource) => ({
-    ...resource,
-    authorizedTo: baseIds.includes(resource.id) ? ["school-1"] : resource.authorizedTo,
-  }));
+  return values;
 }
 
 const classNames = [
@@ -356,7 +336,7 @@ function seedTaskSubmissions(): TaskSubmission[] {
 export function seedWorkspace(): EnterpriseWorkspaceState {
   const resources = initialResources();
   return {
-    schemaVersion: 11,
+    schemaVersion: 12,
     role: null,
     activeSchoolId: "school-1",
     activeStudentId: "student-lin",
@@ -778,48 +758,6 @@ export function seedWorkspace(): EnterpriseWorkspaceState {
       ...additionalJobPostings,
     ],
     applications: [],
-    authorizations: resources.flatMap((resource) =>
-      resource.authorizedTo.map((schoolId) => ({
-        id: `auth-${resource.id}-${schoolId}`,
-        resourceId: resource.id,
-        resourceVersion: resource.version,
-        schoolId,
-        scope: "网络与通信、网络空间安全专业群",
-        majorGroupIds: ["major-network", "major-security"],
-        expiresAt: "2027-12-31",
-        authorizedBy: "科来运营",
-        authorizedAt: resource.updatedAt,
-        status: "有效" as const,
-      })),
-    ),
-    orders: [
-      {
-        id: "order-base-2026",
-        schoolId: "school-1",
-        packageId: "base",
-        name: "2026 岗位培养基础资源包",
-        amount: 80000,
-        status: "已授权",
-        resourceIds: initialResources().filter((item) => item.packageId === "base").map((item) => item.id),
-        majorGroupIds: ["major-network", "major-security"],
-        createdAt: "2026-08-20 10:00",
-        updatedAt: "2026-09-01 09:30",
-        history: [],
-      },
-      {
-        id: "order-renewal-2027",
-        schoolId: "school-1",
-        packageId: "renewal",
-        name: "2027 年度场景更新包",
-        amount: 22000,
-        status: "待确认",
-        resourceIds: ["factory"],
-        majorGroupIds: ["major-network", "major-observability"],
-        createdAt,
-        updatedAt: createdAt,
-        history: [],
-      },
-    ],
     schools: [
       { id: "school-1", name: "江城理工学院", college: "网络空间安全学院", plan: "岗位培养专业版", contact: "陈疏影", status: "服务中" },
       { id: "school-2", name: "岭南信息职业技术学院", college: "信息工程学院", plan: "试用", contact: "待补充", status: "合作洽谈" },

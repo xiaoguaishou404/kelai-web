@@ -11,7 +11,6 @@ import {
   type JobLearningPath,
   type JobPosting,
   type MajorGroup,
-  type OrderStatus,
   type OfflineSession,
   type ProjectPosting,
   type Resource,
@@ -66,7 +65,7 @@ interface StoreValue {
   updateResource: (id: string, patch: Partial<Resource>, actor: string) => void;
   resourceAction: (
     id: string,
-    action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize" | "confirm-rights" | "reject-rights" | "revoke-rights",
+    action: "submit" | "publish" | "reject" | "offline" | "revise" | "confirm-rights" | "reject-rights" | "revoke-rights",
     note?: string,
   ) => void;
   updateMajorGroup: (id: string, patch: Pick<MajorGroup, "majors" | "jobIds">) => void;
@@ -78,14 +77,12 @@ interface StoreValue {
   apply: (application: Application) => void;
   processApplication: (id: string, status: ApplicationStatus, feedback?: string) => void;
   submitDelivery: (id: string, text: string) => void;
-  advanceOrder: (id: string, status: OrderStatus, note: string) => void;
   completeChapter: (courseId: string, chapterIndex: number) => void;
   saveLearningPath: (path: JobLearningPath) => void;
   replacePlatformAdmin: (state: PlatformAdminState) => void;
   setApprovalIdentity: (identity: ApprovalIdentity) => void;
   savePlatformRecord: (record: PlatformRecord) => void;
   enrollCertificate: (enrollment: CertificateEnrollment) => void;
-  reset: () => void;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -100,7 +97,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (saved) {
         const parsed = stripTrainingData(JSON.parse(saved) as LegacyWorkspaceData);
         const savedVersion = Number((parsed as { schemaVersion?: number }).schemaVersion);
-        if (savedVersion >= 5 && savedVersion <= 11) {
+        if (savedVersion >= 5 && savedVersion <= 12) {
           const base = seedWorkspace();
           const mergingExpandedCatalog = savedVersion < 9;
           const savedResourceIds = new Set((parsed.resources ?? []).map((item) => item.id));
@@ -115,7 +112,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             state: {
               ...base,
               ...parsed,
-              schemaVersion: 11,
+              schemaVersion: 12,
               resources: mergingExpandedCatalog
                 ? [
                     ...base.resources.filter((item) => !savedResourceIds.has(item.id)),
@@ -256,19 +253,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     apply: (application) => dispatch({ type: "apply", application }),
     processApplication: (id, status, feedback) => dispatch({ type: "process-application", id, status, feedback }),
     submitDelivery: (id, text) => dispatch({ type: "deliver", id, text }),
-    advanceOrder: (id, status, note) => dispatch({ type: "order", id, status, note }),
     completeChapter: (courseId, chapterIndex) => dispatch({ type: "course-progress", courseId, chapterIndex }),
     saveLearningPath: (path) => dispatch({ type: "save-learning-path", path }),
     replacePlatformAdmin: (platformAdmin) => dispatch({ type: "platform-admin", state: platformAdmin }),
     setApprovalIdentity: (identity) => dispatch({ type: "approval-identity", identity }),
     savePlatformRecord: (record) => dispatch({ type: "platform-record", record }),
     enrollCertificate: (enrollment) => dispatch({ type: "certificate-enroll", enrollment }),
-    reset: () => {
-      window.localStorage.removeItem(WORKSPACE_STORAGE_KEY);
-      window.localStorage.removeItem(LEGACY_WORKSPACE_STORAGE_KEY);
-      window.localStorage.removeItem("colasoft-enterprise-v2");
-      dispatch({ type: "reset" });
-    },
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

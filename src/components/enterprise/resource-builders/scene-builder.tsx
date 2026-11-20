@@ -85,7 +85,7 @@ export function SceneBuilder({ resource, initial, notify, onClose }: BuilderProp
   };
   const save = (submit: boolean) => {
     if (submit && missing.length) return notify(missing.join("；"));
-    persist({ kind: "scene", data: { ...draft, taskDetails } }, { name: draft.name || "未命名场景", description: draft.description || "场景草稿待完善", relatedIds: [draft.jobId], packageId: "renewal", rights }, submit);
+    persist({ kind: "scene", data: { ...draft, taskDetails } }, { name: draft.name || "未命名场景", description: draft.description || "场景草稿待完善", relatedIds: [draft.jobId], rights }, submit);
     notify(submit ? "场景已提交审核" : "场景草稿已保存");
     onClose();
   };

@@ -126,22 +126,16 @@ export function useWorkspacePage() {
   };
   const resourceActionWithNotice = (
     id: string,
-    action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize" | "confirm-rights" | "reject-rights" | "revoke-rights",
+    action: "submit" | "publish" | "reject" | "offline" | "revise" | "confirm-rights" | "reject-rights" | "revoke-rights",
     note: string,
   ) => {
-    const currentlyAuthorized = state.authorizations.some(
-      (item) => item.resourceId === id && item.schoolId === state.activeSchoolId && item.status === "有效",
-    );
-    const rightsReason = action === "publish" || (action === "authorize" && !currentlyAuthorized)
-      ? resourceRightsBlockedReason(state, id, "教学使用")
-      : "";
+    const rightsReason = action === "publish" ? resourceRightsBlockedReason(state, id, "教学使用") : "";
     if (rightsReason) return notify(rightsReason);
     resourceAction(id, action, note);
     notify(
       action === "publish" ? "资源已发布"
         : action === "reject" ? "资源已驳回"
-          : action === "authorize" ? "院校授权已更新"
-            : action === "confirm-rights" ? "资源权属已确认"
+          : action === "confirm-rights" ? "资源权属已确认"
               : action === "reject-rights" ? "资源权属已驳回"
                 : action === "revoke-rights" ? "资源权属已撤回"
                   : "资源状态已更新",

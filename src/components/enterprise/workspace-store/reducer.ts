@@ -4,10 +4,8 @@ import {
   createAudit,
   generatedCertificateNumber,
   nowLabel,
-  orderRightsBlockers,
   resourceRightsBlockedReason,
   sceneProgressFor,
-  seedWorkspace,
   taskReviewBlockers,
   type Application,
   type ApplicationStatus,
@@ -16,7 +14,6 @@ import {
   type JobProfile,
   type JobPosting,
   type MajorGroup,
-  type OrderStatus,
   type OfflineSession,
   type ProjectPosting,
   type Resource,
@@ -37,7 +34,6 @@ import {
 
 export type Action =
   | { type: "hydrate"; state: EnterpriseWorkspaceState }
-  | { type: "reset" }
   | { type: "role"; role: Role }
   | { type: "guide" }
   | { type: "resume"; resume: Resume }
@@ -65,7 +61,7 @@ export type Action =
   | { type: "certificate" }
   | { type: "new-resource"; resource: Resource }
   | { type: "update-resource"; id: string; patch: Partial<Resource>; actor: string }
-  | { type: "resource-action"; id: string; action: "submit" | "publish" | "reject" | "offline" | "revise" | "authorize" | "confirm-rights" | "reject-rights" | "revoke-rights"; note?: string }
+  | { type: "resource-action"; id: string; action: "submit" | "publish" | "reject" | "offline" | "revise" | "confirm-rights" | "reject-rights" | "revoke-rights"; note?: string }
   | { type: "update-major-group"; id: string; patch: Pick<MajorGroup, "majors" | "jobIds"> }
   | { type: "standard"; weights: number[] }
   | { type: "publish-project"; project: ProjectPosting }
@@ -75,7 +71,6 @@ export type Action =
   | { type: "apply"; application: Application }
   | { type: "process-application"; id: string; status: ApplicationStatus; feedback?: string }
   | { type: "deliver"; id: string; text: string }
-  | { type: "order"; id: string; status: OrderStatus; note: string }
   | { type: "course-progress"; courseId: string; chapterIndex: number }
   | { type: "save-learning-path"; path: JobLearningPath }
   | { type: "platform-admin"; state: PlatformAdminState }
@@ -124,8 +119,6 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
   switch (action.type) {
     case "hydrate":
       return action.state;
-    case "reset":
-      return { ...seedWorkspace(), role: state.role };
     case "role":
       return { ...state, role: action.role };
     case "guide":
@@ -505,11 +498,8 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
     case "resource-action": {
       const target = state.resources.find((item) => item.id === action.id);
       if (!target) return state;
-      const currentlyAuthorized = state.authorizations.some(
-        (item) => item.resourceId === action.id && item.schoolId === state.activeSchoolId && item.status === "有效",
-      );
       if (
-        (action.action === "publish" || (action.action === "authorize" && !currentlyAuthorized)) &&
+        action.action === "publish" &&
         resourceRightsBlockedReason(state, action.id, "教学使用")
       ) {
         return state;
@@ -546,18 +536,10 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
                         ...rights.history,
                       ],
                     },
-                    authorizedTo: revoked ? [] : item.authorizedTo,
                     updatedAt: nowLabel(),
                   }
                 : item,
             ),
-            authorizations: revoked
-              ? state.authorizations.map((authorization) =>
-                  authorization.resourceId === action.id && authorization.status === "有效"
-                    ? { ...authorization, status: "已撤回" as const }
-                    : authorization,
-                )
-              : state.authorizations,
           },
           createAudit("科来运营", confirmed ? "确认资源权属" : revoked ? "撤回资源权属" : "驳回资源权属", target.name, action.note || target.rights.agreementNo),
         );
@@ -636,47 +618,8 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
               updatedAt: nowLabel(),
               reviewHistory: [{ ...event, action: "新版本" as const }, ...item.reviewHistory],
             };
-            return {
-              ...item,
-              authorizedTo: item.authorizedTo.includes(state.activeSchoolId)
-                ? item.authorizedTo.filter((id) => id !== state.activeSchoolId)
-                : [...item.authorizedTo, state.activeSchoolId],
-              updatedAt: nowLabel(),
-            };
+            return item;
           }),
-          authorizations:
-            action.action === "authorize"
-              ? (() => {
-                  const exists = state.authorizations.some(
-                    (item) => item.resourceId === action.id && item.schoolId === state.activeSchoolId && item.status === "有效",
-                  );
-                  if (exists) {
-                    return state.authorizations.map((item) =>
-                      item.resourceId === action.id && item.schoolId === state.activeSchoolId
-                        ? { ...item, status: "已撤回" as const }
-                        : item,
-                    );
-                  }
-                  const resource = state.resources.find((item) => item.id === action.id);
-                  return resource
-                    ? [
-                        {
-                          id: crypto.randomUUID(),
-                          resourceId: resource.id,
-                          resourceVersion: resource.version,
-                          schoolId: state.activeSchoolId,
-                          scope: "科来适配专业群",
-                          majorGroupIds: ["major-network", "major-security", "major-observability", "major-computer"],
-                          expiresAt: "2027-12-31",
-                          authorizedBy: "科来运营",
-                          authorizedAt: nowLabel(),
-                          status: "有效" as const,
-                        },
-                        ...state.authorizations,
-                      ]
-                    : state.authorizations;
-                })()
-              : state.authorizations,
           platformAdmin: pendingApproval
             ? {
                 ...state.platformAdmin,
@@ -776,59 +719,6 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
             item.id === action.id
               ? { ...item, status: "待验收", deliveryText: action.text, feedback: "", updatedAt: event.at, history: [...item.history, event] }
               : item,
-          ),
-        },
-        event,
-      );
-    }
-    case "order": {
-      const target = state.orders.find((item) => item.id === action.id);
-      if (!target) return state;
-      if (action.status === "已授权" && orderRightsBlockers(state, target).length > 0) return state;
-      const event = createAudit("科来运营", `订单 · ${action.status}`, target.name, action.note);
-      const packageResourceIds = Array.from(
-        new Set([
-          ...target.resourceIds,
-          ...state.resources.filter((item) => item.packageId === target.packageId).map((item) => item.id),
-        ]),
-      );
-      const resources =
-        action.status === "已授权"
-          ? state.resources.map((item) =>
-              packageResourceIds.includes(item.id) && !item.authorizedTo.includes(state.activeSchoolId)
-                ? { ...item, authorizedTo: [...item.authorizedTo, state.activeSchoolId] }
-                : item,
-            )
-          : state.resources;
-      return audit(
-        {
-          ...state,
-          resources,
-          authorizations:
-            action.status === "已授权"
-              ? [
-                  ...packageResourceIds
-                    .map((resourceId) => state.resources.find((item) => item.id === resourceId))
-                    .filter((item): item is Resource => Boolean(item))
-                    .map((resource) => ({
-                      id: crypto.randomUUID(),
-                      resourceId: resource.id,
-                      resourceVersion: resource.version,
-                      schoolId: target.schoolId,
-                      scope: "科来适配专业群",
-                      majorGroupIds: target.majorGroupIds,
-                      expiresAt: "2027-12-31",
-                      authorizedBy: "科来运营",
-                      authorizedAt: event.at,
-                      status: "有效" as const,
-                    })),
-                  ...state.authorizations.filter(
-                    (item) => !packageResourceIds.includes(item.resourceId) || item.schoolId !== target.schoolId,
-                  ),
-                ]
-              : state.authorizations,
-          orders: state.orders.map((item) =>
-            item.id === action.id ? { ...item, status: action.status, updatedAt: event.at, history: [...item.history, event] } : item,
           ),
         },
         event,

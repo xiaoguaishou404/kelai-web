@@ -28,7 +28,6 @@ export type ApplicationStatus =
   | "待面试"
   | "已录用"
   | "未通过";
-export type OrderStatus = "待确认" | "已确认" | "已授权" | "已结算" | "已取消";
 
 export interface Evidence {
   id: string;
@@ -282,8 +281,6 @@ export interface Resource {
   status: ResourceStatus;
   description: string;
   version: string;
-  packageId: string;
-  authorizedTo: string[];
   relatedIds: string[];
   reviewNote?: string;
   updatedAt: string;
@@ -548,35 +545,8 @@ export interface School {
   status: string;
 }
 
-export interface Order {
-  id: string;
-  schoolId: string;
-  packageId: string;
-  name: string;
-  amount: number;
-  status: OrderStatus;
-  resourceIds: string[];
-  majorGroupIds: string[];
-  createdAt: string;
-  updatedAt: string;
-  history: AuditEvent[];
-}
-
-export interface ResourceAuthorization {
-  id: string;
-  resourceId: string;
-  resourceVersion: string;
-  schoolId: string;
-  scope: string;
-  majorGroupIds: string[];
-  expiresAt: string;
-  authorizedBy: string;
-  authorizedAt: string;
-  status: "有效" | "已撤回";
-}
-
 export interface EnterpriseWorkspaceState {
-  schemaVersion: 11;
+  schemaVersion: 12;
   role: Role | null;
   activeSchoolId: string;
   activeStudentId: string;
@@ -597,8 +567,6 @@ export interface EnterpriseWorkspaceState {
   projects: ProjectPosting[];
   jobPostings: JobPosting[];
   applications: Application[];
-  orders: Order[];
-  authorizations: ResourceAuthorization[];
   schools: School[];
   resume: Resume;
   favorites: string[];

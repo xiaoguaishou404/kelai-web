@@ -334,15 +334,6 @@ export function AcademyConsole({
         </label>
       </header>
 
-      <nav className="ep-platform-switcher" aria-label="院校业务平台">
-        {platformDefinitions.map((item) => (
-          <a className={platform.id === item.id ? "active" : ""} href={`/platform/admin/${item.id}/${item.groups[0].pages[0].id}`} key={item.id}>
-            <span>{item.short}</span>
-            <b>{item.label}</b>
-          </a>
-        ))}
-      </nav>
-
       <div className="ep-academy-layout">
         <aside className="ep-academy-menu">
           {platform.groups.map((group) => (

@@ -25,7 +25,7 @@ export function CourseBuilder({ resource, initial, notify, onClose }: BuilderPro
   const missing = [!draft.name.trim() ? "课程名称" : "", !draft.jobId ? "所属岗位" : "", draft.chapters.length === 0 ? "课程章节" : "", ...rightsMissing(rights)].filter(Boolean);
   const save = (submit: boolean) => {
     if (submit && missing.length) return notify(missing.join("；"));
-    persist({ kind: "course", data: draft }, { name: draft.name || "未命名课程", description: `${draft.chapters.length} 个章节`, relatedIds: [draft.jobId, draft.sceneId], packageId: "renewal", rights }, submit);
+    persist({ kind: "course", data: draft }, { name: draft.name || "未命名课程", description: `${draft.chapters.length} 个章节`, relatedIds: [draft.jobId, draft.sceneId], rights }, submit);
     notify(submit ? "课程已提交审核" : "课程草稿已保存");
     onClose();
   };

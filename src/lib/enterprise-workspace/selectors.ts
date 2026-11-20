@@ -7,7 +7,6 @@ import {
   EnterpriseWorkspaceState,
   JobPosting,
   JobProfile,
-  Order,
   ProjectPosting,
   ResourceRights,
   ResourceRightsStatus,
@@ -132,17 +131,10 @@ export function resourceVisible(
   scope: ResourceUseScope = "教学使用",
 ) {
   const resource = resourceById(state, id);
-  const authorized =
-    Boolean(
-      state.authorizations?.some(
-        (item) => item.resourceId === id && item.schoolId === state.activeSchoolId && item.status === "有效",
-      ),
-    ) || Boolean(resource?.authorizedTo.includes(state.activeSchoolId));
   return Boolean(
     resource &&
       resource.status === "已发布" &&
       resource.publishedContent &&
-      authorized &&
       resourceRightsReady(state, id, scope),
   );
 }
@@ -243,35 +235,17 @@ export function rightsSummary(state: EnterpriseWorkspaceState) {
   };
 }
 
-export function orderRightsBlockers(state: EnterpriseWorkspaceState, order: Order) {
-  const ids = Array.from(
-    new Set([
-      ...order.resourceIds,
-      ...state.resources.filter((item) => item.packageId === order.packageId).map((item) => item.id),
-    ]),
-  );
-  return ids.flatMap((id) => {
-    const resource = resourceById(state, id);
-    if (!resource) return [{ id, name: id, reason: "资源不存在" }];
-    if (resource.status !== "已发布" || !resource.publishedContent) {
-      return [{ id, name: resource.name, reason: "资源尚未审核发布" }];
-    }
-    const reason = resourceRightsBlockedReason(state, id, "教学使用");
-    return reason ? [{ id, name: resource.name, reason }] : [];
-  });
-}
-
 export function jobLearningReadiness(state: EnterpriseWorkspaceState, jobId: string) {
   const resource = resourceById(state, jobId);
   const job = resource?.publishedContent?.kind === "job" ? resource.publishedContent.data : undefined;
   if (!resource || resource.status !== "已发布" || !job) return { ready: false, reason: "岗位标准尚未发布" };
   const rightsReason = resourceRightsBlockedReason(state, jobId, "教学使用");
   if (rightsReason) return { ready: false, reason: rightsReason };
-  if (!resourceVisible(state, jobId)) return { ready: false, reason: "岗位尚未授权给当前院校" };
+  if (!resourceVisible(state, jobId)) return { ready: false, reason: "岗位当前不可用于教学" };
   const sceneReady = (job.sceneIds ?? []).some((id) => resourceVisible(state, id));
   const courseReady = (job.courseIds ?? []).some((id) => resourceVisible(state, id));
-  if (!sceneReady) return { ready: false, reason: "缺少已发布并授权的场景" };
-  if (!courseReady) return { ready: false, reason: "缺少已发布并授权的课程" };
+  if (!sceneReady) return { ready: false, reason: "缺少可用于教学的场景" };
+  if (!courseReady) return { ready: false, reason: "缺少可用于教学的课程" };
   return { ready: true, reason: "" };
 }
 
@@ -564,7 +538,7 @@ export function taskSubmissionBlockedReason(
 ) {
   if (state.role !== "student") return "切换到学生学习身份后可提交成果";
   if (!resourceVisible(state, sceneId)) {
-    return resourceRightsBlockedReason(state, sceneId, "教学使用") || "该场景尚未授权给当前院校";
+    return resourceRightsBlockedReason(state, sceneId, "教学使用") || "该场景当前不可用于教学";
   }
   if (!taskDetailById(sceneId, taskId)) return "任务不存在或尚未发布";
   const existing = taskSubmissionFor(state, sceneId, taskId);
@@ -581,7 +555,7 @@ export function workBlockedReason(state: EnterpriseWorkspaceState, sceneId: stri
   if (state.role !== "student") return "切换到学生学习身份后可提交成果";
   const scene = sceneById(sceneId);
   if (!scene) return "场景不存在";
-  if (!resourceVisible(state, scene.id)) return "该场景尚未授权给当前院校";
+  if (!resourceVisible(state, scene.id)) return "该场景当前不可用于教学";
   const work = latestWork(state, sceneId);
   if (work?.status === "待评价") return "本项成果正在等待教师评价";
   if (work?.status === "已通过") return "本项成果已通过";
@@ -721,10 +695,6 @@ export function classMetrics(state: EnterpriseWorkspaceState) {
     average: Math.round(abilities.reduce((sum, item) => sum + item, 0) / abilities.length),
     weak: dimensions.map((name, index) => ({ name, score: abilities[index] })).sort((a, b) => a.score - b.score)[0],
   };
-}
-
-export function orderForPackage(state: EnterpriseWorkspaceState, packageId: string) {
-  return state.orders.find((item) => item.schoolId === state.activeSchoolId && item.packageId === packageId);
 }
 
 export function applicationTarget(state: EnterpriseWorkspaceState, application: Application) {

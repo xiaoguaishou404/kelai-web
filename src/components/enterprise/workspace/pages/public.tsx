@@ -463,7 +463,7 @@ export function JobView({ id }: { id?: string }) {
   const job = jobs.find((item) => item.id === id);
   if (!job) return <Empty>岗位不存在。</Empty>;
   if (!resourceVisible(state, job.id) && state.role !== "manage" && state.role !== "schoolAdmin") {
-    return <Empty>{resourceRightsBlockedReason(state, job.id, "教学使用") || "该岗位尚未授权给当前院校。"}</Empty>;
+    return <Empty>{resourceRightsBlockedReason(state, job.id, "教学使用") || "该岗位当前不可用于教学。"}</Empty>;
   }
   const readiness = jobLearningReadiness(state, job.id);
   const jobPath = learningPathForJob(state, job.id);
@@ -669,13 +669,12 @@ export function ResourceView({ id }: { id?: string }) {
         <Card><h2>审核与发布</h2><div className="ep-actions">
           {resource.status === "草稿" && <Btn onClick={() => resourceActionWithNotice(resource.id, "submit", "")}>提交审核</Btn>}
           {resource.status === "待审核" && <><Btn disabled={Boolean(rightsReason)} title={rightsReason} onClick={() => resourceActionWithNotice(resource.id, "publish", "")}>审核发布</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject", "请补充内容与关联资源")}>驳回内容</Btn></>}
-          {resource.status === "已发布" && <Btn secondary disabled={!state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") && Boolean(rightsReason)} title={rightsReason} onClick={() => resourceActionWithNotice(resource.id, "authorize", "")}>{state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") ? "撤回授权" : "发放授权"}</Btn>}
         </div><History items={resource.reviewHistory.map((item) => ({ at: item.at, actor: item.actor, action: item.action, note: item.note }))} /></Card>
       </>}
     </div>
   );
   if (!resourceVisible(state, resource.id)) {
-    return <Empty>{resourceRightsBlockedReason(state, resource.id, "教学使用") || "该资源尚未对当前院校开放。"}</Empty>;
+    return <Empty>{resourceRightsBlockedReason(state, resource.id, "教学使用") || "该资源当前不可用于教学。"}</Empty>;
   }
   return <Card><ResourcePreview state={state} resource={resource} /><h2>关联资源</h2>{resource.relatedIds.map((relatedId) => {
     const related = resourceById(state, relatedId);

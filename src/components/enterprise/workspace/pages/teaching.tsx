@@ -7,7 +7,6 @@ import {
   ArrowUpRight,
   BookOpen,
   CheckCircle2,
-  Download,
   GraduationCap,
   Plus,
   ShieldCheck,
@@ -31,6 +30,8 @@ import { Btn, Card, Empty, History, Metric, RadarView, Tag } from "@/components/
 export function TeacherHome() {
   const { jobById, state } = useWorkspacePage();
   const metrics = classMetrics(state);
+  const passedTasks = state.taskSubmissions.filter((item) => item.status === "已通过").length;
+  const completedScenes = state.sceneCompletions.filter((item) => item.status === "已完成").length;
   return (
     <>
       <div className="ep-stats">
@@ -42,19 +43,32 @@ export function TeacherHome() {
       <div className="ep-split">
         <Card>
           <h2>{state.classroom.name}</h2><p>{state.classroom.teacherName} · {state.classroom.major} · {state.classroom.schedule}</p>
-          <div className="ep-actions"><Link className="ep-button" href="/platform/teacher/classes">查看学生</Link><Link className="ep-button secondary" href="/platform/teacher/classroom">课堂教学</Link><Link className="ep-button secondary" href="/platform/teacher/courses">课程评价</Link><Link className="ep-button secondary" href="/platform/teacher/reviews">成果评价</Link></div>
+          <div className="ep-actions"><Link className="ep-button" href="/platform/teacher/classes">查看学生</Link><Link className="ep-button secondary" href="/platform/teacher/classroom">课堂教学</Link><Link className="ep-button secondary" href="/platform/teacher/reviews">成果评价</Link></div>
           <h2>岗位学习路径</h2>
           {state.learningPaths.map((path) => <div className="ep-row" key={path.id}><span className="ep-grow">{jobById(path.jobId)?.name ?? path.name}</span><Tag tone="success">{path.sceneNodes.length} 个场景</Tag></div>)}
         </Card>
         <Card>
-          <h2>班级能力</h2><RadarView values={metrics.abilities} /><p>最弱维度 {metrics.weak.name} {metrics.weak.score} 分 · 通过覆盖 {metrics.passRate}%</p>
-          <Link className="ep-link" href="/platform/teacher/report">查看院校成效 <ArrowUpRight size={15} /></Link>
+          <div className="ep-section-title">
+            <div><h2>班级成效</h2></div>
+            <Btn secondary onClick={() => window.print()}>导出报告</Btn>
+          </div>
+          <RadarView values={metrics.abilities} />
+          <p>最弱维度 {metrics.weak.name} {metrics.weak.score} 分 · 通过覆盖 {metrics.passRate}%</p>
+          {dimensions.map((item, index) => <div className="ep-ability" key={item}><span>{item}</span><progress max={100} value={metrics.abilities[index]} /><b>{metrics.abilities[index]}</b></div>)}
+          <h2>教学判断</h2>
+          <p>班级最弱维度为 {metrics.weak.name}（{metrics.weak.score} 分）。建议优先检查证据来源、不可见边界和结论表达的对应关系。</p>
         </Card>
       </div>
+      <Card>
+        <div className="ep-section-title">
+          <div><h2>学生学习概览</h2></div>
+          <Link className="ep-link" href="/platform/teacher/reviews">进入任务评价 <ArrowUpRight size={15} /></Link>
+        </div>
+        <p>{state.resume.name} 提交 {state.taskSubmissions.length} 个任务成果，通过 {passedTasks} 个任务，完成 {completedScenes} 个场景。</p>
+      </Card>
     </>
   );
 }
-
 export function ClassesView() {
   const { state } = useWorkspacePage();
   const liveScores = abilityScores(state);
@@ -422,53 +436,6 @@ function TaskReviewForm({
   );
 }
 
-export function CourseEvaluationView() {
-  const { courses, jobById, notify, state } = useWorkspacePage();
-  return (
-    <>
-      <Card>
-        <div className="ep-section-title"><div><h1>课程节点评价</h1><p>{state.classroom.name} · 查看学生章节完成、章节自检与课程达成情况。</p></div><Tag>{courses.length} 门课程</Tag></div>
-        <div className="ep-stats">
-          <Metric label="已开放课程" value={courses.length} />
-          <Metric label="完成章节" value={Object.values(state.courseProgress).reduce((sum, value) => sum + value.length, 0)} />
-          <Metric label="班级学生" value={state.classroom.studentIds.length} />
-          <Metric label="场景任务成果" value={state.taskSubmissions.length} />
-        </div>
-      </Card>
-      <Card>
-        <h2>课程学习情况</h2>
-        <div className="ep-tablewrap">
-          <table>
-            <thead><tr><th>课程</th><th>类型</th><th>章节</th><th>演示学生进度</th><th>关联岗位</th><th>状态</th><th>操作</th></tr></thead>
-            <tbody>
-              {courses.map((course) => {
-                const completed = state.courseProgress[course.id]?.length ?? 0;
-                return (
-                  <tr key={course.id}>
-                    <td><b>{course.name}</b><small>{course.code ?? course.id}</small></td>
-                    <td><Tag>{course.courseType ?? "体系课"}</Tag></td>
-                    <td>{course.chapters.length}</td>
-                    <td><progress max={course.chapters.length} value={completed} /> {completed}/{course.chapters.length}</td>
-                    <td>{jobById(course.jobId)?.name ?? "通用课程"}</td>
-                    <td><Tag tone={completed === course.chapters.length ? "success" : "muted"}>{completed === course.chapters.length ? "已完成" : "学习中"}</Tag></td>
-                    <td><Link href={`/platform/course/${course.id}`}>查看课程</Link></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-      <Card>
-        <h2>待复核章节</h2>
-        {state.courseProgress["course-0"]?.length ? (
-          <div className="ep-row"><div className="ep-grow"><b>{state.resume.name} · 网络协议与流量分析基础</b><p>已完成 {state.courseProgress["course-0"].length} 个章节</p></div><Btn secondary onClick={() => notify("章节完成记录已确认")}>确认记录</Btn></div>
-        ) : <Empty>当前没有待复核的课程节点。</Empty>}
-      </Card>
-    </>
-  );
-}
-
 function ReviewForm({ onSubmit }: { onSubmit: (review: Review) => void }) {
   const { evaluationStandard } = useWorkspacePage();
   const [evidence, setEvidence] = useState(32);
@@ -495,22 +462,5 @@ function ReviewForm({ onSubmit }: { onSubmit: (review: Review) => void }) {
       <p>综合 {total} 分 · 通过线 {passScore}</p>
       <div className="ep-actions"><Btn disabled={total < passScore || !comment.trim()} onClick={() => submit("passed")}>通过并回写画像</Btn><Btn secondary disabled={!comment.trim()} onClick={() => submit("returned")}>退回修改</Btn></div>
     </div>
-  );
-}
-
-export function TeacherReport() {
-  const { state } = useWorkspacePage();
-  const metrics = classMetrics(state);
-  return (
-    <>
-      <Card>
-        <div className="ep-section-title"><div><Tag>CLASS OUTCOME</Tag><h1>网络工程 2401 培养成效</h1><p>30 名学生 · 1 名实时演示学生 · 29 名样本记录</p></div><Btn secondary onClick={() => window.print()}><Download size={16} />导出报告</Btn></div>
-        <div className="ep-stats"><Metric label="通过覆盖" value={`${metrics.passRate}%`} /><Metric label="平均能力" value={metrics.average} /><Metric label="待评价" value={metrics.pending} /><Metric label="退回成果" value={metrics.returned} /></div>
-        <RadarView values={metrics.abilities} />
-        {dimensions.map((item, index) => <div className="ep-ability" key={item}><span>{item}</span><progress max={100} value={metrics.abilities[index]} /><b>{metrics.abilities[index]}</b></div>)}
-        <h2>教学判断</h2><p>班级最弱维度为 {metrics.weak.name}（{metrics.weak.score} 分）。建议优先检查证据来源、不可见边界和结论表达的对应关系。</p>
-      </Card>
-      <Card><h2>实时学生</h2><p>{state.resume.name} 提交 {state.taskSubmissions.length} 个任务成果，通过 {state.taskSubmissions.filter((item) => item.status === "已通过").length} 个任务，完成 {state.sceneCompletions.filter((item) => item.status === "已完成").length} 个场景。</p><Link className="ep-link" href="/platform/teacher/reviews">进入任务评价 <ArrowUpRight size={15} /></Link></Card>
-    </>
   );
 }

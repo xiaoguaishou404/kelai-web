@@ -21,9 +21,7 @@ export const teacherNav = [
   ["teacher", "教学总览"],
   ["teacher/classes", "班级与学生"],
   ["teacher/classroom", "课堂教学"],
-  ["teacher/courses", "课程节点评价"],
   ["teacher/reviews", "成果评价"],
-  ["teacher/report", "院校成效"],
 ];
 
 export const schoolAdminNav = [
@@ -43,11 +41,8 @@ export const management = [
   ["manage/resources", "资源建设与审核"],
   ["manage/standards", "能力评价标准"],
   ["manage/schools", "合作院校与协议"],
-  ["manage/experts", "企业专家库"],
   ["manage/projects", "项目派单与验收"],
   ["manage/recruitment", "招聘与人才库"],
-  ["manage/orders", "资源订阅与授权"],
-  ["manage/settlement", "结算台账"],
 ];
 
 const workspaceAreaByRoot: Record<string, Role> = {

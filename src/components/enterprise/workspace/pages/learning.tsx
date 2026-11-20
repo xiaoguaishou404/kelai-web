@@ -172,19 +172,51 @@ export function StudentHome() {
         <Metric label="完成场景" value={scenesCompleted} />
         <Metric label="待评价任务" value={taskPending} />
       </div>
+      <Card className="ep-practice-paths-card">
+        <h2>岗位实践路径</h2>
+        {jobPaths.length > 0 ? (
+          <div className="ep-practice-path-list">
+            {jobPaths.map(({ job, path, progress }) => {
+              const percent = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
+              return (
+                <Link className="ep-practice-path" href={`/platform/job/${job.id}/learning-path`} key={path.id}>
+                  <header>
+                    <span className="ep-practice-path-icon"><BriefcaseBusiness size={17} /></span>
+                    <span className="ep-grow">
+                      <b>{job.name}</b>
+                      <small>{progress.completed}/{progress.total} 个场景{progress.score !== undefined ? ` · ${progress.score} 分` : ""}</small>
+                    </span>
+                    <ChevronRight size={16} />
+                  </header>
+                  <span className="ep-practice-path-meter" aria-label={`路径完成 ${percent}%`}>
+                    <span style={{ width: `${percent}%` }} />
+                  </span>
+                  <div className="ep-practice-path-track">
+                    {progress.nodes.map((item, index) => {
+                      const nodeClass =
+                        item.progress.status === "已完成"
+                          ? "is-completed"
+                          : item.progress.status === "学习中"
+                            ? "is-learning"
+                            : item.progress.status === "待评价"
+                              ? "is-review"
+                              : "is-pending";
+                      return (
+                        <span className={`ep-practice-path-node ${nodeClass}`} key={item.node.id}>
+                          <i>{item.progress.status === "已完成" ? <CheckCircle2 size={14} /> : index + 1}</i>
+                          <small>{item.node.phase}</small>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : <Empty>暂无岗位实践路径。</Empty>}
+      </Card>
       <div className="ep-split">
         <Card>
-          <h2>岗位实践路径</h2>
-          {jobPaths.map(({ job, path, progress }) => (
-            <Link className="ep-row" href={`/platform/job/${job.id}/learning-path`} key={path.id}>
-              <span className="ep-icon"><BriefcaseBusiness size={18} /></span>
-              <div className="ep-grow">
-                <b>{job.name}</b>
-                <p>{progress.completed}/{progress.total} 个场景 · {path.sceneNodes.length} 个节点{progress.score !== undefined ? ` · ${progress.score} 分` : ""}</p>
-              </div>
-              <Tag tone={progress.completed === progress.total ? "success" : "muted"}>{progress.completed === progress.total ? "已完成" : "继续学习"}</Tag>
-            </Link>
-          ))}
           <h2>线下课堂</h2>
           {upcomingSessions.length ? upcomingSessions.map((session) => {
             const checkedIn = state.attendanceRecords.some((item) => item.sessionId === session.id && item.studentId === state.activeStudentId);
@@ -339,7 +371,7 @@ export function SceneView({ id }: { id?: string }) {
   }, [scene, searchParams, setSceneTab, setSceneTaskIndex]);
   if (!scene) return <Empty>场景不存在。</Empty>;
   if (!resourceVisible(state, scene.id) && state.role !== "manage" && state.role !== "schoolAdmin") {
-    return <Empty>{resourceRightsBlockedReason(state, scene.id, "教学使用") || "场景尚未授权给当前院校。"}</Empty>;
+    return <Empty>{resourceRightsBlockedReason(state, scene.id, "教学使用") || "场景当前不可用于教学。"}</Empty>;
   }
   const work = latestWork(state, scene.id);
   return (

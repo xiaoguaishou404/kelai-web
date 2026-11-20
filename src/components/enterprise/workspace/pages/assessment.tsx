@@ -73,7 +73,7 @@ export function StandardDetail({ id }: { id: string }) {
   const item = publishedStandardList.find((standard) => standard.id === id);
   if (!item) return <Empty>评价标准不存在。</Empty>;
   if (!resourceVisible(state, item.id) && state.role !== "manage" && state.role !== "schoolAdmin") {
-    return <Empty>{resourceRightsBlockedReason(state, item.id, "教学使用") || "评价标准尚未授权给当前院校。"}</Empty>;
+    return <Empty>{resourceRightsBlockedReason(state, item.id, "教学使用") || "评价标准当前不可用于教学。"}</Empty>;
   }
   const job = jobById(item.jobId);
   return (
@@ -485,9 +485,9 @@ export function ExamView({ id }: { id?: string }) {
     return () => window.clearInterval(timer);
   }, [started]);
   if (state.role !== "student") return <Empty>学生登录后可参加测评。</Empty>;
-  if (accessibleAssessmentList.length === 0) return <Empty>测评尚未完成权属确认或院校授权。</Empty>;
+  if (accessibleAssessmentList.length === 0) return <Empty>测评尚未完成权属确认或当前不可用于教学。</Empty>;
   const activeAssessment = id ? accessibleAssessmentList.find((item) => item.id === id) : assessment;
-  if (!activeAssessment) return <Empty>测评不存在或尚未完成权属确认与院校授权。</Empty>;
+  if (!activeAssessment) return <Empty>测评不存在或当前不可用于教学。</Empty>;
   const practiceMode = searchParams.get("mode") === "practice" || activeAssessment.kind === "题库";
   const availability = assessmentAvailability(state, activeAssessment);
   const latest = state.examAttempts

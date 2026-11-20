@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { LogOut } from "lucide-react";
+import { BriefcaseBusiness, ChevronDown, LogOut } from "lucide-react";
 import type { Role } from "@/lib/enterprise-workspace";
 import { useWorkspace, WorkspaceProvider } from "@/components/enterprise/workspace-store";
 import { AcademyConsole } from "@/components/enterprise/academy-console";
@@ -44,19 +44,14 @@ import { EmploymentView, JobPostingDetail, ProjectDetail, ProjectsView } from "@
 import {
   ClassesView,
   ClassroomView,
-  CourseEvaluationView,
   ReviewsView,
   TeacherHome,
-  TeacherReport,
 } from "@/components/enterprise/workspace/pages/teaching";
 import {
-  ExpertsView,
   ManageApplications,
   ManageHome,
   ManageResources,
-  OrdersView,
   SchoolsView,
-  SettlementView,
   StandardsView,
 } from "@/components/enterprise/workspace/pages/operations";
 
@@ -70,7 +65,7 @@ export default function Platform({ path = [] }: { path?: string[] }) {
 
 function WorkspaceShell({ path }: { path: string[] }) {
   const router = useRouter();
-  const { state, hydrated, setRole, markGuideSeen, reset } = useWorkspace();
+  const { state, hydrated, setRole, markGuideSeen } = useWorkspace();
   const [notice, setNotice] = useState("");
   const page = path.join("/") || "industry";
   const title = pageTitle(page);
@@ -89,6 +84,30 @@ function WorkspaceShell({ path }: { path: string[] }) {
   const immersivePage = fullBleedPages.has(page) || page.startsWith("job/") || page === "admin" || page.startsWith("admin/");
   const requiredRole = workspaceAreaForPath(page);
   const showWorkspaceSidebar = Boolean(requiredRole && state.role === requiredRole);
+  const accountName =
+    state.role === "teacher"
+      ? "周启明"
+      : state.role === "schoolAdmin"
+        ? "院校管理员"
+        : state.role === "manage"
+          ? "科来运营"
+          : state.resume.name;
+  const workspaceHome =
+    state.role === "teacher"
+      ? "teacher"
+      : state.role === "schoolAdmin"
+        ? "admin/system/tenant"
+        : state.role === "manage"
+          ? "manage"
+          : "learning";
+  const workspaceLabel =
+    state.role === "teacher"
+      ? "院校教学服务"
+      : state.role === "schoolAdmin"
+        ? "院校管理服务台"
+        : state.role === "manage"
+          ? "科来企业服务台"
+          : "学生学习空间";
   const notify = (message: string) => setNotice(message);
   const go = (target: string) => router.push(`/platform/${target}`);
   const switchRole = (role: Role, target: string) => {
@@ -126,14 +145,30 @@ function WorkspaceShell({ path }: { path: string[] }) {
           </span>
         </Link>
         <div className="ep-header-right">
-          <button onClick={() => switchRole("student", "learning")}>学习中心</button>
-          <button onClick={() => switchRole("teacher", "teacher")}>教学服务台</button>
-          <button onClick={() => switchRole("schoolAdmin", "admin/system/tenant")}>院校管理</button>
-          <button onClick={() => switchRole("manage", "manage")}>科来管理</button>
-          <Link className="ep-user" href="/platform/login">
-            {state.role === "teacher" ? "周启明" : state.role === "schoolAdmin" ? "院校管理员" : state.role === "manage" ? "科来运营" : state.resume.name}
-            <LogOut size={14} />
-          </Link>
+          <div className="ep-account">
+            <button className="ep-user" type="button" aria-haspopup="menu">
+              <span className="ep-user-avatar" aria-hidden="true">{accountName.slice(0, 1)}</span>
+              <span className="ep-user-copy">
+                <b>{accountName}</b>
+                <small>{workspaceLabel}</small>
+              </span>
+              <ChevronDown className="ep-user-chevron" size={14} />
+            </button>
+            <div className="ep-user-menu" role="menu">
+              <Link href={`/platform/${workspaceHome}`} role="menuitem">
+                <span className="ep-user-menu-icon"><BriefcaseBusiness size={16} /></span>
+                <span>
+                  <b>我的工作</b>
+                  <small>{workspaceLabel}</small>
+                </span>
+              </Link>
+              <span className="ep-user-menu-divider" />
+              <Link href="/platform/login" role="menuitem">
+                <span className="ep-user-menu-icon"><LogOut size={16} /></span>
+                <span><b>切换身份</b></span>
+              </Link>
+            </div>
+          </div>
         </div>
       </header>
       {page !== "login" && (
@@ -164,8 +199,6 @@ function WorkspaceShell({ path }: { path: string[] }) {
                   {label}
                 </Link>
               ))}
-              <button onClick={() => { reset(); notify("演示数据已恢复"); }}>恢复演示数据</button>
-              <small>本地演示环境</small>
             </aside>
           )}
           <main className="ep-main">
@@ -263,17 +296,12 @@ function renderPage(path: string[], page: string, notify: (message: string) => v
   if (page === "teacher") return <TeacherHome />;
   if (page === "teacher/classes") return <ClassesView />;
   if (page === "teacher/classroom") return <ClassroomView />;
-  if (page === "teacher/courses") return <CourseEvaluationView />;
   if (page === "teacher/reviews") return <ReviewsView />;
-  if (page === "teacher/report") return <TeacherReport />;
   if (page === "manage") return <ManageHome />;
   if (page === "manage/resources") return <ManageResources />;
   if (page === "manage/standards") return <StandardsView />;
   if (page === "manage/schools") return <SchoolsView />;
-  if (page === "manage/experts") return <ExpertsView />;
   if (page === "manage/projects") return <ManageApplications kind="project" />;
   if (page === "manage/recruitment") return <ManageApplications kind="job" />;
-  if (page === "manage/orders") return <OrdersView />;
-  if (page === "manage/settlement") return <SettlementView />;
   return <Card><h1>页面不存在</h1><Link href="/platform/industry">返回首页</Link></Card>;
 }

@@ -310,7 +310,7 @@ export function useResourceSave(resource?: Resource) {
   const { state, createResource, updateResource, resourceAction } = useWorkspace();
   const persist = (
     content: ResourceContent,
-    meta: { name: string; description: string; relatedIds: string[]; packageId: string; rights: ResourceRights },
+    meta: { name: string; description: string; relatedIds: string[]; rights: ResourceRights },
     submit: boolean,
   ) => {
     const status = "草稿" as const;
@@ -326,7 +326,6 @@ export function useResourceSave(resource?: Resource) {
       type: content.kind === "job" ? "岗位" : content.kind === "scene" ? "场景" : content.kind === "course" ? "课程" : content.kind === "assessment" ? "测评" : "评价标准",
       status,
       version: "V1.0",
-      authorizedTo: [],
       updatedAt: nowLabel(),
       draftContent: content,
       rights: {

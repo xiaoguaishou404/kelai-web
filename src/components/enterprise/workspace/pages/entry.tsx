@@ -58,7 +58,6 @@ export function LoginView() {
             <ArrowUpRight />
           </button>
         ))}
-        <small>浏览器本地演示 · 侧栏可恢复全部数据</small>
       </Card>
     </div>
   );

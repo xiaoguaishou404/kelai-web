@@ -6,7 +6,6 @@ import { ArrowUpRight, Building2, Plus } from "lucide-react";
 import {
   effectiveRightsStatus,
   jobLearningReadiness,
-  orderRightsBlockers,
   publishedJobs,
   resourceRightsBlockedReason,
   resourceRightsReady,
@@ -25,14 +24,12 @@ export function ManageHome() {
   const rightsAttention = rights.pending + rights.reviewing + rights.rejected + rights.expired;
   const projectApplications = state.applications.filter((item) => item.kind === "project").length;
   const jobApplications = state.applications.filter((item) => item.kind === "job").length;
-  const pendingOrders = state.orders.filter((item) => item.status !== "已结算" && item.status !== "已取消").length;
   return (
     <>
-      <div className="ep-stats">
+      <div className="ep-stats is-three">
         <Metric label="合作院校" value={state.schools.filter((item) => item.status === "服务中").length} />
         <Metric label="待处理资源" value={pendingResources + rightsAttention} />
         <Metric label="待处理申请" value={projectApplications + jobApplications} />
-        <Metric label="订阅流程中" value={pendingOrders} />
       </div>
       <div className="ep-split">
         <Card>
@@ -40,7 +37,6 @@ export function ManageHome() {
           <Link className="ep-row" href="/platform/manage/resources"><div className="ep-grow"><b>资源审核</b><p>{pendingResources} 项等待审核</p></div><ArrowUpRight /></Link>
           <Link className="ep-row" href="/platform/manage/projects"><div className="ep-grow"><b>项目验收</b><p>{projectApplications} 条项目申请记录</p></div><ArrowUpRight /></Link>
           <Link className="ep-row" href="/platform/manage/recruitment"><div className="ep-grow"><b>人才投递</b><p>{jobApplications} 条岗位投递记录</p></div><ArrowUpRight /></Link>
-          <Link className="ep-row" href="/platform/manage/orders"><div className="ep-grow"><b>订阅与授权</b><p>{state.orders.find((item) => item.status === "待确认")?.name ?? "暂无待确认订单"}</p></div><ArrowUpRight /></Link>
         </Card>
         <Card>
           <h2>最近操作</h2>
@@ -79,12 +75,12 @@ export function ManageResources() {
   return (
     <>
       <Card>
-        <div className="ep-section-title"><div><h1>资源建设与审核</h1><p>草稿 → 审核发布 → 院校授权 → 前台使用</p></div><Tag>年度更新包</Tag></div>
+        <div className="ep-section-title"><div><h1>资源建设与审核</h1><p>草稿 → 确权审核 → 发布使用</p></div><Tag>年度资源</Tag></div>
         <div className="ep-tabs ep-resource-tabs">{types.map((type) => <button key={type} className={resourceType === type ? "active" : ""} onClick={() => { setResourceType(type); setCreatingResource(false); }}>{type}<small>{state.resources.filter((item) => item.type === type).length}</small></button>)}</div>
-        <div className="ep-toolbar ep-resource-toolbar"><div><b>{resourceType}资源</b><p>{resourceType === "岗位" ? "按真实工作任务建设能力模型并组织学习路径" : `管理${resourceType}资源、版本和院校授权`}</p></div><Btn onClick={() => setCreatingResource(true)}><Plus size={16} />新建{resourceType}</Btn></div>
+        <div className="ep-toolbar ep-resource-toolbar"><div><b>{resourceType}资源</b><p>{resourceType === "岗位" ? "按真实工作任务建设能力模型并组织学习路径" : `管理${resourceType}资源与版本`}</p></div><Btn onClick={() => setCreatingResource(true)}><Plus size={16} />新建{resourceType}</Btn></div>
         {creatingResource && <ResourceBuilder kind={resourceType} notify={notify} onClose={() => setCreatingResource(false)} />}
         <div className="ep-tablewrap"><table>
-          <thead><tr><th>编码 / 名称</th><th>版本</th><th>状态</th><th>关联 / 完整性</th><th>资源确权</th><th>院校授权</th><th>操作</th></tr></thead>
+          <thead><tr><th>编码 / 名称</th><th>版本</th><th>状态</th><th>关联 / 完整性</th><th>资源确权</th><th>操作</th></tr></thead>
           <tbody>{resources.map((resource) => {
             const content = resource.draftContent.data;
             const code = "code" in content ? content.code : undefined;
@@ -98,14 +94,12 @@ export function ManageResources() {
                 <td><Tag tone={resource.status === "已发布" ? "success" : resource.status === "已驳回" ? "danger" : "warning"}>{resource.status}</Tag></td>
                 <td>{resource.draftContent.kind === "job" ? <><Tag tone={readiness.ready ? "success" : "muted"}>{readiness.ready ? "可培养" : "待完善"}</Tag><small>{readiness.reason}</small></> : `${resource.relatedIds.length} 项关联`}</td>
                 <td><Tag tone={rightsStatus === "已确权" ? "success" : rightsStatus === "已驳回" || rightsStatus === "已过期" ? "danger" : "warning"}>{rightsStatus}</Tag><small>{rightsReason}</small></td>
-                <td>{state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") ? "已授权" : "未授权"}</td>
                 <td><div className="ep-actions">
                   {(rightsStatus === "待确权" || rightsStatus === "已驳回" || rightsStatus === "已过期") && <Btn secondary onClick={() => go(`resource/${resource.id}`)}>补录确权</Btn>}
                   {resource.status === "草稿" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "submit", "")}>提交审核</Btn>}
                   {resource.status === "待审核" && rightsStatus === "审核中" && <><Btn onClick={() => resourceActionWithNotice(resource.id, "confirm-rights", "")}>通过确权</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject-rights", "请补充权属材料")}>驳回权属</Btn></>}
                   {resource.status === "待审核" && <><Btn disabled={Boolean(rightsReason)} title={rightsReason} onClick={() => resourceActionWithNotice(resource.id, "publish", "")}>审核发布</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject", "请补充内容与关联资源")}>驳回内容</Btn></>}
                   {resource.status === "已驳回" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "submit", "")}>重新提交</Btn>}
-                  {resource.status === "已发布" && <Btn secondary disabled={!state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") && Boolean(rightsReason)} title={rightsReason} onClick={() => resourceActionWithNotice(resource.id, "authorize", "")}>{state.authorizations.some((item) => item.resourceId === resource.id && item.schoolId === state.activeSchoolId && item.status === "有效") ? "撤回授权" : "发放授权"}</Btn>}
                   {resource.status === "已发布" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "offline", "")}>下线</Btn>}
                   {(resource.status === "已下线" || resource.status === "已驳回") && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "revise", "")}>编辑新版本</Btn>}
                 </div></td>
@@ -142,22 +136,8 @@ export function SchoolsView() {
     <Card>
       <h1>合作院校与协议</h1>
       {state.schools.map((school) => <div className="ep-row" key={school.id}><Building2 className="ep-blue" /><div className="ep-grow"><h2>{school.name}</h2><p>{school.college} · {school.plan} · {school.contact}</p></div><Tag tone={school.status === "服务中" ? "success" : "muted"}>{school.status}</Tag></div>)}
-      <Link className="ep-link" href="/platform/manage/orders">管理订阅与授权 <ArrowUpRight size={15} /></Link>
     </Card>
   );
-}
-
-export function ExpertsView() {
-  return <div className="ep-grid">{[
-    ["周明", "网络性能诊断", "金融交易与链路分析"],
-    ["陈宁", "全流量安全研判", "能源管理区告警分析"],
-    ["李远", "售前解决方案", "采集方案与 PoC 验证"],
-    ["许安", "应急响应", "勒索事件取证与处置复盘"],
-    ["唐清", "云网可观测性", "迁移链路与性能基线"],
-    ["顾行", "项目交付", "采集实施与客户验收"],
-    ["沈禾", "应用性能保障", "容量趋势与跨层排障"],
-    ["陆川", "行业解决方案", "医疗与政务数字化方案"],
-  ].map(([name, field, desc]) => <Card key={name}><span className="ep-avatar">{name[0]}</span><h2>{name}</h2><Tag>{field}</Tag><p>{desc}</p><small>参与资源评审和项目验收</small></Card>)}</div>;
 }
 
 export function ManageApplications({ kind }: { kind: "project" | "job" }) {
@@ -310,41 +290,5 @@ export function ManageApplications({ kind }: { kind: "project" | "job" }) {
         })}
       </Card>
     </>
-  );
-}
-
-export function OrdersView() {
-  const { advanceOrder, notify, state } = useWorkspacePage();
-  return (
-    <Card>
-      <h1>资源订阅与授权</h1>
-      <p>基础包已生效，年度更新包完成确认、授权后才会对院校开放。</p>
-      {state.orders.map((order) => {
-        const blockers = orderRightsBlockers(state, order);
-        return (
-          <div className="ep-field" key={order.id}>
-            <div className="ep-row"><div className="ep-grow"><h2>{order.name}</h2><p>{order.packageId === "base" ? "基础岗位培养资源" : "新增场景与课程更新"} · {order.majorGroupIds.map((id) => state.majorGroups.find((group) => group.id === id)?.name).filter(Boolean).join(" / ")}</p></div><Tag tone={order.status === "已结算" ? "success" : "warning"}>{order.status}</Tag></div>
-            <p>演示金额 ¥{order.amount.toLocaleString("zh-CN")} · {order.id}</p>
-            {order.status === "待确认" && <Btn onClick={() => { advanceOrder(order.id, "已确认", "院校确认年度更新包"); notify("订阅已确认"); }}>确认订阅订单</Btn>}
-            {order.status === "已确认" && <Btn disabled={blockers.length > 0} title={blockers.map((item) => item.reason).join("；")} onClick={() => { if (blockers.length) return notify("仍有资源未完成确权"); advanceOrder(order.id, "已授权", "资源已发放至江城理工学院"); notify("资源授权已发放"); }}>发放资源授权</Btn>}
-            {order.status === "已授权" && <Btn onClick={() => { advanceOrder(order.id, "已结算", "确认收款并完成结算"); notify("订单已结算"); }}>确认收款并结算</Btn>}
-            {order.status === "已结算" && <Tag tone="success">流程完成</Tag>}
-            {blockers.length > 0 && <div className="ep-rights-pending">{blockers.map((item) => <div key={item.id}><span><b>{item.name}</b><small>{item.reason}</small></span><Tag tone="warning">待处理</Tag></div>)}</div>}
-            <History items={order.history} />
-          </div>
-        );
-      })}
-    </Card>
-  );
-}
-
-export function SettlementView() {
-  const { state } = useWorkspacePage();
-  const orders = state.orders.filter((item) => item.status === "已授权" || item.status === "已结算");
-  return (
-    <Card>
-      <h1>结算台账</h1>
-      {orders.length === 0 ? <Empty>暂无已授权订单。</Empty> : <div className="ep-tablewrap"><table><thead><tr><th>订单</th><th>院校</th><th>状态</th><th>金额</th><th>更新时间</th></tr></thead><tbody>{orders.map((order) => <tr key={order.id}><td>{order.name}</td><td>{state.schools.find((item) => item.id === order.schoolId)?.name}</td><td>{order.status}</td><td>¥{order.amount.toLocaleString("zh-CN")}</td><td>{order.updatedAt}</td></tr>)}</tbody></table></div>}
-    </Card>
   );
 }

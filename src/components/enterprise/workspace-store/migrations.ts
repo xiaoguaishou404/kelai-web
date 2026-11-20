@@ -37,17 +37,9 @@ export function migrateV3(
   return {
     ...seed,
     ...legacy,
-    schemaVersion: 11,
+    schemaVersion: 12,
     resources,
     majorGroups: seed.majorGroups,
-    authorizations: (legacy.authorizations ?? seed.authorizations).map((authorization) => ({
-      ...authorization,
-      majorGroupIds: authorization.majorGroupIds ?? ["major-network", "major-security"],
-    })),
-    orders: (legacy.orders ?? seed.orders).map((order) => ({
-      ...order,
-      majorGroupIds: order.majorGroupIds ?? ["major-network", "major-security"],
-    })),
   } as EnterpriseWorkspaceState;
 }
 
@@ -116,8 +108,6 @@ export function migrateV2(legacyInput: LegacyWorkspaceMigration & { resources?: 
         status: "草稿" as const,
         description,
         version: String(item.version ?? "V1.0"),
-        packageId: String(item.packageId ?? "renewal"),
-        authorizedTo: [],
         relatedIds,
         updatedAt: String(item.updatedAt ?? nowLabel()),
         draftContent: content,
@@ -145,7 +135,6 @@ export function migrateV2(legacyInput: LegacyWorkspaceMigration & { resources?: 
     favorites: legacy.favorites ?? seed.favorites,
     auditEvents: legacy.auditEvents ?? seed.auditEvents,
     resources: [...seed.resources, ...legacyResources],
-    orders: legacy.orders ?? seed.orders,
   } as EnterpriseWorkspaceState;
   return migrateV3(v3);
 }

@@ -31,7 +31,7 @@ export function AssessmentBuilder({ resource, initial, notify, onClose }: Builde
   const missing = [!draft.name.trim() ? "测评名称" : "", !draft.jobId ? "关联岗位" : "", draft.questions.length === 0 ? "测评题目" : "", ...rightsMissing(rights)].filter(Boolean);
   const save = (submit: boolean) => {
     if (submit && missing.length) return notify(missing.join("；"));
-    persist({ kind: "assessment", data: draft }, { name: draft.name || "未命名测评", description: `${draft.questions.length} 题 · ${draft.passScore} 分合格`, relatedIds: [draft.jobId, draft.standardId ?? ""].filter(Boolean), packageId: "renewal", rights }, submit);
+    persist({ kind: "assessment", data: draft }, { name: draft.name || "未命名测评", description: `${draft.questions.length} 题 · ${draft.passScore} 分合格`, relatedIds: [draft.jobId, draft.standardId ?? ""].filter(Boolean), rights }, submit);
     notify(submit ? "测评已提交审核" : "测评草稿已保存");
     onClose();
   };
