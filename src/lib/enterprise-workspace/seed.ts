@@ -247,7 +247,6 @@ const classmates: SampleLearner[] = classNames.map((name, index) => {
     passed,
     pending,
     returned,
-    completedDays: Math.min(15, 4 + ((index * 3) % 9)),
     readOnly: true,
   };
 });
@@ -357,7 +356,7 @@ function seedTaskSubmissions(): TaskSubmission[] {
 export function seedWorkspace(): EnterpriseWorkspaceState {
   const resources = initialResources();
   return {
-    schemaVersion: 10,
+    schemaVersion: 11,
     role: null,
     activeSchoolId: "school-1",
     activeStudentId: "student-lin",
@@ -373,7 +372,6 @@ export function seedWorkspace(): EnterpriseWorkspaceState {
       teacherName: "周启明",
       schedule: "2026-11-17",
       studentIds: ["student-lin", ...classmates.map((item) => item.id)],
-      assignedTrainingIds: ["network"],
     },
     classmates,
     works: [],
@@ -382,8 +380,6 @@ export function seedWorkspace(): EnterpriseWorkspaceState {
     learningPaths: clone(jobLearningPaths),
     offlineSessions: clone(seededOfflineSessions),
     attendanceRecords: [],
-    completedDays: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    trainingProgress: { network: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
     examAttempts: [],
     certificates: [],
     projects: [

@@ -15,14 +15,11 @@ import {
 import {
   abilityScores,
   classMetrics,
-  completedDays,
   dimensions,
   learningPathForJob,
   nowLabel,
   taskDetailById,
   taskReviewBlockers,
-  trainingEligibility,
-  trainings,
   workReview,
   type Review,
   type TaskReview,
@@ -32,7 +29,7 @@ import { useWorkspacePage } from "@/components/enterprise/workspace/page-runtime
 import { Btn, Card, Empty, History, Metric, RadarView, Tag } from "@/components/enterprise/workspace/ui";
 
 export function TeacherHome() {
-  const { state, trainingById } = useWorkspacePage();
+  const { jobById, state } = useWorkspacePage();
   const metrics = classMetrics(state);
   return (
     <>
@@ -46,8 +43,8 @@ export function TeacherHome() {
         <Card>
           <h2>{state.classroom.name}</h2><p>{state.classroom.teacherName} · {state.classroom.major} · {state.classroom.schedule}</p>
           <div className="ep-actions"><Link className="ep-button" href="/platform/teacher/classes">查看学生</Link><Link className="ep-button secondary" href="/platform/teacher/classroom">课堂教学</Link><Link className="ep-button secondary" href="/platform/teacher/courses">课程评价</Link><Link className="ep-button secondary" href="/platform/teacher/reviews">成果评价</Link></div>
-          <h2>当前短训</h2>
-          {state.classroom.assignedTrainingIds.map((id) => <div className="ep-row" key={id}><span className="ep-grow">{trainingById(id)?.name}</span><Tag tone="success">已分配</Tag></div>)}
+          <h2>岗位学习路径</h2>
+          {state.learningPaths.map((path) => <div className="ep-row" key={path.id}><span className="ep-grow">{jobById(path.jobId)?.name ?? path.name}</span><Tag tone="success">{path.sceneNodes.length} 个场景</Tag></div>)}
         </Card>
         <Card>
           <h2>班级能力</h2><RadarView values={metrics.abilities} /><p>最弱维度 {metrics.weak.name} {metrics.weak.score} 分 · 通过覆盖 {metrics.passRate}%</p>
@@ -59,28 +56,21 @@ export function TeacherHome() {
 }
 
 export function ClassesView() {
-  const { assignTraining, notify, state, trainingById } = useWorkspacePage();
+  const { state } = useWorkspacePage();
   const liveScores = abilityScores(state);
-  const assignableTrainings = trainings;
   return (
     <>
       <Card>
         <div className="ep-section-title"><div><h1>{state.classroom.name}</h1><p>{state.classroom.teacherName} · {state.classroom.studentIds.length} 人 · {state.classroom.major}</p></div><Tag>2026 学年</Tag></div>
         <label className="ep-form">教学开始日期<input type="date" value={state.classroom.schedule} readOnly /></label>
-        <h2>可分配短训</h2>
-        {assignableTrainings.map((training) => {
-          const assigned = state.classroom.assignedTrainingIds.includes(training.id);
-          const eligibility = trainingEligibility(state, training);
-          return <div className="ep-row" key={training.id}><span className="ep-grow">{training.name} · {training.days} 天{!eligibility.ok && <small>{eligibility.reason}</small>}</span><Btn secondary disabled={assigned || !eligibility.ok} title={eligibility.reason} onClick={() => { if (!eligibility.ok) return notify(eligibility.reason); assignTraining(training.id); notify("短训已分配至班级"); }}>{assigned ? "已分配" : "分配给本班"}</Btn></div>;
-        })}
       </Card>
       <Card>
         <h2>学生进度</h2>
         <div className="ep-tablewrap"><table>
-          <thead><tr><th>学生</th><th>学习节点</th><th>通过</th><th>待评</th><th>退回</th><th>能力均分</th></tr></thead>
+          <thead><tr><th>学生</th><th>通过任务</th><th>待评</th><th>退回</th><th>能力均分</th></tr></thead>
           <tbody>
-            <tr><td><b>{state.resume.name}</b><small>当前演示学生</small></td><td>{completedDays(state).length}/{trainingById(state.classroom.assignedTrainingIds[0])?.days ?? 0}</td><td>{state.taskSubmissions.filter((item) => item.status === "已通过").length}</td><td>{state.taskSubmissions.filter((item) => item.status === "待评价").length}</td><td>{state.taskSubmissions.filter((item) => item.status === "已退回").length}</td><td>{Math.round(liveScores.reduce((sum, item) => sum + item, 0) / dimensions.length)}</td></tr>
-            {state.classmates.map((learner) => <tr key={learner.id}><td>{learner.name}</td><td>{learner.completedDays}/15</td><td>{learner.passed}</td><td>{learner.pending}</td><td>{learner.returned}</td><td>{Math.round(learner.abilityScores.reduce((sum, item) => sum + item, 0) / dimensions.length)}</td></tr>)}
+            <tr><td><b>{state.resume.name}</b><small>当前演示学生</small></td><td>{state.taskSubmissions.filter((item) => item.status === "已通过").length}</td><td>{state.taskSubmissions.filter((item) => item.status === "待评价").length}</td><td>{state.taskSubmissions.filter((item) => item.status === "已退回").length}</td><td>{Math.round(liveScores.reduce((sum, item) => sum + item, 0) / dimensions.length)}</td></tr>
+            {state.classmates.map((learner) => <tr key={learner.id}><td>{learner.name}</td><td>{learner.passed}</td><td>{learner.pending}</td><td>{learner.returned}</td><td>{Math.round(learner.abilityScores.reduce((sum, item) => sum + item, 0) / dimensions.length)}</td></tr>)}
           </tbody>
         </table></div>
       </Card>
@@ -511,7 +501,6 @@ function ReviewForm({ onSubmit }: { onSubmit: (review: Review) => void }) {
 export function TeacherReport() {
   const { state } = useWorkspacePage();
   const metrics = classMetrics(state);
-  const liveLearningNodes = state.classroom.assignedTrainingIds.reduce((sum, id) => sum + completedDays(state, id).length, 0);
   return (
     <>
       <Card>
@@ -521,7 +510,7 @@ export function TeacherReport() {
         {dimensions.map((item, index) => <div className="ep-ability" key={item}><span>{item}</span><progress max={100} value={metrics.abilities[index]} /><b>{metrics.abilities[index]}</b></div>)}
         <h2>教学判断</h2><p>班级最弱维度为 {metrics.weak.name}（{metrics.weak.score} 分）。建议优先检查证据来源、不可见边界和结论表达的对应关系。</p>
       </Card>
-      <Card><h2>实时学生</h2><p>{state.resume.name} 已完成 {liveLearningNodes} 个学习节点，提交 {state.taskSubmissions.length} 个任务成果，通过 {state.taskSubmissions.filter((item) => item.status === "已通过").length} 个任务，完成 {state.sceneCompletions.filter((item) => item.status === "已完成").length} 个场景。</p><Link className="ep-link" href="/platform/teacher/reviews">进入任务评价 <ArrowUpRight size={15} /></Link></Card>
+      <Card><h2>实时学生</h2><p>{state.resume.name} 提交 {state.taskSubmissions.length} 个任务成果，通过 {state.taskSubmissions.filter((item) => item.status === "已通过").length} 个任务，完成 {state.sceneCompletions.filter((item) => item.status === "已完成").length} 个场景。</p><Link className="ep-link" href="/platform/teacher/reviews">进入任务评价 <ArrowUpRight size={15} /></Link></Card>
     </>
   );
 }

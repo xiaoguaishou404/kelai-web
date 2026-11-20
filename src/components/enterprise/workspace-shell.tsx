@@ -30,7 +30,6 @@ import {
   SceneView,
   StudentApplications,
   StudentHome,
-  TrainingView,
 } from "@/components/enterprise/workspace/pages/learning";
 import { CourseView, CoursesView, TextbookView } from "@/components/enterprise/workspace/pages/curriculum";
 import {
@@ -76,7 +75,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
   const page = path.join("/") || "industry";
   const title = pageTitle(page);
   const detailChannel =
-    path[0] === "job" || path[0] === "scene" || path[0] === "learning-path" || path[0] === "training"
+    path[0] === "job" || path[0] === "scene" || path[0] === "learning-path"
       ? "resources"
       : path[0] === "course" || path[0] === "textbook"
         ? "courses"
@@ -253,7 +252,6 @@ function renderPage(path: string[], page: string, notify: (message: string) => v
   if (path[0] === "job" && path[1] && path[2] === "learning-path") return <JobLearningPathView jobId={path[1]} />;
   if (path[0] === "job") return <JobView id={path[1]} />;
   if (path[0] === "learning-path") return <LegacyLearningPathRedirect jobId={path[1]} />;
-  if (path[0] === "training") return <TrainingView id={path[1]} />;
   if (path[0] === "scene") return <SceneView id={path[1]} />;
   if (path[0] === "course") return <CourseView id={path[1]} />;
   if (path[0] === "resource") return <ResourceView id={path[1]} />;

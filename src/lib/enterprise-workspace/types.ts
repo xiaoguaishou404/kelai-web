@@ -98,7 +98,6 @@ export interface SceneProfile {
   answer: string;
   abilityWeights: number[];
   courseIds: string[];
-  trainingIds: string[];
   code?: string;
   department?: string;
   majors?: string[];
@@ -264,23 +263,6 @@ export type ResourceContent =
   | { kind: "course"; data: CourseProfile }
   | { kind: "assessment"; data: AssessmentProfile }
   | { kind: "standard"; data: StandardProfile };
-
-export interface TrainingDay {
-  day: number;
-  title: string;
-  courseId: string;
-  sceneId?: string;
-  activity: string;
-}
-
-export interface TrainingProfile {
-  id: string;
-  name: string;
-  days: number;
-  jobId: string;
-  sceneId: string;
-  dayPlans: TrainingDay[];
-}
 
 export interface Question {
   id: string;
@@ -475,7 +457,6 @@ export interface Classroom {
   teacherName: string;
   schedule: string;
   studentIds: string[];
-  assignedTrainingIds: string[];
 }
 
 export interface SampleLearner {
@@ -486,7 +467,6 @@ export interface SampleLearner {
   passed: number;
   pending: number;
   returned: number;
-  completedDays: number;
   readOnly: true;
 }
 
@@ -596,7 +576,7 @@ export interface ResourceAuthorization {
 }
 
 export interface EnterpriseWorkspaceState {
-  schemaVersion: 10;
+  schemaVersion: 11;
   role: Role | null;
   activeSchoolId: string;
   activeStudentId: string;
@@ -612,8 +592,6 @@ export interface EnterpriseWorkspaceState {
   learningPaths: JobLearningPath[];
   offlineSessions: OfflineSession[];
   attendanceRecords: AttendanceRecord[];
-  completedDays: number[];
-  trainingProgress: Record<string, number[]>;
   examAttempts: ExamAttempt[];
   certificates: Certificate[];
   projects: ProjectPosting[];

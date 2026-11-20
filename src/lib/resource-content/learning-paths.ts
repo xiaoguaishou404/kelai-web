@@ -30,7 +30,6 @@ function buildLearningScene(input: SceneSeedInput): SceneProfile {
     answer: `围绕“${input.name}”先确认业务目标与采集边界，再选择相互印证的证据形成结论，并说明仍不可见的范围。`,
     abilityWeights: [0.1, 0.15, 0.25, 0.25, 0.1, 0.15],
     courseIds: input.courseIds ?? [],
-    trainingIds: [],
   };
 }
 

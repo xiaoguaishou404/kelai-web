@@ -248,24 +248,6 @@
   background: linear-gradient(90deg, #3361e8, #70c8b7);
   transition: width .35s ease;
 }
-.ep .ep-day-requirements {
-  display: grid;
-  gap: calc(var(--scale-base) * 8);
-  padding: calc(var(--scale-base) * 14);
-  margin: calc(var(--scale-base) * 16) 0;
-  border-radius: calc(var(--scale-base) * 11);
-  background: #f7f9fd;
-}
-.ep .ep-day-requirements > div {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: calc(var(--scale-base) * 10);
-  align-items: center;
-}
-.ep .ep-day-requirements b {
-  font-family: var(--font-numeric);
-  color: #3a4e68;
-}
 .ep .ep-evaluation-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

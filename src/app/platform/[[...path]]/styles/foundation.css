@@ -792,31 +792,6 @@
   .ep-blue {
     color: #3361e8;
   }
-  .ep-learning-map {
-    display: grid;
-    grid-template-columns: calc(var(--scale-base) * 280) minmax(0,1fr);
-    gap: calc(var(--scale-base) * 24);
-    align-items: start;
-  }
-  .ep-day {
-    width: 100%;
-    padding: calc(var(--scale-base) * 14);
-    border: 0;
-    background: transparent;
-    text-align: left;
-    color: #64748b;
-    border-radius: calc(var(--scale-base) * 8);
-    display: flex;
-    gap: calc(var(--scale-base) * 12);
-    align-items: center;
-  }
-  .ep-day small {
-    min-width: calc(var(--scale-base) * 46);
-  }
-  .ep-day.active {
-    background: #edf3ff;
-    color: #3361e8;
-  }
   .ep-console {
     background: #f6f9fd;
     border: calc(var(--scale-base) * 1) solid #dfebf7;
@@ -1209,13 +1184,6 @@
     }
     .ep-rights-form {
       padding: calc(var(--scale-base) * 16);
-    }
-    .ep-learning-map {
-      grid-template-columns: 1fr;
-    }
-    .ep-learning-map>.ep-card:first-child {
-      max-height: calc(var(--scale-base) * 250);
-      overflow: auto;
     }
     .ep-section-title {
       align-items: flex-start;

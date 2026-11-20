@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowUpRight, BookOpen, CheckCircle2, ChevronRight, Search } from "lucide-react";
-import { resourceName, resourceRightsBlockedReason, resourceVisible, trainings } from "@/lib/enterprise-workspace";
+import { resourceName, resourceRightsBlockedReason, resourceVisible } from "@/lib/enterprise-workspace";
 import { ChannelHero } from "@/components/enterprise/channel-hero";
 import { enrichChapter, getChapterResources, textbooks } from "@/lib/resource-content";
 import { useWorkspacePage } from "@/components/enterprise/workspace/page-runtime";
@@ -15,7 +15,10 @@ export function CoursesView() {
   const [courseMode, setCourseMode] = useState("全部");
   const visibleCourses = courses.filter((course) => resourceVisible(state, course.id));
   const visibleScenes = scenes.filter((scene) => resourceVisible(state, scene.id));
-  const visibleTrainings = trainings.filter((training) => resourceVisible(state, training.sceneId));
+  const visiblePathCount = state.learningPaths.filter((path) => {
+    const job = jobById(path.jobId);
+    return Boolean(job && resourceVisible(state, job.id));
+  }).length;
   const shownCourses = visibleCourses.filter(
     (course) =>
       (courseMode === "全部" || course.courseType === courseMode) &&
@@ -38,7 +41,7 @@ export function CoursesView() {
           { label: "岗位课程", value: String(visibleCourses.length).padStart(2, "0") },
           { label: "课程章节", value: visibleCourses.reduce((sum, course) => sum + course.chapters.length, 0) },
           { label: "场景联动", value: String(visibleScenes.length).padStart(2, "0") },
-          { label: "学习路径", value: String(visibleTrainings.length).padStart(2, "0") },
+          { label: "学习路径", value: String(visiblePathCount).padStart(2, "0") },
         ]}
       />
       <div className="ep-course-toolbar" id="course-browser">

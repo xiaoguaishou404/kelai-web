@@ -8,7 +8,6 @@ import {
   Question,
   SceneProfile,
   StandardProfile,
-  TrainingProfile,
 } from "./types";
 import { dimensions } from "./types";
 import { learningPathScenes } from "@/lib/resource-content";
@@ -198,7 +197,6 @@ export const scenes: SceneProfile[] = [
     answer: "先对齐业务时间窗，再比较网络传输与应用等待。现有证据指向核心应用响应等待，建议应用团队联合核查日志。采集范围未覆盖数据库，不能直接判断数据库故障。",
     abilityWeights: [0, 0.15, 0.2, 0.5, 0, 0.15],
     courseIds: ["course-0", "course-2", "course-5"],
-    trainingIds: ["network"],
   },
   {
     id: "energy",
@@ -218,7 +216,6 @@ export const scenes: SceneProfile[] = [
     answer: "依据巡检窗口和白名单归并扫描，优先核查 DNS 失败与用户超时的关联。当前证据仅覆盖办公管理区。",
     abilityWeights: [0, 0.1, 0.15, 0.2, 0.4, 0.15],
     courseIds: ["course-3", "course-5"],
-    trainingIds: ["security"],
   },
   {
     id: "hospital",
@@ -238,7 +235,6 @@ export const scenes: SceneProfile[] = [
     answer: "影像查询等待显著偏离基线，先排除明显的传输异常，再联合 PACS 应用核查，保留存储端不可见边界。",
     abilityWeights: [0, 0.1, 0.25, 0.5, 0, 0.15],
     courseIds: ["course-2", "course-5"],
-    trainingIds: ["network"],
   },
   {
     id: "factory",
@@ -258,7 +254,6 @@ export const scenes: SceneProfile[] = [
     answer: "优先核对 B 车间地址冲突与网络变更，用 ARP、TCP 和交换机时间线相互印证。",
     abilityWeights: [0.15, 0.15, 0.25, 0.3, 0, 0.15],
     courseIds: ["course-1", "course-2", "course-5"],
-    trainingIds: ["network"],
   },
   ...learningPathScenes,
   {
@@ -279,7 +274,6 @@ export const scenes: SceneProfile[] = [
     answer: "优先依据同一渠道的异常聚集和应用线程等待，排除普遍网络拥塞。建议核查渠道限流和线程池配置，同时保留下游依赖不可见边界。",
     abilityWeights: [0, 0.1, 0.25, 0.45, 0, 0.2],
     courseIds: ["course-2", "course-11"],
-    trainingIds: ["network"],
   },
   {
     id: "cloud-migration",
@@ -299,7 +293,6 @@ export const scenes: SceneProfile[] = [
     answer: "抖动来自旧解析与健康检查失败后的重试叠加上升，跨云 RTT 增加不是主要超时来源。应同步清理 DNS 缓存并优化健康检查参数。",
     abilityWeights: [0.1, 0.1, 0.3, 0.35, 0, 0.15],
     courseIds: ["course-12"],
-    trainingIds: [],
   },
   {
     id: "ranch-encryption",
@@ -319,7 +312,6 @@ export const scenes: SceneProfile[] = [
     answer: "应先隔离首批感染资产并核对共享访问，结合周期外联判断控制通道。备份区未采集，恢复前必须补充备份完整性和隔离验证。",
     abilityWeights: [0, 0.05, 0.2, 0.25, 0.35, 0.15],
     courseIds: ["course-7", "course-13"],
-    trainingIds: [],
   },
   {
     id: "branch-cutover",
@@ -339,7 +331,6 @@ export const scenes: SceneProfile[] = [
     answer: "割接后业务总体可用，但单向镜像和旧长连接残留导致偶发中断。应补全双向镜像、推动长连接重建，并更新验收记录。",
     abilityWeights: [0.3, 0.15, 0.2, 0.2, 0, 0.15],
     courseIds: ["course-1", "course-10"],
-    trainingIds: [],
   },
   {
     id: "poc-value",
@@ -359,7 +350,6 @@ export const scenes: SceneProfile[] = [
     answer: "PoC 应采用同一业务在不同时间窗的对照样本，展示定位路径和证据完整性。价值指标应聚焦定位效率，不把未接入的存储内部指标作为方案能力。",
     abilityWeights: [0, 0.25, 0.2, 0.15, 0, 0.4],
     courseIds: ["course-4", "course-9"],
-    trainingIds: [],
   },
   {
     id: "dc-change",
@@ -379,7 +369,6 @@ export const scenes: SceneProfile[] = [
     answer: "性能波动与变更窗口高度一致，应先验证 ACL 会话老化与安全策略顺序，不必直接回退全部变更。建议灰度回退问题规则并持续观察。",
     abilityWeights: [0.2, 0.1, 0.25, 0.3, 0, 0.15],
     courseIds: ["course-8"],
-    trainingIds: [],
   },
   {
     id: "tap-quality",
@@ -399,7 +388,6 @@ export const scenes: SceneProfile[] = [
     answer: "双向覆盖满足要求，但汇聚口突发丢包需要调整队列或分流策略。验收结论应保留丢包窗口和复测结果。",
     abilityWeights: [0.35, 0.1, 0.3, 0.15, 0, 0.1],
     courseIds: ["course-1", "course-10"],
-    trainingIds: [],
   },
   {
     id: "trace-degradation",
@@ -419,7 +407,6 @@ export const scenes: SceneProfile[] = [
     answer: "本次是渐进式性能衰减而非网络突发故障。应围绕应用等待和连接容量制定优化计划，并持续观察高峰趋势。",
     abilityWeights: [0.1, 0.05, 0.35, 0.35, 0, 0.15],
     courseIds: ["course-6", "course-2"],
-    trainingIds: [],
   },
   {
     id: "incident-handoff",
@@ -439,7 +426,6 @@ export const scenes: SceneProfile[] = [
     answer: "接续简报应明确事件时间线、已隔离范围、证据强弱和未完成取证项。不能把尚未取证的离线终端表述为已排除风险。",
     abilityWeights: [0.05, 0.1, 0.15, 0.2, 0.3, 0.2],
     courseIds: ["course-7", "course-13"],
-    trainingIds: [],
   },
 ];
 
@@ -613,62 +599,6 @@ export const courses: CourseProfile[] = [
       { title: "值班交接", content: "保证调查状态在团队之间完整传递。", method: "记录经过验证、待验证和已排除内容。" },
       { title: "规则优化", content: "把误报和漏报转化为规则改进。", method: "验证调整前后的命中率和风险覆盖。" },
     ],
-  },
-];
-
-const networkDays: [string, string, string?][] = [
-  ["技术服务岗位与客户现场", "course-4"],
-  ["旁路采集环境初始化", "course-1"],
-  ["协议分层与五元组", "course-0"],
-  ["业务访谈与故障时间窗", "course-4"],
-  ["端到端链路绘制", "course-4"],
-  ["TCP 建连与握手", "course-2"],
-  ["往返时延与重传", "course-2"],
-  ["应用响应时间分析", "course-2"],
-  ["正常与异常基线对比", "course-2"],
-  ["银行交易慢案例研判", "course-2", "bank"],
-  ["医疗影像查询超时分析", "course-2", "hospital"],
-  ["制造产线断连案例阅读", "course-1"],
-  ["证据清单与边界说明", "course-5", "bank"],
-  ["客户复盘与口头答辩", "course-5", "bank"],
-  ["综合成果交付", "course-5", "bank"],
-];
-
-const securityTitles = [
-  "全流量安全岗位认知", "安全分析环境与采集范围", "协议与资产识别", "会话还原基础", "DNS 异常识别",
-  "扫描行为与白名单", "告警归并与去重", "巡检窗口核对", "异常外联调查", "横向通信识别",
-  "加密流量可见性", "威胁证据链组织", "能源专网管理区案例", "风险与业务影响评估", "误报排除与复核",
-  "调查优先级排序", "值班研判报告", "复盘答辩与案例变体", "综合安全研判实操", "结业交付与岗位测评",
-];
-
-export const trainings: TrainingProfile[] = [
-  {
-    id: "network",
-    name: "网络故障定位实战短训",
-    days: 15,
-    jobId: "service",
-    sceneId: "bank",
-    dayPlans: networkDays.map(([title, courseId, sceneId], index) => ({
-      day: index + 1,
-      title,
-      courseId,
-      sceneId,
-      activity: sceneId ? "阅读案例材料、完成流量分析并提交证据结论" : "完成课程章节、记录方法要点并进入下一学习节点",
-    })),
-  },
-  {
-    id: "security",
-    name: "全流量安全分析实战短训",
-    days: 20,
-    jobId: "security",
-    sceneId: "energy",
-    dayPlans: securityTitles.map((title, index) => ({
-      day: index + 1,
-      title,
-      courseId: index < 10 ? "course-3" : "course-5",
-      sceneId: index >= 12 ? "energy" : undefined,
-      activity: index >= 12 ? "核对巡检窗口与 DNS 会话，形成值班研判摘要" : "完成安全分析方法章节并记录采集边界",
-    })),
   },
 ];
 

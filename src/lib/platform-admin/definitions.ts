@@ -81,7 +81,7 @@ export const platformDefinitions: PlatformDefinition[] = [
       {
         id: "display",
         label: "展示与路径",
-        description: "控制前台推荐和学习地图",
+        description: "控制前台推荐与岗位学习路径",
         pages: [
           page("recommend", "岗位推荐", "配置前台推荐岗位及排序", "推荐位", ["edit"]),
           page("learn-roads", "学习路径", "编排岗位下的课程与场景顺序", "学习路径", ["create", "edit"]),

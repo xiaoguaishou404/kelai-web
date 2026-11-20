@@ -117,7 +117,7 @@ export function JobBuilder({ resource, initial, notify, onClose }: BuilderProps 
           <label className="ep-form">建设方式<select value={draft.buildMode} onChange={(event) => setDraft({ ...draft, buildMode: event.target.value as JobProfile["buildMode"] })}><option>独立建设</option><option>校企共建</option></select></label>
           <label className="ep-form">可见范围<select><option>年度更新包 · 授权院校</option><option>发布后全平台可见</option></select></label>
           <RightsFields rights={rights} onChange={setRights} />
-          <p className="ep-status warn">岗位发布后若没有场景或课程，会标记为“学习路径待完善”，暂不可被短训、项目和招聘选择。</p>
+          <p className="ep-status warn">岗位发布后若没有场景或课程，会标记为“学习路径待完善”，暂不可被项目和招聘选择。</p>
         </div>}
       </div>
       <Footer current={step} max={4} canSubmit={!missing.length} missing={missing} onBack={() => setStep(Math.max(0, step - 1))} onNext={() => setStep(Math.min(4, step + 1))} onDraft={() => save(false)} onSubmit={() => save(true)} />

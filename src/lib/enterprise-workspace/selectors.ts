@@ -1,5 +1,5 @@
 import { enrichJob, enrichScene } from "@/lib/resource-content";
-import { assessment, courses, jobs, scenes, trainings } from "./catalog";
+import { assessment, courses, jobs, scenes } from "./catalog";
 import {
   Application,
   AssessmentProfile,
@@ -19,7 +19,6 @@ import {
   SceneProgressStatus,
   StandardProfile,
   TaskSubmission,
-  TrainingProfile,
   Work,
 } from "./types";
 import { dimensions } from "./types";
@@ -34,10 +33,6 @@ export function sceneById(id: string) {
 
 export function courseById(id: string) {
   return courses.find((item) => item.id === id);
-}
-
-export function trainingById(id: string) {
-  return trainings.find((item) => item.id === id);
 }
 
 export function resourceById(state: EnterpriseWorkspaceState, id: string) {
@@ -212,15 +207,11 @@ export function resourceName(state: EnterpriseWorkspaceState, id: string, fallba
   return resource?.publishedContent?.data.name ?? resource?.name ?? fallback;
 }
 
-export function activeTrainingIds(state: EnterpriseWorkspaceState) {
-  return state.classroom.assignedTrainingIds;
-}
-
 export function majorGroupAdaptation(state: EnterpriseWorkspaceState, groupId: string) {
   const group = state.majorGroups.find((item) => item.id === groupId);
   if (!group) return { group, status: "待补齐" as const, jobs: [], completedJobs: [], scenes: [], courses: [] };
   const relatedJobs = publishedJobs(state).filter((job) => group.jobIds.includes(job.id));
-  const readyJobs = relatedJobs.filter((job) => jobTrainingReadiness(state, job.id).ready);
+  const readyJobs = relatedJobs.filter((job) => jobLearningReadiness(state, job.id).ready);
   const relatedScenes = publishedScenes(state).filter(
     (scene) =>
       relatedJobs.some((job) => job.id === scene.jobId) &&
@@ -270,7 +261,7 @@ export function orderRightsBlockers(state: EnterpriseWorkspaceState, order: Orde
   });
 }
 
-export function jobTrainingReadiness(state: EnterpriseWorkspaceState, jobId: string) {
+export function jobLearningReadiness(state: EnterpriseWorkspaceState, jobId: string) {
   const resource = resourceById(state, jobId);
   const job = resource?.publishedContent?.kind === "job" ? resource.publishedContent.data : undefined;
   if (!resource || resource.status !== "已发布" || !job) return { ready: false, reason: "岗位标准尚未发布" };
@@ -282,29 +273,6 @@ export function jobTrainingReadiness(state: EnterpriseWorkspaceState, jobId: str
   if (!sceneReady) return { ready: false, reason: "缺少已发布并授权的场景" };
   if (!courseReady) return { ready: false, reason: "缺少已发布并授权的课程" };
   return { ready: true, reason: "" };
-}
-
-export function completedDays(state: EnterpriseWorkspaceState, trainingId = "network") {
-  return state.trainingProgress?.[trainingId] ?? (trainingId === "network" ? state.completedDays : []);
-}
-
-export function currentTrainingDay(state: EnterpriseWorkspaceState, trainingId = "network") {
-  const training = trainingById(trainingId);
-  if (!training) return undefined;
-  const done = completedDays(state, trainingId);
-  return training.dayPlans.find((item) => !done.includes(item.day)) ?? training.dayPlans[training.dayPlans.length - 1];
-}
-
-export function trainingEligibility(state: EnterpriseWorkspaceState, training: TrainingProfile) {
-  const job = jobTrainingReadiness(state, training.jobId);
-  if (!job.ready) return { ok: false, reason: job.reason };
-  const courseIds = Array.from(new Set(training.dayPlans.map((item) => item.courseId).filter(Boolean)));
-  const sceneIds = Array.from(new Set(training.dayPlans.map((item) => item.sceneId).filter((id): id is string => Boolean(id))));
-  const blockedCourse = courseIds.find((id) => !resourceVisible(state, id));
-  if (blockedCourse) return { ok: false, reason: `课程资源未完成确权或授权：${resourceName(state, blockedCourse, blockedCourse)}` };
-  const blockedScene = sceneIds.find((id) => !resourceVisible(state, id));
-  if (blockedScene) return { ok: false, reason: `场景资源未完成确权或授权：${resourceName(state, blockedScene, blockedScene)}` };
-  return { ok: true, reason: "" };
 }
 
 export function latestWork(state: EnterpriseWorkspaceState, sceneId: string) {
@@ -614,14 +582,6 @@ export function workBlockedReason(state: EnterpriseWorkspaceState, sceneId: stri
   const scene = sceneById(sceneId);
   if (!scene) return "场景不存在";
   if (!resourceVisible(state, scene.id)) return "该场景尚未授权给当前院校";
-  const training = trainings.find((item) => item.id === scene.trainingIds.find((id) => state.classroom.assignedTrainingIds.includes(id)));
-  const assignedJobPath = state.resources.some(
-    (resource) =>
-      resource.publishedContent?.kind === "job" &&
-      (resource.publishedContent.data.sceneIds ?? []).includes(sceneId) &&
-      state.classroom.assignedTrainingIds.includes(`path-${resource.id}`),
-  );
-  if (!training && !assignedJobPath) return "教师尚未将关联短训或岗位学习路径分配给当前班级";
   const work = latestWork(state, sceneId);
   if (work?.status === "待评价") return "本项成果正在等待教师评价";
   if (work?.status === "已通过") return "本项成果已通过";
@@ -751,7 +711,6 @@ export function classMetrics(state: EnterpriseWorkspaceState) {
   const samplePending = state.classmates.reduce((sum, item) => sum + item.pending, 0);
   const sampleReturned = state.classmates.reduce((sum, item) => sum + item.returned, 0);
   const learnersWithProgress = state.classmates.filter((item) => item.passed > 0).length + (activePassed > 0 ? 1 : 0);
-  const completed = state.classmates.reduce((sum, item) => sum + item.completedDays, 0) + completedDays(state).length;
   return {
     abilities,
     passed: activePassed + samplePassed,
@@ -759,7 +718,6 @@ export function classMetrics(state: EnterpriseWorkspaceState) {
     returned: activeReturned + sampleReturned,
     learnersWithProgress,
     passRate: Math.round((learnersWithProgress / state.classroom.studentIds.length) * 100),
-    completedDays: completed,
     average: Math.round(abilities.reduce((sum, item) => sum + item, 0) / abilities.length),
     weak: dimensions.map((name, index) => ({ name, score: abilities[index] })).sort((a, b) => a.score - b.score)[0],
   };

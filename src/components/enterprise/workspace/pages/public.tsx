@@ -17,7 +17,7 @@ import {
 import {
   dimensions,
   effectiveRightsStatus,
-  jobTrainingReadiness,
+  jobLearningReadiness,
   learningPathForJob,
   majorGroupAdaptation,
   resourceById,
@@ -26,7 +26,6 @@ import {
   resourceVisible,
   rightsSummary,
   sceneProgressFor,
-  trainings,
   type JobProfile,
   type MajorGroup,
   type Resource,
@@ -187,7 +186,13 @@ export function ResourcesView() {
     { label: "岗位", value: jobs.filter((item) => resourceVisible(state, item.id)).length },
     { label: "场景", value: scenes.filter((item) => resourceVisible(state, item.id)).length },
     { label: "课程", value: courses.filter((item) => resourceVisible(state, item.id)).length },
-    { label: "短训", value: trainings.filter((item) => resourceVisible(state, item.sceneId)).length },
+    {
+      label: "学习路径",
+      value: state.learningPaths.filter((path) => {
+        const job = jobById(path.jobId);
+        return Boolean(job && resourceVisible(state, job.id));
+      }).length,
+    },
   ];
   const resourceChainLabels = ["能力标准", "真实任务", "方法内容", "学习路径"];
   const maxResourceCount = Math.max(1, ...resourceOverview.map((item) => item.value));
@@ -347,8 +352,8 @@ export function ResourcesView() {
       </div>
       <div className="ep-toolbar" id="resource-browser">
         <div className="ep-resource-context">
-          <Tag>{tab === "场景" ? "实践场景" : tab === "短训" ? "短训专区" : tab === "资源图谱" ? "资源图谱" : "产业岗位"}</Tag>
-          <span>{tab === "场景" ? "按行业、岗位和任务筛选真实实践场景" : tab === "短训" ? "按周期组织场景与任务的强化训练" : tab === "资源图谱" ? "查看岗位、场景、课程和评价关系" : "按产业链阶段、行业与能力方向浏览岗位"}</span>
+          <Tag>{tab === "场景" ? "实践场景" : tab === "资源图谱" ? "资源图谱" : "产业岗位"}</Tag>
+          <span>{tab === "场景" ? "按行业、岗位和任务筛选真实实践场景" : tab === "资源图谱" ? "查看岗位、场景、课程和评价关系" : "按产业链阶段、行业与能力方向浏览岗位"}</span>
         </div>
         <label className="ep-search"><Search size={16} /><input aria-label="搜索资源" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索岗位、场景或技能" /></label>
       </div>
@@ -385,16 +390,6 @@ export function ResourcesView() {
             <Card key={item.id}>
               <div className={`ep-art art-${index}`}><BookOpen size={64} /><span>COLASOFT ACADEMY</span></div>
               <div className="ep-cardbody"><Tag>岗位核心课程</Tag><h2>{resourceName(state, item.id, item.name)}</h2><p>{item.chapters.length} 个章节 · 案例与实训联动</p><Link className="ep-link" href={`/platform/course/${item.id}`}>进入课程 <ArrowUpRight size={16} /></Link></div>
-            </Card>
-          ))}
-        </div>
-      )}
-      {tab === "短训" && (
-        <div className="ep-grid">
-          {trainings.filter((item) => resourceVisible(state, item.sceneId)).map((item) => (
-            <Card key={item.id}>
-              <div className="ep-art"><GraduationCap size={64} /><span>{item.days} DAY LEARNING MAP</span></div>
-              <div className="ep-cardbody"><Tag>{item.days} 天短训</Tag><h2>{item.name}</h2><p>岗位认知 → 方法学习 → 场景实操 → 综合交付</p><Link className="ep-link" href={`/platform/training/${item.id}`}>打开岗位学习地图 <ArrowUpRight size={16} /></Link></div>
             </Card>
           ))}
         </div>
@@ -470,7 +465,7 @@ export function JobView({ id }: { id?: string }) {
   if (!resourceVisible(state, job.id) && state.role !== "manage" && state.role !== "schoolAdmin") {
     return <Empty>{resourceRightsBlockedReason(state, job.id, "教学使用") || "该岗位尚未授权给当前院校。"}</Empty>;
   }
-  const readiness = jobTrainingReadiness(state, job.id);
+  const readiness = jobLearningReadiness(state, job.id);
   const jobPath = learningPathForJob(state, job.id);
   const pathSceneIds = jobPath?.sceneNodes.map((node) => node.sceneId) ?? job.sceneIds ?? [];
   const relatedAssessments = publishedAssessmentList.filter((item) => (job.assessmentIds ?? []).includes(item.id) && (state.role === "manage" || resourceVisible(state, item.id)));

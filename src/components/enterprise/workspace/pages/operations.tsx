@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ArrowUpRight, Building2, Plus } from "lucide-react";
 import {
   effectiveRightsStatus,
-  jobTrainingReadiness,
+  jobLearningReadiness,
   orderRightsBlockers,
   publishedJobs,
   resourceRightsBlockedReason,
@@ -88,7 +88,7 @@ export function ManageResources() {
           <tbody>{resources.map((resource) => {
             const content = resource.draftContent.data;
             const code = "code" in content ? content.code : undefined;
-            const readiness = resource.draftContent.kind === "job" ? jobTrainingReadiness(state, resource.id) : { ready: false, reason: "" };
+            const readiness = resource.draftContent.kind === "job" ? jobLearningReadiness(state, resource.id) : { ready: false, reason: "" };
             const rightsStatus = effectiveRightsStatus(resource.rights);
             const rightsReason = resourceRightsBlockedReason(state, resource.id, "教学使用");
             return (
@@ -115,8 +115,8 @@ export function ManageResources() {
         </table></div>
       </Card>
       {resourceType === "岗位" && <Card><h2>岗位选择状态</h2>{publishedJobs(state).map((job) => {
-        const readiness = jobTrainingReadiness(state, job.id);
-        return <div className="ep-row" key={job.id}><div className="ep-grow"><b>{job.name}</b><p>{readiness.reason || "已具备场景与课程，可被短训、项目和招聘选择"}</p></div><Tag tone={readiness.ready ? "success" : "warning"}>{readiness.ready ? "可培养" : "标准已发布"}</Tag></div>;
+        const readiness = jobLearningReadiness(state, job.id);
+        return <div className="ep-row" key={job.id}><div className="ep-grow"><b>{job.name}</b><p>{readiness.reason || "已具备场景与课程，可被项目和招聘选择"}</p></div><Tag tone={readiness.ready ? "success" : "warning"}>{readiness.ready ? "可培养" : "标准已发布"}</Tag></div>;
       })}</Card>}
     </>
   );
@@ -199,7 +199,7 @@ export function ManageApplications({ kind }: { kind: "project" | "job" }) {
   const [requirements, setRequirements] = useState("具备相关岗位基础能力\n能够说明工作依据与边界");
   const applications = state.applications.filter((item) => item.kind === kind);
   const requiredScope = kind === "project" ? "项目展示" : "招聘引用";
-  const selectableJobs = jobs.filter((job) => jobTrainingReadiness(state, job.id).ready && resourceRightsReady(state, job.id, requiredScope));
+  const selectableJobs = jobs.filter((job) => jobLearningReadiness(state, job.id).ready && resourceRightsReady(state, job.id, requiredScope));
   const selectedJob = selectableJobs.find((job) => job.id === jobId) ?? selectableJobs[0];
   return (
     <>

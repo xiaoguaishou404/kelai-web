@@ -13,13 +13,11 @@ import {
   Download,
   GraduationCap,
   LockKeyhole,
-  Network,
 } from "lucide-react";
 import {
   abilityScores,
   certificateEligibility,
   classMetrics,
-  completedDays,
   dimensions,
   examQuestions,
   jobMatch,
@@ -42,7 +40,6 @@ import {
   type SceneProfile,
   type TaskAssessmentResult,
   type TaskSubmission,
-  type TrainingProfile,
   type Work,
 } from "@/lib/enterprise-workspace";
 import { useWorkspacePage } from "@/components/enterprise/workspace/page-runtime";
@@ -56,76 +53,6 @@ import {
   Tag,
   applicationTone,
 } from "@/components/enterprise/workspace/ui";
-
-export function TrainingView({ id }: { id?: string }) {
-  const {
-  completeDayWithNotice,
-  courseById,
-  currentTrainingDay,
-  sceneById,
-  selected,
-  setSelected,
-  state,
-  trainingById,
-  } = useWorkspacePage();
-  const training = trainingById(id ?? "network");
-  if (!training) return <Empty>短训不存在。</Empty>;
-  const day = training.dayPlans[selected] ?? training.dayPlans[0];
-  const current = currentTrainingDay(state, training.id);
-  const completed = completedDays(state, training.id);
-  const assigned = state.classroom.assignedTrainingIds.includes(training.id) || training.id.startsWith("path-");
-  const dayCourse = day.courseId ? courseById(day.courseId) : undefined;
-  const dayScene = day.sceneId ? sceneById(day.sceneId) : undefined;
-  const courseDone = Boolean(
-    dayCourse &&
-    (state.courseProgress[dayCourse.id]?.length ?? 0) >= dayCourse.chapters.length,
-  );
-  const daySceneProgress = dayScene ? sceneProgressFor(state, dayScene.id) : undefined;
-  const sceneDone = Boolean(daySceneProgress?.status === "已完成");
-  const dayReady =
-    (!dayCourse || courseDone) &&
-    (!dayScene || sceneDone);
-  return (
-    <>
-      <Card>
-        <Tag>{training.days} 天岗位学习地图</Tag><h1>{training.name}</h1>
-        <p>{assigned ? "已分配至网络工程 2401" : "等待教师分配至班级"}</p>
-        {state.role === "student" && !assigned && <Empty>教师分配后可开始学习。</Empty>}
-      </Card>
-      <div className="ep-learning-map">
-        <Card>
-          <h2>场景导航</h2>
-          {training.dayPlans.map((item, index) => (
-            <button className={"ep-day " + (selected === index ? "active" : "")} key={item.day} onClick={() => setSelected(index)}>
-              <small>DAY {String(item.day).padStart(2, "0")}</small>{item.title}{completed.includes(item.day) && <CheckCircle2 size={14} />}
-            </button>
-          ))}
-        </Card>
-        <Card>
-          <Tag>DAY {String(day.day).padStart(2, "0")}</Tag><h1>{day.title}</h1>
-          <h2>本日任务</h2><p>{day.activity}</p>
-          {day.courseId && resourceVisible(state, day.courseId) && <Link className="ep-row" href={`/platform/course/${day.courseId}`}><BookOpen size={20} /><div className="ep-grow">{resourceName(state, day.courseId, courseById(day.courseId)?.name ?? "关联课程")}<p>课程与案例材料</p></div><ChevronRight /></Link>}
-          {day.sceneId && resourceVisible(state, day.sceneId) && <Link className="ep-row" href={`/platform/scene/${day.sceneId}`}><Activity size={20} /><div className="ep-grow">{resourceName(state, day.sceneId, sceneById(day.sceneId)?.name ?? "关联实训")}<p>进入场景完成任务</p></div><ChevronRight /></Link>}
-          {(dayCourse || dayScene) && (
-            <div className="ep-day-requirements">
-              {dayCourse && <div><span>课程章节</span><b>{state.courseProgress[dayCourse.id]?.length ?? 0}/{dayCourse.chapters.length}</b><Tag tone={courseDone ? "success" : "muted"}>{courseDone ? "已完成" : "未完成"}</Tag></div>}
-              {dayScene && <div><span>场景任务</span><b>{daySceneProgress?.completedCount ?? 0}/{daySceneProgress?.taskCount ?? 0}</b><Tag tone={sceneDone ? "success" : daySceneProgress?.status === "待评价" ? "warning" : "muted"}>{daySceneProgress?.status ?? "未开始"}</Tag></div>}
-            </div>
-          )}
-          {state.role === "student" && assigned && (
-            completed.includes(day.day)
-              ? <Tag tone="success">本日已完成</Tag>
-              : day.day === current?.day
-                ? dayReady
-                  ? <Btn onClick={() => { completeDayWithNotice(training.id, day.day); }}>完成本日学习</Btn>
-                  : <p className="ep-status warn">请先完成本日课程章节和场景全部必做任务。</p>
-                : <Empty>当前开放 DAY {String(current?.day ?? 1).padStart(2, "0")}</Empty>
-          )}
-        </Card>
-      </div>
-    </>
-  );
-}
 
 export function JobLearningPathView({ jobId }: { jobId?: string }) {
   const { jobs, selected, setSelected, state, taskStatus, taskStatusTone } = useWorkspacePage();
@@ -219,20 +146,7 @@ export function JobLearningPathView({ jobId }: { jobId?: string }) {
 }
 
 export function StudentHome() {
-  const {
-  checkInSession,
-  currentTrainingDay,
-  jobById,
-  notify,
-  sceneById,
-  state,
-  taskStatusTone,
-  trainingById,
-  } = useWorkspacePage();
-  const assignedTrainings = state.classroom.assignedTrainingIds
-    .map((id) => trainingById(id))
-    .filter((item): item is TrainingProfile => Boolean(item));
-  const totalCompleted = assignedTrainings.reduce((sum, item) => sum + completedDays(state, item.id).length, 0);
+  const { checkInSession, jobById, notify, sceneById, state, taskStatusTone } = useWorkspacePage();
   const scores = abilityScores(state);
   const metrics = classMetrics(state);
   const taskPending = state.taskSubmissions.filter((item) => item.status === "待评价").length;
@@ -253,10 +167,10 @@ export function StudentHome() {
         <GraduationCap size={76} strokeWidth={1} />
       </Card>
       <div className="ep-stats">
-        <Metric label="学习路径" value={state.classroom.assignedTrainingIds.length} />
-        <Metric label="完成节点" value={totalCompleted} />
+        <Metric label="学习路径" value={jobPaths.length} />
         <Metric label="通过任务" value={taskPassed} />
         <Metric label="完成场景" value={scenesCompleted} />
+        <Metric label="待评价任务" value={taskPending} />
       </div>
       <div className="ep-split">
         <Card>
@@ -271,12 +185,6 @@ export function StudentHome() {
               <Tag tone={progress.completed === progress.total ? "success" : "muted"}>{progress.completed === progress.total ? "已完成" : "继续学习"}</Tag>
             </Link>
           ))}
-          <h2>短训安排</h2>
-          {assignedTrainings.length ? assignedTrainings.map((item) => {
-            const itemCurrent = currentTrainingDay(state, item.id);
-            const done = completedDays(state, item.id).length;
-            return <Link className="ep-row" href={`/platform/training/${item.id}`} key={item.id}><span className="ep-icon"><Network /></span><div className="ep-grow"><b>{item.name}</b><p>{done}/{item.days} 节点 · 当前 DAY {String(itemCurrent?.day ?? 1).padStart(2, "0")} · {itemCurrent?.title}</p></div><ChevronRight /></Link>;
-          }) : <Empty>等待教师分配学习路径。</Empty>}
           <h2>线下课堂</h2>
           {upcomingSessions.length ? upcomingSessions.map((session) => {
             const checkedIn = state.attendanceRecords.some((item) => item.sessionId === session.id && item.studentId === state.activeStudentId);
@@ -319,12 +227,11 @@ export function PortraitView() {
   const eligibility = certificateEligibility(state);
   const passed = state.taskSubmissions.filter((item) => item.status === "已通过");
   const completedScenes = state.sceneCompletions.filter((item) => item.status === "已完成");
-  const learningNodes = state.classroom.assignedTrainingIds.reduce((sum, id) => sum + completedDays(state, id).length, 0);
   return (
     <>
       <Card>
         <div className="ep-section-title"><div><Tag>COMPETENCY PROFILE</Tag><h1>{state.resume.name}的岗位能力画像</h1></div><Btn secondary onClick={() => window.print()}><Download size={16} />导出报告</Btn></div>
-        <p>已通过 {passed.length} 个任务 · 完成 {completedScenes.length} 个场景 · 完成 {learningNodes} 个学习节点 · 理论成绩 {eligibility.latestExam?.score ?? "待测评"}</p>
+        <p>已通过 {passed.length} 个任务 · 完成 {completedScenes.length} 个场景 · 理论成绩 {eligibility.latestExam?.score ?? "待测评"}</p>
         <RadarView values={scores} />
         {dimensions.map((item, index) => <div className="ep-ability" key={item}><span>{item}</span><progress max={100} value={scores[index]} /><b>{scores[index]}</b></div>)}
         <h2>岗位契合度</h2>

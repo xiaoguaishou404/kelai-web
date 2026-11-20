@@ -31,6 +31,7 @@ import {
 } from "@/lib/platform-admin";
 import { reducer } from "./reducer";
 import { migrateV2, migrateV3 } from "./migrations";
+import { stripTrainingData, type LegacyWorkspaceData } from "./legacy-state";
 
 export { buildApplication, buildWork, canApplyProject, applicationJobScore, jobStatusOptions, projectStatusOptions } from "./factories";
 
@@ -41,8 +42,6 @@ interface StoreValue {
   markGuideSeen: () => void;
   saveResume: (resume: Resume) => void;
   toggleFavorite: (jobId: string) => void;
-  assignTraining: (trainingId: string) => void;
-  completeDay: (day: number, trainingId?: string) => void;
   submitWork: (work: Work) => void;
   reviewWork: (workId: string, review: Review) => void;
   saveTask: (submission: TaskSubmission) => void;
@@ -99,9 +98,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       const saved = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as EnterpriseWorkspaceState;
+        const parsed = stripTrainingData(JSON.parse(saved) as LegacyWorkspaceData);
         const savedVersion = Number((parsed as { schemaVersion?: number }).schemaVersion);
-        if (savedVersion >= 5 && savedVersion <= 10) {
+        if (savedVersion >= 5 && savedVersion <= 11) {
           const base = seedWorkspace();
           const mergingExpandedCatalog = savedVersion < 9;
           const savedResourceIds = new Set((parsed.resources ?? []).map((item) => item.id));
@@ -116,7 +115,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             state: {
               ...base,
               ...parsed,
-              schemaVersion: 10,
+              schemaVersion: 11,
               resources: mergingExpandedCatalog
                 ? [
                     ...base.resources.filter((item) => !savedResourceIds.has(item.id)),
@@ -223,8 +222,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     markGuideSeen: () => dispatch({ type: "guide" }),
     saveResume: (resume) => dispatch({ type: "resume", resume }),
     toggleFavorite: (jobId) => dispatch({ type: "favorite", jobId }),
-    assignTraining: (trainingId) => dispatch({ type: "assign-training", trainingId }),
-    completeDay: (day, trainingId = "network") => dispatch({ type: "complete-day", day, trainingId }),
     submitWork: (work) => dispatch({ type: "submit-work", work }),
     reviewWork: (workId, review) => dispatch({ type: "review-work", workId, review }),
     saveTask: (submission) => dispatch({ type: "task-save", submission }),

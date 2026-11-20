@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   certificateEligibility,
-  completedDays,
   examQuestions,
   generatedCertificateNumber,
   publishedAssessments,
@@ -15,18 +14,16 @@ import {
   resourceRightsBlockedReason,
   resourceVisible,
   taskCompletionFor,
-  trainings,
   type AssessmentProfile,
   type StandardProfile,
   type TaskSubmission,
-  type TrainingProfile,
 } from "@/lib/enterprise-workspace";
 import { buildApplication, useWorkspace } from "@/components/enterprise/workspace-store";
 import { useWorkspaceRuntime } from "@/components/enterprise/workspace/runtime";
 
 export function useWorkspacePage() {
   const store = useWorkspace();
-  const { state, toggleFavorite, completeDay, apply, resourceAction, issueCertificate } = store;
+  const { state, toggleFavorite, apply, resourceAction, issueCertificate } = store;
   const router = useRouter();
   const searchParams = useSearchParams();
   const runtime = useWorkspaceRuntime();
@@ -56,40 +53,6 @@ export function useWorkspacePage() {
     const jobById = (id: string) => jobs.find((item) => item.id === id);
     const sceneById = (id: string) => scenes.find((item) => item.id === id);
     const courseById = (id: string) => courses.find((item) => item.id === id);
-    const trainingById = (id: string): TrainingProfile | undefined => {
-      const base = trainings.find((item) => item.id === id);
-      if (base) return base;
-      if (!id.startsWith("path-")) return undefined;
-      const job = jobById(id.slice(5));
-      if (!job) return undefined;
-      const relatedScenes = scenes.filter((scene) => (job.sceneIds ?? []).includes(scene.id));
-      const relatedCourses = courses.filter((course) => (job.courseIds ?? []).includes(course.id));
-      const planItems = [
-        { title: `${job.name}岗位认知`, courseId: relatedCourses[0]?.id ?? "", sceneId: undefined as string | undefined },
-        ...relatedCourses.slice(0, 3).map((course) => ({ title: course.name, courseId: course.id, sceneId: undefined as string | undefined })),
-        ...relatedScenes.map((scene) => ({ title: scene.name, courseId: relatedCourses[0]?.id ?? "", sceneId: scene.id })),
-      ];
-      return {
-        id,
-        name: `${job.name}岗位学习路径`,
-        days: planItems.length,
-        jobId: job.id,
-        sceneId: relatedScenes[0]?.id ?? "",
-        dayPlans: planItems.map((item, index) => ({
-          day: index + 1,
-          title: item.title,
-          courseId: item.courseId,
-          sceneId: item.sceneId,
-          activity: item.sceneId ? "完成场景分析并提交成果" : "完成课程节点并记录方法要点",
-        })),
-      };
-    };
-    const currentTrainingDay = (workspaceState: typeof state, id = "network") => {
-      const training = trainingById(id);
-      if (!training) return undefined;
-      const done = completedDays(workspaceState, id);
-      return training.dayPlans.find((item) => !done.includes(item.day)) ?? training.dayPlans[training.dayPlans.length - 1];
-    };
     const assessment: AssessmentProfile =
       accessibleAssessmentList.find((item) => item.jobId === "service") ??
       accessibleAssessmentList[0] ??
@@ -129,8 +92,6 @@ export function useWorkspacePage() {
       jobById,
       sceneById,
       courseById,
-      trainingById,
-      currentTrainingDay,
       assessment,
       evaluationStandard,
     };
@@ -155,12 +116,6 @@ export function useWorkspacePage() {
   const toggleFavoriteWithNotice = (id: string, noun = "岗位") => {
     toggleFavorite(id);
     notify(state.favorites.includes(id) ? "已取消收藏" : `${noun}已收藏`);
-  };
-  const completeDayWithNotice = (trainingId: string, day: number) => {
-    const current = catalog.currentTrainingDay(state, trainingId);
-    if (!current || current.day !== day) return notify(`当前开放 DAY ${String(current?.day ?? 1).padStart(2, "0")}`);
-    completeDay(day, trainingId);
-    notify(`DAY ${String(day).padStart(2, "0")} 已完成`);
   };
   const applyWithNotice = (input: { kind: "project" | "job"; targetId: string; name: string; company: string }) => {
     if (state.applications.some((item) => item.kind === input.kind && item.targetId === input.targetId)) {
@@ -226,7 +181,6 @@ export function useWorkspacePage() {
     taskStatusTone,
     claimCertificate,
     toggleFavoriteWithNotice,
-    completeDayWithNotice,
     applyWithNotice,
     resourceActionWithNotice,
   };

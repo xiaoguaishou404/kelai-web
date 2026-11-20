@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
   publishedJobs,
-  trainings,
   type ResourceRights,
   type SceneProfile,
   type SceneTaskDetail,
@@ -91,7 +90,7 @@ export function SceneBuilder({ resource, initial, notify, onClose }: BuilderProp
     onClose();
   };
   return <div className="ep-builder"><div className="ep-builder-head"><div><span>场景资源建设</span><h2>{draft.name || "新建场景"}</h2></div><button onClick={onClose}>关闭</button></div><WizardSteps current={step} steps={["基础信息", "任务链与量规", "提交"]} /><div className="ep-builder-body">
-    {step === 0 && <div className="ep-form-grid"><Field label="场景名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></Field><Field label="所属岗位"><select value={draft.jobId} onChange={(event) => setDraft({ ...draft, jobId: event.target.value })}><option value="">请选择</option>{jobs.map((job) => <option value={job.id} key={job.id}>{job.name}</option>)}</select></Field><Field label="难度"><select value={draft.difficulty} onChange={(event) => setDraft({ ...draft, difficulty: event.target.value })}><option>基础</option><option>进阶</option><option>综合</option></select></Field><Field label="归属短训"><select value={draft.trainingIds[0] ?? ""} onChange={(event) => setDraft({ ...draft, trainingIds: event.target.value ? [event.target.value] : [] })}><option value="">暂不关联</option>{trainings.map((training) => <option value={training.id} key={training.id}>{training.name}</option>)}</select></Field><Field label="场景介绍" wide><textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></Field><Field label="专家参考答案" wide><textarea value={draft.answer} onChange={(event) => setDraft({ ...draft, answer: event.target.value })} /></Field></div>}
+    {step === 0 && <div className="ep-form-grid"><Field label="场景名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></Field><Field label="所属岗位"><select value={draft.jobId} onChange={(event) => setDraft({ ...draft, jobId: event.target.value })}><option value="">请选择</option>{jobs.map((job) => <option value={job.id} key={job.id}>{job.name}</option>)}</select></Field><Field label="难度"><select value={draft.difficulty} onChange={(event) => setDraft({ ...draft, difficulty: event.target.value })}><option>基础</option><option>进阶</option><option>综合</option></select></Field><Field label="场景介绍" wide><textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></Field><Field label="专家参考答案" wide><textarea value={draft.answer} onChange={(event) => setDraft({ ...draft, answer: event.target.value })} /></Field></div>}
     {step === 1 && (
       <div className="ep-builder-list">
         <div className="ep-builder-section-head"><div><h3>场景任务</h3><small>每个任务独立学习、提交和评价，权重合计应为 100%。</small></div><span className={`ep-tag ${taskWeightTotal === 100 ? "is-success" : "is-warning"}`}>任务权重 {taskWeightTotal}%</span></div>

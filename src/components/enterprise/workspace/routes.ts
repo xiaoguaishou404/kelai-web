@@ -70,7 +70,6 @@ export function pageTitle(page: string) {
   const detailTitles = {
     job: "岗位详情",
     scene: "场景实训",
-    training: "短训学习地图",
     "learning-path": "岗位学习路径",
     course: "课程学习",
     exam: "岗位测评",

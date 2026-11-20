@@ -79,7 +79,6 @@ export function defaultScene(jobId = ""): SceneProfile {
     answer: "",
     abilityWeights: [0, 0.15, 0.2, 0.5, 0, 0.15],
     courseIds: [],
-    trainingIds: [],
   };
 }
 

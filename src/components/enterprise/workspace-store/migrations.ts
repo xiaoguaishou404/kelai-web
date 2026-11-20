@@ -7,10 +7,12 @@ import {
   type EnterpriseWorkspaceState,
   type Resource,
 } from "@/lib/enterprise-workspace";
+import { stripTrainingData, type LegacyWorkspaceMigration } from "./legacy-state";
 
 export function migrateV3(
-  legacy: Partial<EnterpriseWorkspaceState> & { schemaVersion?: number; resources?: Resource[] },
+  legacyInput: LegacyWorkspaceMigration & { schemaVersion?: number; resources?: Resource[] },
 ): EnterpriseWorkspaceState {
+  const legacy = stripTrainingData(legacyInput);
   const seed = seedWorkspace();
   const resources = (legacy.resources?.length ? legacy.resources : seed.resources).map((resource) => {
     const seeded = seed.resources.find((item) => item.id === resource.id);
@@ -35,7 +37,7 @@ export function migrateV3(
   return {
     ...seed,
     ...legacy,
-    schemaVersion: 10,
+    schemaVersion: 11,
     resources,
     majorGroups: seed.majorGroups,
     authorizations: (legacy.authorizations ?? seed.authorizations).map((authorization) => ({
@@ -49,7 +51,8 @@ export function migrateV3(
   } as EnterpriseWorkspaceState;
 }
 
-export function migrateV2(legacy: Partial<EnterpriseWorkspaceState> & { resources?: Array<Record<string, unknown>> }): EnterpriseWorkspaceState {
+export function migrateV2(legacyInput: LegacyWorkspaceMigration & { resources?: Array<Record<string, unknown>> }): EnterpriseWorkspaceState {
+  const legacy = stripTrainingData(legacyInput);
   const seed = seedWorkspace();
   const legacyResources: Resource[] = (legacy.resources ?? [])
     .filter((item) => !seed.resources.some((resource) => resource.id === item.id))
@@ -76,7 +79,6 @@ export function migrateV2(legacy: Partial<EnterpriseWorkspaceState> & { resource
               answer: "",
               abilityWeights: [0, 0, 0, 0, 0, 0],
               courseIds: [],
-              trainingIds: [],
             },
           };
         }
@@ -136,11 +138,6 @@ export function migrateV2(legacy: Partial<EnterpriseWorkspaceState> & { resource
     role: legacy.role ?? null,
     teacherGuideSeen: legacy.teacherGuideSeen ?? false,
     works: legacy.works ?? seed.works,
-    completedDays: legacy.completedDays ?? seed.completedDays,
-    trainingProgress: {
-      ...seed.trainingProgress,
-      network: legacy.completedDays ?? seed.completedDays,
-    },
     examAttempts: legacy.examAttempts ?? seed.examAttempts,
     certificates: legacy.certificates ?? seed.certificates,
     applications: legacy.applications ?? seed.applications,

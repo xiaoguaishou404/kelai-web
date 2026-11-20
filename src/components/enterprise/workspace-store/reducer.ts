@@ -42,8 +42,6 @@ export type Action =
   | { type: "guide" }
   | { type: "resume"; resume: Resume }
   | { type: "favorite"; jobId: string }
-  | { type: "assign-training"; trainingId: string }
-  | { type: "complete-day"; day: number; trainingId: string }
   | { type: "submit-work"; work: Work }
   | { type: "review-work"; workId: string; review: Review }
   | { type: "task-save"; submission: TaskSubmission }
@@ -141,28 +139,6 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
           ? state.favorites.filter((id) => id !== action.jobId)
           : [...state.favorites, action.jobId],
       };
-    case "assign-training": {
-      const assigned = Array.from(new Set([...state.classroom.assignedTrainingIds, action.trainingId]));
-      return audit(
-        { ...state, classroom: { ...state.classroom, assignedTrainingIds: assigned } },
-        createAudit("周启明", "分配短训", state.classroom.name, `开放短训 ${action.trainingId}`),
-      );
-    }
-    case "complete-day": {
-      const current = state.trainingProgress?.[action.trainingId] ?? (action.trainingId === "network" ? state.completedDays : []);
-      if (current.includes(action.day)) return state;
-      return audit(
-        {
-          ...state,
-          completedDays: action.trainingId === "network" ? [...current, action.day].sort((a, b) => a - b) : state.completedDays,
-          trainingProgress: {
-            ...state.trainingProgress,
-            [action.trainingId]: [...current, action.day].sort((a, b) => a - b),
-          },
-        },
-        createAudit(state.resume.name, "完成学习节点", `${action.trainingId} · DAY ${String(action.day).padStart(2, "0")}`, "学习记录已写入班级进度"),
-      );
-    }
     case "submit-work": {
       const previous = state.works.find((item) => item.id === action.work.id);
       return audit(
