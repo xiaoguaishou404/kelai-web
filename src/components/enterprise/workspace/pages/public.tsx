@@ -119,10 +119,32 @@ export function IndustryView() {
           </div>
         )}
       </Card>
+      <Card>
+        <h2>行业应用现场</h2>
+        <div className="ep-grid compact">
+          {visibleScenes.map((item) => {
+            const resource = resourceById(state, item.id);
+            const rightsStatus = effectiveRightsStatus(resource?.rights);
+            return (
+              <Link className="ep-field ep-scene-field" href={`/platform/scene/${item.id}`} key={item.id}>
+                <div className="ep-field-tags"><Tag>{item.industry}</Tag><Tag tone={rightsStatus === "已确权" ? "success" : "warning"}>{rightsStatus}</Tag></div>
+                <h3>{item.name}</h3><p>{item.description}</p>
+                <small>{resource?.rights?.ownership ?? "待补录"} · {resource?.rights?.useScopes.join(" / ")}</small>
+              </Link>
+            );
+          })}
+        </div>
+      </Card>
       <Card className="ep-rights-overview">
         <div className="ep-section-title">
           <div><Tag>RIGHT CLEARANCE</Tag><h2>场景与资源确权</h2></div>
           {manager && <Link className="ep-link" href="/platform/manage/resources">进入资源管理 <ArrowUpRight size={15} /></Link>}
+        </div>
+        <p className="ep-rights-intro">科来对知与的场景与资源进行确权授权，明确资源用途、使用范围与有效期，让产业内容合规进入课程、实训与人才评价。</p>
+        <div className="ep-rights-flow" aria-label="资源授权链路">
+          <span><i>01</i>资源归属</span>
+          <span><i>02</i>授权确认</span>
+          <span><i>03</i>教学使用</span>
         </div>
         <div className="ep-rights-stats">
           <div><b>{rights.confirmed}</b><span>已确权</span></div>
@@ -145,22 +167,6 @@ export function IndustryView() {
             })}
           </div>
         )}
-      </Card>
-      <Card>
-        <h2>行业应用现场</h2>
-        <div className="ep-grid compact">
-          {visibleScenes.map((item) => {
-            const resource = resourceById(state, item.id);
-            const rightsStatus = effectiveRightsStatus(resource?.rights);
-            return (
-              <Link className="ep-field ep-scene-field" href={`/platform/scene/${item.id}`} key={item.id}>
-                <div className="ep-field-tags"><Tag>{item.industry}</Tag><Tag tone={rightsStatus === "已确权" ? "success" : "warning"}>{rightsStatus}</Tag></div>
-                <h3>{item.name}</h3><p>{item.description}</p>
-                <small>{resource?.rights?.ownership ?? "待补录"} · {resource?.rights?.useScopes.join(" / ")}</small>
-              </Link>
-            );
-          })}
-        </div>
       </Card>
     </>
   );
@@ -210,7 +216,7 @@ export function ResourcesView() {
   };
   return (
     <>
-      <section className="ep-resource-hero ep-full-bleed">
+      <section className="ep-resource-hero ep-full-bleed is-title-only">
         <svg className="ep-resource-hero-geometry" viewBox="0 0 1440 520" preserveAspectRatio="none" aria-hidden="true">
           <path d="M-70 448 224 274V72l280 158" />
           <path d="M-70 448 238 482 518 314" />
@@ -220,7 +226,7 @@ export function ResourcesView() {
         </svg>
         <div className="ep-resource-hero-inner">
           <div className="ep-resource-hero-copy">
-            <h2>把产业现场，<em>变成学习现场</em></h2>
+            <h2>岗位与场景资源馆</h2>
             <p>从岗位标准到场景实训，连接可教、可练、可评价的产业资源。</p>
             <div className="ep-resource-mode-switch">
               <button type="button" className={tab === "岗位" ? "is-active" : ""} onClick={() => browseResources("岗位")}>
@@ -346,10 +352,6 @@ export function ResourcesView() {
           </div>
         </div>
       </section>
-      <div className="ep-pageheading ep-resource-pageheading">
-        <h1>岗位与场景资源馆</h1>
-        <span>2026 学年 · 企业版</span>
-      </div>
       <div className="ep-toolbar" id="resource-browser">
         <div className="ep-resource-context">
           <Tag>{tab === "场景" ? "实践场景" : tab === "资源图谱" ? "资源图谱" : "产业岗位"}</Tag>

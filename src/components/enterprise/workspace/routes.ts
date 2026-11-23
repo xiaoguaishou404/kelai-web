@@ -57,7 +57,7 @@ export function workspaceAreaForPath(page: string): Role | null {
 }
 
 const channelHeroPages = new Set(["courses", "assessment", "projects", "employment"]);
-export const fullBleedPages = new Set(["industry", "resources", ...channelHeroPages, "industry/company"]);
+export const fullBleedPages = new Set(["industry", "resources", "policy", ...channelHeroPages, "industry/company"]);
 
 export function pageTitle(page: string) {
   if (page.startsWith("employment/")) return "岗位详情";
@@ -75,6 +75,7 @@ export function pageTitle(page: string) {
     textbook: "数字教材",
     certificate: "证书详情",
     "evaluation-method": "测评方式",
+    policy: "国家政策",
     login: "身份选择",
   } as Record<string, string>;
   return [...channels, ...studentNav, ...teacherNav, ...management, ...schoolAdminNav].find(([url]) => url === page)?.[1]

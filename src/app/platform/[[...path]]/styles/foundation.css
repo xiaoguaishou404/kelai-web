@@ -686,6 +686,36 @@
     font-size: calc(var(--scale-base) * 23);
     margin-top: calc(var(--scale-base) * 10);
   }
+  .ep-rights-intro {
+    max-width: calc(var(--scale-base) * 860);
+    margin: calc(var(--scale-base) * -8) 0 calc(var(--scale-base) * 16);
+    color: #6f8094;
+    font-size: calc(var(--scale-base) * 12.5);
+    line-height: 1.75;
+  }
+  .ep-rights-flow {
+    display: grid;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    gap: calc(var(--scale-base) * 8);
+    margin-bottom: calc(var(--scale-base) * 14);
+  }
+  .ep-rights-flow span {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--scale-base) * 9);
+    padding: calc(var(--scale-base) * 11) calc(var(--scale-base) * 13);
+    border: calc(var(--scale-base) * 1) solid #e8eef7;
+    border-radius: calc(var(--scale-base) * 9);
+    background: #f8fbff;
+    color: #536981;
+    font-size: calc(var(--scale-base) * 11.5);
+  }
+  .ep-rights-flow i {
+    color: #7793c5;
+    font-family: var(--font-numeric);
+    font-size: calc(var(--scale-base) * 9);
+    font-style: normal;
+  }
   .ep-rights-stats {
     display: grid;
     grid-template-columns: repeat(4,minmax(0,1fr));

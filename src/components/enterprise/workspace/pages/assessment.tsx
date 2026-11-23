@@ -184,8 +184,7 @@ export function AssessmentView() {
       <ChannelHero
         variant="assessment"
         kicker="ASSESSMENT & CREDENTIAL"
-        title="让能力达成，"
-        highlight="有证据也有凭证"
+        title="测评与证书资源馆"
         description="用岗位标准组织理论核验、场景实操与能力认定，让每一次达标都可追溯、可证明。"
         metrics={[
           { label: "测评资源", value: String(assessmentCount).padStart(2, "0") },

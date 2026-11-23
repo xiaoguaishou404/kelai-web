@@ -33,7 +33,7 @@ type ChannelHeroProps = {
   variant: ChannelHeroVariant;
   kicker: string;
   title: string;
-  highlight: string;
+  highlight?: string;
   description: string;
   metrics: ChannelHeroMetric[];
   actions?: ChannelHeroAction[];
@@ -84,9 +84,10 @@ export function ChannelHero({
 }: ChannelHeroProps) {
   const titleId = `channel-hero-${variant}-title`;
   const scene = sceneTypes[variant];
+  const titleOnly = !highlight?.trim();
 
   return (
-    <section className={`ep-channel-hero ep-full-bleed is-${variant}`} aria-labelledby={titleId}>
+    <section className={`ep-channel-hero ep-full-bleed is-${variant}${titleOnly ? " is-title-only" : ""}`} aria-labelledby={titleId}>
       <div className="ep-channel-hero-grid" aria-hidden="true" />
       <div className="ep-channel-hero-orbit" aria-hidden="true" />
       <div className="ep-channel-hero-inner">
@@ -97,7 +98,7 @@ export function ChannelHero({
           </span>
           <h1 id={titleId}>
             {title}
-            <span>{highlight}</span>
+            {!titleOnly && <span>{highlight}</span>}
           </h1>
           <p>{description}</p>
           {!!actions?.length && <div className="ep-channel-hero-actions">

@@ -34,8 +34,7 @@ export function CoursesView() {
       <ChannelHero
         variant="courses"
         kicker="COURSE & TEXTBOOK"
-        title="让课程沿着岗位，"
-        highlight="生长成学习现场"
+        title="课程与教材资源馆"
         description="把岗位任务、方法内容与真实场景组织成可教、可练、可评价的动态课程体系。"
         metrics={[
           { label: "岗位课程", value: String(visibleCourses.length).padStart(2, "0") },

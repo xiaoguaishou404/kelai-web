@@ -157,8 +157,7 @@ export function ProjectsView() {
       <ChannelHero
         variant="projects"
         kicker="INDUSTRY PROJECT WORKORDER"
-        title="把企业真实工单，"
-        highlight="交给学生接单交付"
+        title="产业项目实战"
         description="查看项目需求、周期与激励，在线接单，按里程碑提交成果并完成企业验收。"
         metrics={[
           { label: "待接单", value: String(publishedProjects.filter((project) => projectStatusOf(project) === "待接单").length).padStart(2, "0") },
@@ -306,8 +305,7 @@ export function EmploymentView() {
       <ChannelHero
         variant="employment"
         kicker="CAREER SERVICE"
-        title="让实战成果，"
-        highlight="抵达真实岗位机会"
+        title="就业服务中心"
         description="把能力画像、岗位匹配与投递服务连成一条路径，帮助学生看清差距、找到方向。"
         metrics={[
           { label: "在招岗位", value: String(publishedPostings.length).padStart(2, "0") },

@@ -41,6 +41,7 @@ import {
   StandardDetail,
 } from "@/components/enterprise/workspace/pages/assessment";
 import { EmploymentView, JobPostingDetail, ProjectDetail, ProjectsView } from "@/components/enterprise/workspace/pages/projects";
+import { PolicyView } from "@/components/enterprise/workspace/pages/policy";
 import {
   ClassesView,
   ClassroomView,
@@ -234,12 +235,13 @@ function WorkspaceShell({ path }: { path: string[] }) {
             <Link href="/platform/projects">产业项目</Link>
             <Link href="/platform/employment">就业服务</Link>
           </nav>
-          <nav className="ep-footer-links" aria-label="资源体系">
-            <strong>资源体系</strong>
+          <nav className="ep-footer-links" aria-label="资源与政策">
+            <strong>资源与政策</strong>
             <Link href="/platform/courses">课程与教材</Link>
             <Link href="/platform/assessment">测评与证书</Link>
             <Link href="/platform/manage/resources">资源建设</Link>
             <Link href="/platform/manage/standards">能力标准</Link>
+            <Link href="/platform/policy">国家政策</Link>
           </nav>
           <div className="ep-footer-qr">
             <Image src="/brand/zhiyu-wechat-qr.png" alt="知与公众号二维码" width={92} height={92} priority />
@@ -271,6 +273,7 @@ function renderPage(path: string[], page: string, notify: (message: string) => v
   if (page === "resources") return <ResourcesView />;
   if (page === "courses") return <CoursesView />;
   if (page === "assessment") return <AssessmentView />;
+  if (page === "policy") return <PolicyView />;
   if (page === "exam") return <ExamView />;
   if (path[0] === "assessment" && path[1]) return <AssessmentDetail id={path[1]} />;
   if (path[0] === "standard" && path[1]) return <StandardDetail id={path[1]} />;

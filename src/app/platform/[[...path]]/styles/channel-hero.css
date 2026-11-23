@@ -138,6 +138,35 @@
   line-height: 1.78;
 }
 
+.ep .ep-channel-hero.is-title-only .ep-channel-hero-inner {
+  min-height: calc(var(--scale-base) * 520);
+}
+
+.ep .ep-channel-hero.is-title-only .ep-channel-hero-copy {
+  padding-top: calc(var(--scale-base) * 44);
+  padding-bottom: calc(var(--scale-base) * 38);
+}
+
+.ep .ep-channel-hero.is-title-only .ep-channel-hero-copy h1 {
+  max-width: calc(var(--scale-base) * 680);
+  margin-bottom: calc(var(--scale-base) * 15);
+  font-size: calc(var(--scale-base) * 50);
+  line-height: 1.08;
+}
+
+.ep .ep-channel-hero.is-title-only .ep-channel-hero-copy>p {
+  max-width: calc(var(--scale-base) * 540);
+  line-height: 1.7;
+}
+
+.ep .ep-channel-hero.is-title-only .ep-channel-hero-actions {
+  margin-top: calc(var(--scale-base) * 22);
+}
+
+.ep .ep-channel-hero.is-title-only .ep-channel-hero-metrics {
+  margin-top: calc(var(--scale-base) * 26);
+}
+
 .ep .ep-channel-hero-actions {
   display: flex;
   align-items: center;

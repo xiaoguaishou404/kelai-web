@@ -24,6 +24,11 @@
   .ep .ep-channel-hero-stage {
     display: none;
   }
+
+  .ep .ep-channel-hero.is-title-only .ep-channel-hero-copy {
+    padding-top: calc(var(--scale-base) * 46);
+    padding-bottom: calc(var(--scale-base) * 42);
+  }
 }
 
 @media (max-width: 760px) {
@@ -34,6 +39,10 @@
 
   .ep .ep-channel-hero-copy h1 {
     font-size: calc(var(--scale-base) * 46);
+  }
+
+  .ep .ep-channel-hero.is-title-only .ep-channel-hero-copy h1 {
+    font-size: calc(var(--scale-base) * 42);
   }
 
   .ep .ep-channel-hero-metrics {
