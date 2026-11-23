@@ -32,7 +32,7 @@
   min-height: calc(var(--scale-base) * 310);
   overflow: hidden;
   border-radius: calc(var(--scale-base) * 16);
-  background: #08172f;
+  background: #eaf2ff;
   box-shadow: 0 calc(var(--scale-base) * 12) calc(var(--scale-base) * 34) rgb(21 46 91 / 13%);
 }
 
@@ -40,12 +40,12 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 36%, rgb(5 18 42 / 84%) 100%);
+  background: linear-gradient(180deg, transparent 52%, rgb(239 246 255 / 92%) 100%);
 }
 
 .ep .ep-company-strength-visual img {
   object-fit: cover;
-  opacity: .9;
+  object-position: center;
 }
 
 .ep .ep-company-visual-caption {
@@ -57,7 +57,7 @@
   display: flex;
   flex-direction: column;
   gap: calc(var(--scale-base) * 7);
-  color: white;
+  color: #243752;
 }
 
 .ep .ep-company-visual-caption span,
@@ -70,7 +70,7 @@
 }
 
 .ep .ep-company-visual-caption span {
-  color: rgb(225 239 255 / 62%);
+  color: #456188;
 }
 
 .ep .ep-company-visual-caption strong {

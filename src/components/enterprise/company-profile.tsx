@@ -108,10 +108,10 @@ export function CompanyProfile({
       <section className="ep-company-section ep-company-strengths" aria-labelledby="company-strengths-title">
         <div className="ep-company-strength-visual">
           <Image
-            src="/brand/colasoft-observability-hero.webp"
+            src="/brand/colasoft-company-strength.webp"
             alt="面向 AI 时代的网络数据流与可观测性基础设施"
             fill
-            sizes="(max-width: 900px) 100vw, 42vw"
+            sizes="(max-width: 1180px) 100vw, 42vw"
           />
           <div className="ep-company-visual-caption">
             <span>FROM FLOW DATA TO AI OBSERVABILITY</span>

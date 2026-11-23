@@ -428,6 +428,14 @@
   .ep-cardbody {
     padding: calc(var(--scale-base) * 22);
   }
+  .ep-resource-cover {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #edf4ff;
+  }
+  .ep-resource-cover img {
+    object-fit: cover;
+  }
   .ep-art {
     height: calc(var(--scale-base) * 158);
     background: radial-gradient(ellipse at 80% 30%,#d4e5ff,transparent 60%),linear-gradient(125deg,#eff5ff,#e2ebfc);

@@ -32,6 +32,7 @@ import {
 } from "@/lib/enterprise-workspace";
 import { ResourceBuilder, ResourcePreview } from "@/components/enterprise/resource-builders";
 import { useWorkspacePage } from "@/components/enterprise/workspace/page-runtime";
+import { ResourceCover } from "@/components/enterprise/workspace/resource-cover";
 import { Btn, Card, Empty, History, Metric, RadarView, Tag } from "@/components/enterprise/workspace/ui";
 
 export function IndustryView() {
@@ -361,29 +362,43 @@ export function ResourcesView() {
       </div>
       {tab === "岗位" && (
         <div className="ep-grid">
-          {listedJobs.map((item, index) => (
+          {listedJobs.map((item) => (
             <Card key={item.id}>
-              <div className={`ep-art art-${index}`}><Network size={64} /><span>{item.category}</span></div>
-              <div className="ep-cardbody"><div className="ep-chips"><Tag>{item.stage}</Tag>{item.recommended && <Tag tone="success">推荐</Tag>}</div><h2>{item.name}</h2><p>{item.description}</p><div className="ep-chips">{item.skills.map((skill) => <Tag key={skill}>{skill}</Tag>)}</div><Link className="ep-link" href={`/platform/job/${item.id}`}>探索岗位与学习路径 <ArrowUpRight size={16} /></Link></div>
+              <ResourceCover id={item.id} kind="job" category={item.category} industry={item.industry} />
+              <div className="ep-cardbody">
+                <div className="ep-chips">
+                  <Tag>{item.stage}</Tag>
+                  {item.category && item.category !== item.stage && <Tag tone="muted">{item.category}</Tag>}
+                  {item.recommended && <Tag tone="success">推荐</Tag>}
+                </div>
+                <h2>{item.name}</h2>
+                <p>{item.description}</p>
+                <div className="ep-chips">{item.skills.map((skill) => <Tag key={skill}>{skill}</Tag>)}</div>
+                <Link className="ep-link" href={`/platform/job/${item.id}`}>探索岗位与学习路径 <ArrowUpRight size={16} /></Link>
+              </div>
             </Card>
           ))}
-          {state.resources.filter((item) => item.type === "岗位" && !jobById(item.id) && resourceVisible(state, item.id) && matching(item.name)).map((item) => <ResourceCard key={item.id} resource={item} />)}
+          {state.resources.filter((item) => item.type === "岗位" && !jobById(item.id) && resourceVisible(state, item.id) && matching(item.name)).map((item) => <ResourceCard key={item.id} resource={item} showCover />)}
         </div>
       )}
       {tab === "场景" && (
         <div className="ep-grid">
-          {scenes.filter((item) => resourceVisible(state, item.id) && (filter === "全部" || item.industry === filter) && matching(item.name)).map((item, index) => (
+          {scenes.filter((item) => resourceVisible(state, item.id) && (filter === "全部" || item.industry === filter) && matching(item.name)).map((item) => (
             <Card key={item.id}>
-              <div className={`ep-art art-${index}`}><Activity size={64} /><span>{item.industry}现场</span></div>
+              <ResourceCover id={item.id} kind="scene" industry={item.industry} />
               <div className="ep-cardbody">
-                <div className="ep-chips"><Tag>{item.difficulty}</Tag><Tag tone={sceneProgressFor(state, item.id).status === "已完成" ? "success" : sceneProgressFor(state, item.id).status === "待评价" ? "warning" : "muted"}>{sceneProgressFor(state, item.id).status}</Tag></div>
+                <div className="ep-chips">
+                  <Tag>{item.difficulty}</Tag>
+                  {item.industry && <Tag tone="muted">{item.industry}</Tag>}
+                  <Tag tone={sceneProgressFor(state, item.id).status === "已完成" ? "success" : sceneProgressFor(state, item.id).status === "待评价" ? "warning" : "muted"}>{sceneProgressFor(state, item.id).status}</Tag>
+                </div>
                 <h2>{item.name}</h2><p>{item.description}</p>
                 <small>{sceneProgressFor(state, item.id).completedCount}/{sceneProgressFor(state, item.id).taskCount} 个任务已完成</small>
                 <Link className="ep-link" href={`/platform/scene/${item.id}`}>{sceneProgressFor(state, item.id).status === "未开始" ? "查看场景与任务" : "继续场景学习"} <ArrowUpRight size={16} /></Link>
               </div>
             </Card>
           ))}
-          {state.resources.filter((item) => item.type === "场景" && !sceneById(item.id) && resourceVisible(state, item.id) && matching(item.name)).map((item) => <ResourceCard key={item.id} resource={item} />)}
+          {state.resources.filter((item) => item.type === "场景" && !sceneById(item.id) && resourceVisible(state, item.id) && matching(item.name)).map((item) => <ResourceCard key={item.id} resource={item} showCover />)}
         </div>
       )}
       {tab === "课程" && (
@@ -401,9 +416,10 @@ export function ResourcesView() {
   );
 }
 
-export function ResourceCard({ resource }: { resource: Resource }) {
+export function ResourceCard({ resource, showCover = false }: { resource: Resource; showCover?: boolean }) {
   return (
     <Card>
+      {showCover && <ResourceCover id={resource.id} kind={resource.type === "岗位" ? "job" : "scene"} />}
       <div className="ep-cardbody"><Tag>{resource.type}</Tag><h2>{resource.name}</h2><p>{resource.description}</p><Link className="ep-link" href={`/platform/resource/${resource.id}`}>查看资源 <ArrowUpRight size={16} /></Link></div>
     </Card>
   );
