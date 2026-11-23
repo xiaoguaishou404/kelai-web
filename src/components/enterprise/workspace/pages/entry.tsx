@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Activity, ArrowUpRight, BookOpen, Building2, GraduationCap, Network, ShieldCheck } from "lucide-react";
 import { type Role } from "@/lib/enterprise-workspace";
 import { useWorkspacePage } from "@/components/enterprise/workspace/page-runtime";
-import { Btn, Card, Empty, Tag } from "@/components/enterprise/workspace/ui";
+import { Btn, Card, Tag } from "@/components/enterprise/workspace/ui";
 
 export function TeacherGuide({ onClose }: { onClose: () => void }) {
   return (
@@ -18,14 +18,6 @@ export function TeacherGuide({ onClose }: { onClose: () => void }) {
       </Card>
     </div>
   );
-}
-
-export function LegacyLearningPathRedirect({ jobId }: { jobId?: string }) {
-  const { router } = useWorkspacePage();
-  useEffect(() => {
-    if (jobId) router.replace(`/platform/job/${jobId}/learning-path`);
-  }, [jobId, router]);
-  return <Card><Empty>正在进入岗位学习路径…</Empty></Card>;
 }
 
 export function LoginView() {

@@ -344,7 +344,7 @@ export function EmploymentView() {
                   {state.role === "student" && eligibility.tier === "apply" && (applied ? <Tag>{applied.status}</Tag> : <Btn disabled={!eligibility.ok} title={eligibility.reason} onClick={() => applyWithNotice({ kind: "job", targetId: posting.id, name: posting.name, company: posting.company })}>投递</Btn>)}
                   {state.role === "student" && eligibility.tier === "apply" && <Btn secondary onClick={() => setResumePosting(posting)}>简历</Btn>}
                   {state.role === "student" && eligibility.tier === "improve" && <Link className="ep-button" href={`/platform/employment/${posting.id}#improve`}>个性化提升建议</Link>}
-                  {state.role === "student" && eligibility.tier === "learn" && <Link className="ep-button" href={`/platform/job/${posting.jobId}/learning-path`}>去学习</Link>}
+                  {state.role === "student" && eligibility.tier === "learn" && <Link className="ep-button" href={`/platform/job/${posting.jobId}`}>去学习</Link>}
                   <Link className="ep-button secondary" href={`/platform/employment/${posting.id}`}>查看详情</Link>
                   <Btn secondary onClick={() => toggleFavoriteWithNotice(posting.id)}><Star size={14} />{favorite ? "已收藏" : "收藏"}</Btn>
                 </div>
@@ -421,11 +421,11 @@ export function JobPostingDetail({ id }: { id: string }) {
           <div className="ep-posting-match"><b>{match.match}%</b><div><Tag tone={match.match >= 80 ? "success" : match.match >= 60 ? "warning" : "muted"}>{eligibility.tier === "apply" ? "可直接投递" : eligibility.tier === "improve" ? "建议针对性提升" : "需要系统学习"}</Tag><p>{posting.matchHighlight}</p></div></div>
           {job && <div className="ep-assess-ability-list">{dimensions.map((item, index) => <div key={item}><span>{item}</span><progress max="100" value={matchScores[index] ?? 0} /><b>{matchScores[index] ?? 0}/{job.target[index]}</b></div>)}</div>}
           {!eligibility.ok && <p className="ep-status warn">{eligibility.reason}</p>}
-          {state.role === "student" && eligibility.tier !== "apply" && <Link className="ep-button" href={`/platform/job/${posting.jobId}/learning-path`}>进入岗位学习路径</Link>}
+          {state.role === "student" && eligibility.tier !== "apply" && <Link className="ep-button" href={`/platform/job/${posting.jobId}`}>进入岗位学习路径</Link>}
         </Card>
       </div>
       <Card id="improve">
-        <div className="ep-section-title"><div><h2>针对性提升</h2><p>根据当前能力差距推荐场景。</p></div><Link className="ep-link" href={`/platform/job/${posting.jobId}/learning-path`}>查看完整路径 <ArrowUpRight size={15} /></Link></div>
+        <div className="ep-section-title"><div><h2>针对性提升</h2><p>根据当前能力差距推荐场景。</p></div><Link className="ep-link" href={`/platform/job/${posting.jobId}#job-learning-path`}>查看完整路径 <ArrowUpRight size={15} /></Link></div>
         <div className="ep-grid">
           {recommendations.map((scene) => <Link className="ep-job-scene" href={`/platform/scene/${scene.id}`} key={scene.id}><Tag>{scene.industry}</Tag><h3>{scene.name}</h3><p>{scene.description}</p><span>{scene.tasks.length} 个任务 <ChevronRight size={14} /></span></Link>)}
           {recommendations.length === 0 && <Empty>当前没有额外推荐场景。</Empty>}

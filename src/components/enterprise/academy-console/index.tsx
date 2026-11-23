@@ -421,7 +421,7 @@ export function AcademyConsole({
                   </select>
                 </label>
                 {selectedPathJob && (
-                  <a className="ep-button secondary" href={`/platform/job/${selectedPathJob.id}/learning-path`}>
+                  <a className="ep-button secondary" href={`/platform/job/${selectedPathJob.id}#job-learning-path`}>
                     <Eye size={15} />预览前台路径
                   </a>
                 )}

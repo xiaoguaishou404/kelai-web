@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   BookOpen,
   BriefcaseBusiness,
+  CheckCircle2,
   ChevronRight,
   GraduationCap,
   Layers,
@@ -18,7 +19,7 @@ import {
   dimensions,
   effectiveRightsStatus,
   jobLearningReadiness,
-  learningPathForJob,
+  learningPathProgress,
   majorGroupAdaptation,
   resourceById,
   resourceName,
@@ -363,7 +364,7 @@ export function ResourcesView() {
       {tab === "岗位" && (
         <div className="ep-grid">
           {listedJobs.map((item) => (
-            <Card key={item.id}>
+            <Link className="ep-card ep-resource-card-link" href={`/platform/job/${item.id}`} aria-label={`查看岗位 ${item.name}`} key={item.id}>
               <ResourceCover id={item.id} kind="job" category={item.category} industry={item.industry} />
               <div className="ep-cardbody">
                 <div className="ep-chips">
@@ -374,17 +375,16 @@ export function ResourcesView() {
                 <h2>{item.name}</h2>
                 <p>{item.description}</p>
                 <div className="ep-chips">{item.skills.map((skill) => <Tag key={skill}>{skill}</Tag>)}</div>
-                <Link className="ep-link" href={`/platform/job/${item.id}`}>探索岗位与学习路径 <ArrowUpRight size={16} /></Link>
               </div>
-            </Card>
+            </Link>
           ))}
-          {state.resources.filter((item) => item.type === "岗位" && !jobById(item.id) && resourceVisible(state, item.id) && matching(item.name)).map((item) => <ResourceCard key={item.id} resource={item} showCover />)}
+          {state.resources.filter((item) => item.type === "岗位" && !jobById(item.id) && resourceVisible(state, item.id) && matching(item.name)).map((item) => <ResourceCard key={item.id} resource={item} showCover href={`/platform/resource/${item.id}`} />)}
         </div>
       )}
       {tab === "场景" && (
         <div className="ep-grid">
           {scenes.filter((item) => resourceVisible(state, item.id) && (filter === "全部" || item.industry === filter) && matching(item.name)).map((item) => (
-            <Card key={item.id}>
+            <Link className="ep-card ep-resource-card-link" href={`/platform/scene/${item.id}`} aria-label={`查看场景 ${item.name}`} key={item.id}>
               <ResourceCover id={item.id} kind="scene" industry={item.industry} />
               <div className="ep-cardbody">
                 <div className="ep-chips">
@@ -394,11 +394,10 @@ export function ResourcesView() {
                 </div>
                 <h2>{item.name}</h2><p>{item.description}</p>
                 <small>{sceneProgressFor(state, item.id).completedCount}/{sceneProgressFor(state, item.id).taskCount} 个任务已完成</small>
-                <Link className="ep-link" href={`/platform/scene/${item.id}`}>{sceneProgressFor(state, item.id).status === "未开始" ? "查看场景与任务" : "继续场景学习"} <ArrowUpRight size={16} /></Link>
               </div>
-            </Card>
+            </Link>
           ))}
-          {state.resources.filter((item) => item.type === "场景" && !sceneById(item.id) && resourceVisible(state, item.id) && matching(item.name)).map((item) => <ResourceCard key={item.id} resource={item} showCover />)}
+          {state.resources.filter((item) => item.type === "场景" && !sceneById(item.id) && resourceVisible(state, item.id) && matching(item.name)).map((item) => <ResourceCard key={item.id} resource={item} showCover href={`/platform/resource/${item.id}`} />)}
         </div>
       )}
       {tab === "课程" && (
@@ -416,13 +415,22 @@ export function ResourcesView() {
   );
 }
 
-export function ResourceCard({ resource, showCover = false }: { resource: Resource; showCover?: boolean }) {
-  return (
-    <Card>
+export function ResourceCard({ resource, showCover = false, href }: { resource: Resource; showCover?: boolean; href?: string }) {
+  const content = (
+    <>
       {showCover && <ResourceCover id={resource.id} kind={resource.type === "岗位" ? "job" : "scene"} />}
-      <div className="ep-cardbody"><Tag>{resource.type}</Tag><h2>{resource.name}</h2><p>{resource.description}</p><Link className="ep-link" href={`/platform/resource/${resource.id}`}>查看资源 <ArrowUpRight size={16} /></Link></div>
-    </Card>
+      <div className="ep-cardbody">
+        <Tag>{resource.type}</Tag>
+        <h2>{resource.name}</h2>
+        <p>{resource.description}</p>
+        {!href && <Link className="ep-link" href={`/platform/resource/${resource.id}`}>查看资源 <ArrowUpRight size={16} /></Link>}
+      </div>
+    </>
   );
+  if (href) {
+    return <Link className="ep-card ep-resource-card-link" href={href} aria-label={`查看${resource.type} ${resource.name}`}>{content}</Link>;
+  }
+  return <Card>{content}</Card>;
 }
 
 function ResourceGraph() {
@@ -479,20 +487,20 @@ export function JobView({ id }: { id?: string }) {
   } = useWorkspacePage();
   const [detailTab, setDetailTab] = useState("overview");
   const job = jobs.find((item) => item.id === id);
+  const path = job ? learningPathProgress(state, job.id) : undefined;
+  const pathNodes = path?.nodes ?? [];
   if (!job) return <Empty>岗位不存在。</Empty>;
   if (!resourceVisible(state, job.id) && state.role !== "manage" && state.role !== "schoolAdmin") {
     return <Empty>{resourceRightsBlockedReason(state, job.id, "教学使用") || "该岗位当前不可用于教学。"}</Empty>;
   }
   const readiness = jobLearningReadiness(state, job.id);
-  const jobPath = learningPathForJob(state, job.id);
-  const pathSceneIds = jobPath?.sceneNodes.map((node) => node.sceneId) ?? job.sceneIds ?? [];
+  const pathSceneIds = path?.nodes.map((node) => node.node.sceneId) ?? job.sceneIds ?? [];
   const relatedAssessments = publishedAssessmentList.filter((item) => (job.assessmentIds ?? []).includes(item.id) && (state.role === "manage" || resourceVisible(state, item.id)));
   const relatedStandards = publishedStandardList.filter((item) => (job.standardIds ?? []).includes(item.id) && (state.role === "manage" || resourceVisible(state, item.id)));
   const relatedScenes = pathSceneIds
     .map((sceneId) => scenes.find((item) => item.id === sceneId))
     .filter((item): item is NonNullable<typeof item> => Boolean(item) && (state.role === "manage" || resourceVisible(state, item!.id)));
   const relatedCourses = courses.filter((item) => (job.courseIds ?? []).includes(item.id) && (state.role === "manage" || resourceVisible(state, item.id)));
-  const relatedGroups = state.majorGroups.filter((group) => (job.majorGroupIds ?? []).includes(group.id));
   const jobRights = resourceById(state, job.id)?.rights;
   const strategy = relatedStandards[0] ?? (job.id === "service" ? evaluationStandard : undefined);
   const knowledgeNodes = [...(job.skills ?? []), ...(job.abilityPoints ?? []).map((item) => item.name)].slice(0, 14);
@@ -503,29 +511,51 @@ export function JobView({ id }: { id?: string }) {
     ["standard", "胜任标准"],
     ["knowledge", "知识图谱"],
     ["certificate", "涉及证书"],
-    ["scene", "实践场景"],
   ];
   return (
     <>
-      <section className="ep-detail-hero">
-        <div>
-          <div className="ep-chips">
-            <Tag>{job.category}</Tag>
-            <Tag tone={readiness.ready ? "success" : "warning"}>{readiness.ready ? "可培养" : "学习路径待完善"}</Tag>
-            {jobRights && <Tag tone={effectiveRightsStatus(jobRights) === "已确权" ? "success" : "warning"}>{effectiveRightsStatus(jobRights)}</Tag>}
+      <section className="ep-detail-hero ep-job-detail-hero">
+        <div className="ep-job-detail-top">
+          <div>
+            <div className="ep-chips">
+              <Tag>{job.category}</Tag>
+              <Tag tone={readiness.ready ? "success" : "warning"}>{readiness.ready ? "可培养" : "学习路径待完善"}</Tag>
+              {jobRights && <Tag tone={effectiveRightsStatus(jobRights) === "已确权" ? "success" : "warning"}>{effectiveRightsStatus(jobRights)}</Tag>}
+            </div>
+            <h1>{resourceName(state, job.id, job.name)}</h1>
+            <p>{job.description}</p>
+            <div className="ep-detail-meta">
+              <span>岗位编码 {job.code ?? `KL-GW-${job.id.toUpperCase()}`}</span>
+              <span>{job.industry} · {job.stage}</span>
+              <span>{job.salaryRange ?? "能力导向"}</span>
+            </div>
+            {!!job.aliases?.length && <small>别名：{job.aliases.join(" · ")}</small>}
           </div>
-          <h1>{resourceName(state, job.id, job.name)}</h1>
-          <p>{job.description}</p>
-          <div className="ep-detail-meta">
-            <span>岗位编码 {job.code ?? `KL-GW-${job.id.toUpperCase()}`}</span>
-            <span>{job.industry} · {job.stage}</span>
-            <span>{job.salaryRange ?? "能力导向"}</span>
+          <div className="ep-detail-hero-actions">
+            {state.role === "student" && <Btn secondary onClick={() => toggleFavoriteWithNotice(job.id)}>{state.favorites.includes(job.id) ? "已收藏" : "收藏岗位"}</Btn>}
           </div>
-          {!!job.aliases?.length && <small>别名：{job.aliases.join(" · ")}</small>}
         </div>
-        <div className="ep-detail-hero-actions">
-          <Link className="ep-button" href={`/platform/job/${job.id}/learning-path`}>开始学习<ArrowUpRight size={15} /></Link>
-          {state.role === "student" && <Btn secondary onClick={() => toggleFavoriteWithNotice(job.id)}>{state.favorites.includes(job.id) ? "已收藏" : "收藏岗位"}</Btn>}
+        <div className="ep-job-scene-path" id="job-learning-path">
+          <div className="ep-job-scene-path-head">
+            <b>场景学习路径</b>
+            <Tag tone={path?.completed === path?.total ? "success" : "muted"}>{path?.completed ?? 0}/{path?.total ?? 0} 场景完成</Tag>
+          </div>
+          {pathNodes.length ? (
+            <div className="ep-scene-path-track">
+              {pathNodes.map((item, index) => (
+                <Link
+                  className={`is-${item.progress.status === "已完成" ? "success" : item.progress.status === "待评价" ? "warning" : "muted"}`}
+                  href={`/platform/scene/${item.scene.id}`}
+                  key={item.node.id}
+                >
+                  <span className="ep-scene-path-index">{index === 0 ? "START" : index === pathNodes.length - 1 ? "END" : String(index + 1).padStart(2, "0")}</span>
+                  <i>{item.progress.status === "已完成" ? <CheckCircle2 size={18} /> : index + 1}</i>
+                  <b>{item.scene.name}</b>
+                  <small>{item.node.phase} · {item.progress.completedCount}/{item.progress.taskCount} 任务</small>
+                </Link>
+              ))}
+            </div>
+          ) : <Empty>当前岗位还没有可用的场景学习路径。</Empty>}
         </div>
       </section>
       <div className="ep-stats">
@@ -540,23 +570,20 @@ export function JobView({ id }: { id?: string }) {
         ))}
       </div>
       {detailTab === "overview" && (
-        <div className="ep-split">
-          <Card>
-            <h2>岗位定位</h2>
-            <p>{job.description}</p>
-            <h2>职业发展路线</h2>
-            {(job.careerPaths ?? []).length ? (job.careerPaths ?? []).map((item, index) => (
-              <div className="ep-career-step" key={item}><span>{index + 1}</span><b>{item}</b></div>
-            )) : <Empty>职业发展路线待完善。</Empty>}
-          </Card>
-          <Card>
-            <h2>学习与实践入口</h2>
-            {relatedGroups.length > 0 && <div className="ep-chips">{relatedGroups.map((group) => <Tag key={group.id}>{group.name}</Tag>)}</div>}
-            <Link className="ep-row" href={`/platform/job/${job.id}/learning-path`}><span className="ep-icon"><GraduationCap size={20} /></span><span className="ep-grow">岗位学习路径<small>{jobPath?.sceneNodes.length ?? relatedScenes.length} 个场景串联训练、考核与答辩</small></span><ChevronRight size={15} /></Link>
-            {relatedScenes.slice(0, 2).map((item) => <Link className="ep-row" key={item.id} href={`/platform/scene/${item.id}`}><span className="ep-icon"><Activity size={20} /></span><span className="ep-grow">{item.name}<small>{item.taskDetails?.length ?? item.tasks.length} 个任务</small></span><ChevronRight size={15} /></Link>)}
-            {!readiness.ready && <p className="ep-status warn">{readiness.reason}</p>}
-          </Card>
-        </div>
+        <Card className="ep-job-overview">
+          <div className="ep-job-overview-grid">
+            <div>
+              <h2>岗位定位</h2>
+              <p>{job.description}</p>
+            </div>
+            <div>
+              <h2>职业发展路线</h2>
+              {(job.careerPaths ?? []).length ? (job.careerPaths ?? []).map((item, index) => (
+                <div className="ep-career-step" key={item}><span>{index + 1}</span><b>{item}</b></div>
+              )) : <Empty>职业发展路线待完善。</Empty>}
+            </div>
+          </div>
+        </Card>
       )}
       {detailTab === "duties" && (
         <div className="ep-split">
@@ -625,22 +652,18 @@ export function JobView({ id }: { id?: string }) {
         </Card>
       )}
       {detailTab === "certificate" && (
-        <div className="ep-grid">
+        <div className="ep-grid ep-certificate-reference-grid">
           {(job.certificates ?? []).length ? (job.certificates ?? []).map((item, index) => (
-            <Card key={item}><span className="ep-credential-mark">CERT</span><h2>{item}</h2><p>{index === 0 ? "岗位能力达标后可关联认定" : "行业或企业认证参考"}</p><Link className="ep-link" href="/platform/assessment#certificate-resources">查看证书资源 <ArrowUpRight size={15} /></Link></Card>
-          )) : <Card><Empty>当前岗位未配置关联证书。</Empty></Card>}
+            <Card className="ep-certificate-reference-card" key={item}>
+              <span className="ep-credential-mark">CERT</span>
+              <div className="ep-certificate-reference-copy">
+                <h2>{item}</h2>
+                <p>{index === 0 ? "岗位能力达标后可关联认定" : "行业或企业认证参考"}</p>
+              </div>
+              <Link className="ep-link ep-certificate-reference-link" href="/platform/assessment#certificate-resources">查看证书资源 <ArrowUpRight size={15} /></Link>
+            </Card>
+          )) : <Card className="ep-certificate-reference-empty"><Empty>当前岗位未配置关联证书。</Empty></Card>}
         </div>
-      )}
-      {detailTab === "scene" && (
-        <Card>
-          <div className="ep-section-title"><div><h2>实践场景与任务</h2><p>{relatedScenes.length} 个场景 · {relatedScenes.reduce((sum, item) => sum + (item.taskDetails?.length ?? item.tasks.length), 0)} 个任务</p></div></div>
-          {relatedScenes.map((scene) => (
-            <article className="ep-scene-accordion" key={scene.id}>
-              <header><div><Tag>{scene.industry} · {scene.difficulty}</Tag><h3>{scene.name}</h3><p>{scene.description}</p></div><Link className="ep-button secondary" href={`/platform/scene/${scene.id}`}>进入场景</Link></header>
-              <div>{(scene.taskDetails ?? []).map((task, index) => <span key={task.id}><i>{index + 1}</i>{task.title}<small>{task.type} · {task.minutes} 分钟</small></span>)}</div>
-            </article>
-          ))}
-        </Card>
       )}
       <Card>
         <h2>关联课程与评价</h2>

@@ -21,10 +21,9 @@ import {
 } from "@/components/enterprise/workspace/routes";
 import { WorkspaceRuntimeProvider } from "@/components/enterprise/workspace/runtime";
 import { Card } from "@/components/enterprise/workspace/ui";
-import { LegacyLearningPathRedirect, LoginView, TeacherGuide } from "@/components/enterprise/workspace/pages/entry";
+import { LoginView, TeacherGuide } from "@/components/enterprise/workspace/pages/entry";
 import { IndustryView, JobView, ResourcesView, ResourceView } from "@/components/enterprise/workspace/pages/public";
 import {
-  JobLearningPathView,
   PortraitView,
   ResumeView,
   SceneView,
@@ -71,7 +70,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
   const page = path.join("/") || "industry";
   const title = pageTitle(page);
   const detailChannel =
-    path[0] === "job" || path[0] === "scene" || path[0] === "learning-path"
+    path[0] === "job" || path[0] === "scene"
       ? "resources"
       : path[0] === "course" || path[0] === "textbook"
         ? "courses"
@@ -285,9 +284,7 @@ function renderPage(path: string[], page: string, notify: (message: string) => v
   if (path[0] === "project" && path[1]) return <ProjectDetail id={path[1]} />;
   if (path[0] === "employment" && path[1]) return <JobPostingDetail id={path[1]} />;
   if (page === "employment") return <EmploymentView />;
-  if (path[0] === "job" && path[1] && path[2] === "learning-path") return <JobLearningPathView jobId={path[1]} />;
-  if (path[0] === "job") return <JobView id={path[1]} />;
-  if (path[0] === "learning-path") return <LegacyLearningPathRedirect jobId={path[1]} />;
+  if (path[0] === "job" && path.length === 2 && path[1]) return <JobView key={path[1]} id={path[1]} />;
   if (path[0] === "scene") return <SceneView id={path[1]} />;
   if (path[0] === "course") return <CourseView id={path[1]} />;
   if (path[0] === "resource") return <ResourceView id={path[1]} />;

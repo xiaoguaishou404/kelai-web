@@ -61,11 +61,9 @@ export const fullBleedPages = new Set(["industry", "resources", "policy", ...cha
 
 export function pageTitle(page: string) {
   if (page.startsWith("employment/")) return "岗位详情";
-  if (page.startsWith("job/") && page.endsWith("/learning-path")) return "岗位学习路径";
   const detailTitles = {
     job: "岗位详情",
     scene: "场景实训",
-    "learning-path": "岗位学习路径",
     course: "课程学习",
     exam: "岗位测评",
     resource: "资源详情",

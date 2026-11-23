@@ -54,97 +54,6 @@ import {
   applicationTone,
 } from "@/components/enterprise/workspace/ui";
 
-export function JobLearningPathView({ jobId }: { jobId?: string }) {
-  const { jobs, selected, setSelected, state, taskStatus, taskStatusTone } = useWorkspacePage();
-  const job = jobs.find((item) => item.id === jobId);
-  const path = job ? learningPathProgress(state, job.id) : undefined;
-  if (!job || !path) return <Empty>岗位学习路径不存在。</Empty>;
-  const activeIndex = Math.min(selected, Math.max(0, path.nodes.length - 1));
-  const activeNode = path.nodes[activeIndex];
-  const firstOpen = Math.max(
-    0,
-    path.nodes.findIndex((item) => item.progress.status !== "已完成"),
-  );
-  return (
-    <>
-      <section className="ep-detail-hero">
-        <div>
-          <div className="ep-chips">
-            <Tag>{path.path?.version ?? "V1.0"}</Tag>
-            <Tag>{path.total} 个场景</Tag>
-            <Tag tone={path.completed === path.total ? "success" : "muted"}>{path.completed === path.total ? "路径已完成" : `完成 ${path.completed}/${path.total}`}</Tag>
-          </div>
-          <h1>{path.path?.name ?? `${job.name}学习路径`}</h1>
-          <p>{path.path?.description ?? "从真实任务出发，沿着场景完成能力训练和交付。"}</p>
-          <div className="ep-detail-meta">
-            <span>岗位：{job.name}</span>
-            <span>{path.nodes.reduce((sum, item) => sum + (item.scene.taskDetails?.length ?? item.scene.tasks.length), 0)} 个任务</span>
-            {path.score !== undefined && <span>当前加权 {path.score} 分</span>}
-          </div>
-        </div>
-        <button className="ep-button" onClick={() => setSelected(firstOpen)}>
-          {path.completed > 0 ? "继续路径" : "开始路径"}<ArrowUpRight size={15} />
-        </button>
-      </section>
-      <Card className="ep-scene-path">
-        <div className="ep-scene-path-track">
-          {path.nodes.map((item, index) => (
-            <button
-              className={`${activeIndex === index ? "active" : ""} is-${item.progress.status === "已完成" ? "success" : item.progress.status === "待评价" ? "warning" : "muted"}`}
-              onClick={() => setSelected(index)}
-              key={item.node.id}
-            >
-              <span className="ep-scene-path-index">{index === 0 ? "START" : index === path.nodes.length - 1 ? "END" : String(index + 1).padStart(2, "0")}</span>
-              <i>{item.progress.status === "已完成" ? <CheckCircle2 size={18} /> : index + 1}</i>
-              <b>{item.scene.name}</b>
-              <small>{item.node.phase} · {item.progress.completedCount}/{item.progress.taskCount} 任务</small>
-            </button>
-          ))}
-        </div>
-      </Card>
-      {activeNode && (
-        <div className="ep-split">
-          <Card>
-            <div className="ep-chips"><Tag>{activeNode.node.phase}</Tag><Tag tone={activeNode.progress.status === "已完成" ? "success" : activeNode.progress.status === "待评价" ? "warning" : "muted"}>{activeNode.progress.status}</Tag></div>
-            <h2>{activeNode.scene.name}</h2>
-            <p>{activeNode.scene.description}</p>
-            <div className="ep-detail-meta">
-              <span>{activeNode.scene.taskDetails?.length ?? activeNode.scene.tasks.length} 个任务</span>
-              <span>{activeNode.scene.taskDetails?.reduce((sum, task) => sum + task.minutes, 0) ?? 0} 分钟</span>
-              {activeNode.progress.score !== undefined && <span>{activeNode.progress.status === "已完成" ? "场景得分" : "当前加权"} {activeNode.progress.score}</span>}
-            </div>
-            <div className="ep-actions">
-              <Link className="ep-button" href={`/platform/scene/${activeNode.scene.id}`}>{activeNode.progress.status === "未开始" ? "进入场景学习" : "继续场景"}</Link>
-            </div>
-          </Card>
-          <Card>
-            <h2>本场景任务</h2>
-            <div className="ep-path-task-list">
-              {(activeNode.scene.taskDetails ?? []).map((task, index) => {
-                const submission = taskSubmissionFor(state, activeNode.scene.id, task.id);
-                return (
-                  <article key={task.id}>
-                    <span className="ep-number">{index + 1}</span>
-                    <div>
-                      {(() => {
-                        const status = taskStatus(submission, activeNode.scene.id, task.id);
-                        return <div className="ep-chips"><Tag>{task.type}</Tag><Tag>{task.deliveryMode}</Tag><Tag tone={taskStatusTone(status)}>{status}</Tag></div>;
-                      })()}
-                      <b>{task.title}</b>
-                      <small>{task.assessmentMethods.map((method) => method.type).join(" · ")}</small>
-                    </div>
-                    <Link href={`/platform/scene/${activeNode.scene.id}?task=${task.id}`}>去学习</Link>
-                  </article>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
-      )}
-    </>
-  );
-}
-
 export function StudentHome() {
   const { checkInSession, jobById, notify, sceneById, state, taskStatusTone } = useWorkspacePage();
   const scores = abilityScores(state);
@@ -179,7 +88,7 @@ export function StudentHome() {
             {jobPaths.map(({ job, path, progress }) => {
               const percent = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
               return (
-                <Link className="ep-practice-path" href={`/platform/job/${job.id}/learning-path`} key={path.id}>
+                <Link className="ep-practice-path" href={`/platform/job/${job.id}`} key={path.id}>
                   <header>
                     <span className="ep-practice-path-icon"><BriefcaseBusiness size={17} /></span>
                     <span className="ep-grow">
