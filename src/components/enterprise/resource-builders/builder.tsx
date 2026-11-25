@@ -1,5 +1,3 @@
-"use client";
-
 import { ResourceType } from "@/lib/enterprise-workspace";
 import { BuilderProps } from "./shared";
 import { JobBuilder } from "./job-builder";

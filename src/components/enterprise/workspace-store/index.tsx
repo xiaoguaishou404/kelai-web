@@ -1,5 +1,3 @@
-"use client";
-
 import { createContext, useContext, useEffect, useReducer, useState, type ReactNode } from "react";
 import {
   WORKSPACE_STORAGE_KEY,

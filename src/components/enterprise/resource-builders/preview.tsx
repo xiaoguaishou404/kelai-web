@@ -1,5 +1,3 @@
-"use client";
-
 import { jobMatch, type EnterpriseWorkspaceState, type Resource } from "@/lib/enterprise-workspace";
 
 export function ResourcePreview({ state, resource }: { state: EnterpriseWorkspaceState; resource: Resource }) {

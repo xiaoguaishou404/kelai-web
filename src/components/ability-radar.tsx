@@ -1,8 +1,9 @@
-"use client";
-
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from "recharts";
-import { ABILITIES } from "@/lib/mock-data";
-import type { AbilityKey } from "@/lib/types";
+
+const ABILITY_KEYS = ["deploy", "listen", "path", "locate", "alert", "report"] as const;
+const ABILITY_LABELS = ["环境部署", "需求理解", "链路分析", "故障定位", "安全研判", "交付汇报"];
+
+type AbilityKey = (typeof ABILITY_KEYS)[number];
 
 export function AbilityRadar({
   scores,
@@ -15,10 +16,10 @@ export function AbilityRadar({
   color?: string;
   labels?: string[];
 }) {
-  const data = ABILITIES.map((ability, index) => ({
-    name: labels?.[index] ?? ability.name.replace("装机与环境部署", "环境部署"),
-    score: scores[ability.key],
-    benchmark: benchmark?.[ability.key],
+  const data = ABILITY_KEYS.map((key, index) => ({
+    name: labels?.[index] ?? ABILITY_LABELS[index] ?? key,
+    score: scores[key],
+    benchmark: benchmark?.[key],
   }));
 
   return (

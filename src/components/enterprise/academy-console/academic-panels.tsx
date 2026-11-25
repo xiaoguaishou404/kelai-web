@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { useWorkspace } from "@/components/enterprise/workspace-store";
 import type { ScheduleEntry, TeachingPlan, TrainingProgram } from "@/lib/enterprise-workspace/types";

@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import { Link } from "@/components/router/link";
 import { useState } from "react";
 import {
   Activity,

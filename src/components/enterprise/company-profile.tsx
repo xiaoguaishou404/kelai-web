@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import { Image } from "@/components/router/image";
+import { Link } from "@/components/router/link";
 import { BadgeCheck, BookOpen, BriefcaseBusiness, GraduationCap, Network, UsersRound } from "lucide-react";
 import { IndustryHero } from "@/components/enterprise/industry-hero";
 import {

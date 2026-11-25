@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { CheckCircle2, ChevronLeft, ChevronRight, Send } from "lucide-react";
 import {

@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import { Link } from "@/components/router/link";
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -16,7 +14,6 @@ import {
 } from "lucide-react";
 import {
   abilityScores,
-  certificateEligibility,
   classMetrics,
   dimensions,
   examQuestions,

@@ -740,7 +740,7 @@
   body:has(.ep-student-portrait) .ep-ai-copilot,
   body:has(.ep-student-portrait) .ep-console-toolbar,
   body:has(.ep-student-portrait) .ep-academy > .ep-status,
-  body:has(.ep-student-portrait) nextjs-portal {
+  body:has(.ep-student-portrait) vite-error-overlay {
     display: none !important;
   }
 

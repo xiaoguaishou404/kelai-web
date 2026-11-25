@@ -1,9 +1,10 @@
-"use client";
-
-import { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { AlertCircle } from "lucide-react";
-import { AbilityRadar } from "@/components/ability-radar";
-import { ApplicationStatus, dimensions } from "@/lib/enterprise-workspace";
+import { dimensions, type ApplicationStatus } from "@/lib/enterprise-workspace";
+
+const AbilityRadar = lazy(() =>
+  import("@/components/ability-radar").then((module) => ({ default: module.AbilityRadar })),
+);
 
 const radarKeys = ["deploy", "listen", "path", "locate", "alert", "report"] as const;
 
@@ -36,7 +37,11 @@ export function Tag({ children, tone = "" }: { children: ReactNode; tone?: strin
 }
 
 export function RadarView({ values }: { values: number[] }) {
-  return <AbilityRadar labels={dimensions} scores={Object.fromEntries(radarKeys.map((key, index) => [key, values[index]])) as Record<typeof radarKeys[number], number>} />;
+  return (
+    <Suspense fallback={<div className="ability-radar" aria-hidden="true" />}>
+      <AbilityRadar labels={dimensions} scores={Object.fromEntries(radarKeys.map((key, index) => [key, values[index]])) as Record<typeof radarKeys[number], number>} />
+    </Suspense>
+  );
 }
 
 export function Metric({ value, label }: { value: ReactNode; label: string }) {

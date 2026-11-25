@@ -1,15 +1,11 @@
-"use client";
-
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { Link } from "@/components/router/link";
+import { Image } from "@/components/router/image";
+import { useNavigate } from "react-router-dom";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { BriefcaseBusiness, ChevronDown, LogOut } from "lucide-react";
 import type { Role } from "@/lib/enterprise-workspace";
 import { useWorkspace, WorkspaceProvider } from "@/components/enterprise/workspace-store";
-import { AcademyConsole } from "@/components/enterprise/academy-console";
 import { canEnterAdmin } from "@/lib/platform-admin/permissions";
-import { LessonResultsPanel } from "@/components/enterprise/academy-console/assessment-panels";
 import { ConsoleSidebar } from "@/components/enterprise/console-sidebar";
 import { ConsoleAccessProvider } from "@/components/enterprise/console-access";
 import { CompanyDetail, CompanyProfile } from "@/components/enterprise/company-profile";
@@ -53,6 +49,13 @@ import {
 } from "@/components/enterprise/workspace/pages/teaching";
 import { ManageHome } from "@/components/enterprise/workspace/pages/operations";
 
+const AcademyConsole = lazy(() =>
+  import("@/components/enterprise/academy-console").then((module) => ({ default: module.AcademyConsole })),
+);
+const LessonResultsPanel = lazy(() =>
+  import("@/components/enterprise/academy-console/assessment-panels").then((module) => ({ default: module.LessonResultsPanel })),
+);
+
 export default function Platform({ path = [] }: { path?: string[] }) {
   return (
     <WorkspaceProvider>
@@ -62,7 +65,7 @@ export default function Platform({ path = [] }: { path?: string[] }) {
 }
 
 function WorkspaceShell({ path }: { path: string[] }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { state, hydrated, setRole, markGuideSeen } = useWorkspace();
   const [notice, setNotice] = useState("");
   const page = path.join("/") || "industry";
@@ -112,10 +115,10 @@ function WorkspaceShell({ path }: { path: string[] }) {
           ? "科来企业服务台"
           : "学生学习空间";
   const notify = (message: string) => setNotice(message);
-  const go = (target: string) => router.push(`/platform/${target}`);
+  const go = (target: string) => navigate(`/platform/${target}`);
   const switchRole = (role: Role, target: string) => {
     setRole(role);
-    router.push(`/platform/${target}`);
+    navigate(`/platform/${target}`);
   };
 
   useEffect(() => {
@@ -130,7 +133,9 @@ function WorkspaceShell({ path }: { path: string[] }) {
 
   const content = (
     <WorkspaceRuntimeProvider value={{ notify, go, switchRole }}>
-      {renderPage(path, page, notify)}
+      <Suspense fallback={<div className="ep-loading">正在载入工作空间…</div>}>
+        {renderPage(path, page, notify)}
+      </Suspense>
     </WorkspaceRuntimeProvider>
   );
 

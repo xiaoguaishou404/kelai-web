@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { type CourseProfile, type ResourceRights, type TeachingResourceItem } from "@/lib/enterprise-workspace";

@@ -1,19 +1,22 @@
 import type { PageAgentCore } from "@page-agent/core";
+import type { PageController } from "@page-agent/page-controller";
 import {
   definePageAgentElement,
   type ColasoftPageAgentElement,
 } from "@/components/enterprise/page-agent-element";
-
-type RuntimeConfig = {
-  configured?: boolean;
-  model?: string;
-  maxSteps?: number;
-};
+import {
+  AI_SETTINGS_CHANGE_EVENT,
+  DEFAULT_AI_MODEL,
+  loadAiSettings,
+  type AiSettings,
+} from "@/lib/ai-settings";
 
 export type PageAgentRuntime = {
   host: ColasoftPageAgentElement;
   agent: PageAgentCore | null;
+  pageController: PageController | null;
   syncPath: (pathname: string) => void;
+  refresh: () => Promise<void>;
 };
 
 declare global {
@@ -21,6 +24,8 @@ declare global {
     __COLASOFT_PAGE_AGENT_RUNTIME__?: PageAgentRuntime;
   }
 }
+
+const MAX_STEPS = Number.MAX_SAFE_INTEGER;
 
 const HIGH_RISK_LABELS = [
   "提交审核",
@@ -41,6 +46,7 @@ const HIGH_RISK_LABELS = [
 ];
 
 let pendingRuntime: Promise<PageAgentRuntime> | null = null;
+let refreshSequence = 0;
 
 function maskSensitiveContent(content: string) {
   return content
@@ -69,35 +75,7 @@ function setupHighRiskProtection(host: HTMLElement) {
   window.addEventListener("pagehide", () => observer.disconnect(), { once: true });
 }
 
-async function createRuntime(pathname: string): Promise<PageAgentRuntime> {
-  definePageAgentElement();
-  const host = document.createElement("colasoft-page-agent") as ColasoftPageAgentElement;
-  document.body.appendChild(host);
-  setupHighRiskProtection(host);
-
-  const config: RuntimeConfig = await fetch("/api/ai/compatible/config", {
-    cache: "no-store",
-    credentials: "include",
-  })
-    .then((response) => response.json() as Promise<RuntimeConfig>)
-    .catch(() => ({ configured: false }));
-
-  const model = config.model ?? "deepseek-flash";
-  const maxSteps = Math.max(20, Math.floor(config.maxSteps ?? Number.MAX_SAFE_INTEGER));
-  const configured = Boolean(config.configured);
-  host.setConfiguration({ model, maxSteps, configured });
-  host.setPath(pathname);
-
-  if (!configured) {
-    const runtime: PageAgentRuntime = {
-      host,
-      agent: null,
-      syncPath: (path) => host.setPath(path),
-    };
-    window.__COLASOFT_PAGE_AGENT_RUNTIME__ = runtime;
-    return runtime;
-  }
-
+async function buildAgent(settings: AiSettings) {
   const [{ PageAgentCore }, { PageController }] = await Promise.all([
     import("@page-agent/core"),
     import("@page-agent/page-controller"),
@@ -108,18 +86,16 @@ async function createRuntime(pathname: string): Promise<PageAgentRuntime> {
     viewportExpansion: -1,
     keepSemanticTags: true,
     includeAttributes: ["data-*", "aria-*"],
-    interactiveBlacklist: [host],
   });
 
   const agent = new PageAgentCore({
     pageController,
-    baseURL: "/api/ai/compatible",
-    model,
+    baseURL: settings.baseURL,
+    apiKey: settings.apiKey,
+    model: settings.model,
     language: "zh-CN",
-    maxSteps,
+    maxSteps: MAX_STEPS,
     maxRetries: 2,
-    customFetch: ((url: RequestInfo | URL, init?: RequestInit) =>
-      fetch(url, { ...init, credentials: "include" })) as typeof fetch,
     experimentalScriptExecutionTool: false,
     experimentalLlmsTxt: false,
     transformPageContent: maskSensitiveContent,
@@ -134,13 +110,96 @@ async function createRuntime(pathname: string): Promise<PageAgentRuntime> {
     },
   });
 
-  host.attachAgent(agent, { model, maxSteps, configured });
+  return { agent, pageController };
+}
+
+function disposeAgent(runtime: PageAgentRuntime) {
+  const agent = runtime.agent;
+  const pageController = runtime.pageController;
+  runtime.agent = null;
+  runtime.pageController = null;
+  try {
+    agent?.dispose();
+  } catch {
+    // The agent may already be disposed.
+  }
+  try {
+    pageController?.dispose();
+  } catch {
+    // The controller may already be disposed.
+  }
+  runtime.host.detachAgent();
+}
+
+async function refreshRuntime(runtime: PageAgentRuntime) {
+  const sequence = ++refreshSequence;
+  disposeAgent(runtime);
+
+  const settings = loadAiSettings();
+  if (!settings) {
+    runtime.host.setConfiguration({
+      model: DEFAULT_AI_MODEL,
+      maxSteps: MAX_STEPS,
+      configured: false,
+    });
+    return;
+  }
+
+  try {
+    const { agent, pageController } = await buildAgent(settings);
+    if (sequence !== refreshSequence) {
+      agent.dispose();
+      pageController.dispose();
+      return;
+    }
+    runtime.agent = agent;
+    runtime.pageController = pageController;
+    runtime.host.attachAgent(agent, {
+      model: settings.model,
+      maxSteps: MAX_STEPS,
+      configured: true,
+    });
+  } catch (error) {
+    console.error("[AI] 初始化模型连接失败", error);
+    runtime.host.setConfiguration({
+      model: settings.model,
+      maxSteps: MAX_STEPS,
+      configured: false,
+    });
+    runtime.host.setRuntimeError("模型服务连接失败，请检查配置。");
+  }
+}
+
+async function createRuntime(pathname: string): Promise<PageAgentRuntime> {
+  definePageAgentElement();
+  const host = document.createElement("colasoft-page-agent") as ColasoftPageAgentElement;
+  document.body.appendChild(host);
+  setupHighRiskProtection(host);
+
   const runtime: PageAgentRuntime = {
     host,
-    agent,
+    agent: null,
+    pageController: null,
     syncPath: (path) => host.setPath(path),
+    refresh: async () => {
+      await refreshRuntime(runtime);
+    },
   };
+
+  window.addEventListener(AI_SETTINGS_CHANGE_EVENT, () => {
+    void runtime.refresh();
+  });
+
+  const initialSettings = loadAiSettings();
+  host.setConfiguration({
+    model: initialSettings?.model ?? DEFAULT_AI_MODEL,
+    maxSteps: MAX_STEPS,
+    configured: Boolean(initialSettings),
+  });
+  host.setPath(pathname);
+
   window.__COLASOFT_PAGE_AGENT_RUNTIME__ = runtime;
+  await runtime.refresh();
   return runtime;
 }
 

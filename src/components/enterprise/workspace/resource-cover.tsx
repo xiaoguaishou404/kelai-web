@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { Image } from "@/components/router/image";
 
 const illustratedResourceIds = new Set([
   "service", "security", "presales", "observability", "deployment", "operations",

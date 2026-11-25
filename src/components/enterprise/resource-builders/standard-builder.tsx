@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { publishedJobs, type ResourceRights, type StandardProfile } from "@/lib/enterprise-workspace";
 import {

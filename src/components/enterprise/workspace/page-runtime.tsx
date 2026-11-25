@@ -1,7 +1,5 @@
-"use client";
-
 import { useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "react-router-dom";
 import {
   certificateEligibility,
   examQuestions,
@@ -25,8 +23,7 @@ import { useWorkspaceRuntime } from "@/components/enterprise/workspace/runtime";
 export function useWorkspacePage() {
   const store = useWorkspace();
   const { state, toggleFavorite, apply, resourceAction, issueCertificate } = store;
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const runtime = useWorkspaceRuntime();
   const { notify } = runtime;
   const [query, setQuery] = useState("");
@@ -151,7 +148,6 @@ export function useWorkspacePage() {
 
   return {
     ...store,
-    router,
     searchParams,
     ...runtime,
     ...catalog,

@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { ManageApplications } from "@/components/enterprise/workspace/pages/operations";
 import { TenantPanel } from "./catalog-panels";

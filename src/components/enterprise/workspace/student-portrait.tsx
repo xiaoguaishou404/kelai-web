@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import { Link } from "@/components/router/link";
 import { useEffect, useId, useMemo, useRef, useState, type Ref } from "react";
 import { createPortal, flushSync } from "react-dom";
 import {

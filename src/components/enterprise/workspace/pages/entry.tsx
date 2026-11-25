@@ -1,5 +1,3 @@
-"use client";
-
 import { type ReactNode } from "react";
 import { Activity, ArrowUpRight, BookOpen, Building2, GraduationCap, Network, ShieldCheck } from "lucide-react";
 import { type Role } from "@/lib/enterprise-workspace";

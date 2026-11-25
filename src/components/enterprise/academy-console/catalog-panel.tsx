@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type ReactNode } from "react";
 import { Plus, Search } from "lucide-react";
 import { useWorkspace } from "@/components/enterprise/workspace-store";

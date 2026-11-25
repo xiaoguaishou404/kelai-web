@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import { Link } from "@/components/router/link";
 import { useState, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 import { ResourceBuilder } from "@/components/enterprise/resource-builders";

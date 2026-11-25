@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { useWorkspace } from "@/components/enterprise/workspace-store";
 import { StudentPortrait } from "@/components/enterprise/workspace/student-portrait";
