@@ -251,16 +251,14 @@
   }
   @media(max-width:760px) {
     & {
-      left: 0;
-      bottom: 0;
-      width: 100%;
+      right: max(.75rem, calc(var(--scale-base) * 12));
+      bottom: max(.75rem, calc(var(--scale-base) * 12));
+      left: max(.75rem, calc(var(--scale-base) * 12));
+      width: auto;
       transform: none;
     }
     .ep-ai-shell {
-      border-right: 0;
-      border-bottom: 0;
-      border-left: 0;
-      border-radius: calc(var(--scale-base) * 16) calc(var(--scale-base) * 16) 0 0;
+      border-radius: calc(var(--scale-base) * 16);
     }
     .ep-ai-panel {
       max-height: min(78dvh,calc(var(--scale-base) * 680));

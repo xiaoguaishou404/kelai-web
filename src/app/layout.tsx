@@ -5,7 +5,7 @@ import { DemoProvider } from "@/lib/demo-store";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "科来 - 知与 | 场景化产教融合平台",
+  title: "科来网络 | 场景化产教融合平台",
   icons: { icon: "/brand/colasoft-logo.png", apple: "/brand/colasoft-logo.png" },
   description: "场景化产教融合平台，连接岗位标准、场景实训、产业项目与人才培养。",
 };

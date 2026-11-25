@@ -3,7 +3,7 @@
 import { ReactNode } from "react";
 import { AlertCircle } from "lucide-react";
 import { AbilityRadar } from "@/components/ability-radar";
-import { ApplicationStatus } from "@/lib/enterprise-workspace";
+import { ApplicationStatus, dimensions } from "@/lib/enterprise-workspace";
 
 const radarKeys = ["deploy", "listen", "path", "locate", "alert", "report"] as const;
 
@@ -36,7 +36,7 @@ export function Tag({ children, tone = "" }: { children: ReactNode; tone?: strin
 }
 
 export function RadarView({ values }: { values: number[] }) {
-  return <AbilityRadar scores={Object.fromEntries(radarKeys.map((key, index) => [key, values[index]])) as Record<typeof radarKeys[number], number>} />;
+  return <AbilityRadar labels={dimensions} scores={Object.fromEntries(radarKeys.map((key, index) => [key, values[index]])) as Record<typeof radarKeys[number], number>} />;
 }
 
 export function Metric({ value, label }: { value: ReactNode; label: string }) {

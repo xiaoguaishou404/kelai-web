@@ -11,6 +11,7 @@ import {
   publishedJobs,
   publishedScenes,
   publishedStandards,
+  publishedTextbooks,
   resourceRightsBlockedReason,
   resourceVisible,
   taskCompletionFor,
@@ -35,13 +36,14 @@ export function useWorkspacePage() {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [sceneTab, setSceneTab] = useState("overview");
   const [sceneTaskIndex, setSceneTaskIndex] = useState(0);
-  const [resourceType, setResourceType] = useState<import("@/lib/enterprise-workspace").Resource["type"]>("岗位");
+  const [resourceType, setResourceType] = useState<import("@/lib/enterprise-workspace").Resource["type"]>("评价标准");
   const [creatingResource, setCreatingResource] = useState(false);
 
   const catalog = useMemo(() => {
     const jobs = publishedJobs(state);
     const scenes = publishedScenes(state);
     const courses = publishedCourses(state);
+    const textbooks = publishedTextbooks(state);
     const publishedAssessmentList = publishedAssessments(state);
     const publishedStandardList = publishedStandards(state);
     const accessibleAssessmentList = publishedAssessmentList.filter(
@@ -85,6 +87,7 @@ export function useWorkspacePage() {
       jobs,
       scenes,
       courses,
+      textbooks,
       publishedAssessmentList,
       publishedStandardList,
       accessibleAssessmentList,

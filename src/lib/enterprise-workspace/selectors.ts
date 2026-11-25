@@ -1,5 +1,5 @@
 import { enrichJob, enrichScene } from "@/lib/resource-content";
-import { assessment, courses, jobs, scenes } from "./catalog";
+import { courses, jobs, scenes } from "./catalog";
 import {
   Application,
   AssessmentProfile,
@@ -18,6 +18,7 @@ import {
   SceneProgressStatus,
   StandardProfile,
   TaskSubmission,
+  TextbookProfile,
   Work,
 } from "./types";
 import { dimensions } from "./types";
@@ -63,7 +64,18 @@ export function publishedCourses(state: EnterpriseWorkspaceState) {
     .filter((item): item is CourseProfile => Boolean(item));
 }
 
+export function publishedTextbooks(state: EnterpriseWorkspaceState) {
+  return state.resources
+    .map((resource) => resource.publishedContent?.kind === "textbook" ? resource.publishedContent.data : undefined)
+    .filter((item): item is TextbookProfile => Boolean(item));
+}
+
+export function publishedJobById(state: EnterpriseWorkspaceState, id: string) {
+  return publishedJobs(state).find((item) => item.id === id);
+}
+
 export function publishedAssessments(state: EnterpriseWorkspaceState) {
+  const jobMap = new Map(publishedJobs(state).map((job) => [job.id, job]));
   return state.resources
     .map((resource) => resource.publishedContent?.kind === "assessment" ? resource.publishedContent.data : undefined)
     .filter((item): item is AssessmentProfile => Boolean(item))
@@ -72,7 +84,7 @@ export function publishedAssessments(state: EnterpriseWorkspaceState) {
       kind: item.kind ?? "试卷",
       difficulty: item.difficulty ?? "中级",
       publisher: item.publisher ?? "科来网络",
-      abilityPointCount: item.abilityPointCount ?? jobById(item.jobId)?.abilityPoints?.length ?? 6,
+      abilityPointCount: item.abilityPointCount ?? jobMap.get(item.jobId)?.abilityPoints?.length ?? 6,
       averageScore: item.averageScore,
       usageCount: item.usageCount,
     }));
@@ -253,13 +265,17 @@ export function latestWork(state: EnterpriseWorkspaceState, sceneId: string) {
   return state.works.find((item) => item.studentId === state.activeStudentId && item.sceneId === sceneId);
 }
 
-export function sceneTaskDetails(sceneId: string) {
-  const scene = sceneById(sceneId);
-  return scene ? enrichScene(scene).taskDetails ?? [] : [];
+function publishedSceneById(state: EnterpriseWorkspaceState, sceneId: string) {
+  return publishedScenes(state).find((item) => item.id === sceneId);
 }
 
-export function taskDetailById(sceneId: string, taskId: string) {
-  return sceneTaskDetails(sceneId).find((item) => item.id === taskId);
+export function sceneTaskDetails(state: EnterpriseWorkspaceState, sceneId: string) {
+  const scene = publishedSceneById(state, sceneId);
+  return scene?.taskDetails ?? [];
+}
+
+export function taskDetailById(state: EnterpriseWorkspaceState, sceneId: string, taskId: string) {
+  return sceneTaskDetails(state, sceneId).find((item) => item.id === taskId);
 }
 
 export function taskSubmissionFor(
@@ -289,7 +305,7 @@ export function taskAssessmentProgress(
   submission?: TaskSubmission,
   studentId = state.activeStudentId,
 ): TaskAssessmentProgress[] {
-  const task = taskDetailById(sceneId, taskId);
+  const task = taskDetailById(state, sceneId, taskId);
   if (!task) return [];
   const review = submission?.reviews[submission.reviews.length - 1];
   const session = state.offlineSessions.find(
@@ -354,7 +370,7 @@ export function taskCompletionFor(
   taskId: string,
   studentId = state.activeStudentId,
 ) {
-  const task = taskDetailById(sceneId, taskId);
+  const task = taskDetailById(state, sceneId, taskId);
   const submission = taskSubmissionFor(state, sceneId, taskId, studentId);
   if (!task) {
     return {
@@ -417,7 +433,7 @@ export function sceneProgressFor(
   sceneId: string,
   studentId = state.activeStudentId,
 ) {
-  const tasks = sceneTaskDetails(sceneId);
+  const tasks = sceneTaskDetails(state, sceneId);
   const submissions = state.taskSubmissions.filter(
     (item) => item.studentId === studentId && item.sceneId === sceneId,
   );
@@ -487,8 +503,9 @@ export function learningPathProgress(
   studentId = state.activeStudentId,
 ) {
   const path = learningPathForJob(state, jobId);
+  const catalogScenes = publishedScenes(state);
   if (!path) {
-    const fallbackScenes = scenes.filter((scene) => scene.jobId === jobId);
+    const fallbackScenes = catalogScenes.filter((scene) => scene.jobId === jobId);
     return {
       path,
       nodes: fallbackScenes.map((rawScene, index) => ({
@@ -508,7 +525,7 @@ export function learningPathProgress(
   }
   const nodes = path.sceneNodes
     .map((node) => {
-      const rawScene = scenes.find((item) => item.id === node.sceneId);
+      const rawScene = catalogScenes.find((item) => item.id === node.sceneId);
       return rawScene
         ? { node, scene: enrichScene(rawScene), progress: sceneProgressFor(state, rawScene.id, studentId) }
         : undefined;
@@ -516,11 +533,11 @@ export function learningPathProgress(
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const completedNodes = nodes.filter((item) => item.progress.status === "已完成");
   const totalWeight = completedNodes.reduce((sum, item) => {
-    const sceneTasks = sceneTaskDetails(item.scene.id);
+    const sceneTasks = sceneTaskDetails(state, item.scene.id);
     return sum + sceneTasks.reduce((taskSum, task) => taskSum + task.weight, 0);
   }, 0);
   const score = totalWeight > 0
-    ? Math.round(completedNodes.reduce((sum, item) => sum + (item.progress.score ?? 0) * sceneTaskDetails(item.scene.id).reduce((taskSum, task) => taskSum + task.weight, 0), 0) / totalWeight)
+    ? Math.round(completedNodes.reduce((sum, item) => sum + (item.progress.score ?? 0) * sceneTaskDetails(state, item.scene.id).reduce((taskSum, task) => taskSum + task.weight, 0), 0) / totalWeight)
     : undefined;
   return {
     path,
@@ -540,7 +557,7 @@ export function taskSubmissionBlockedReason(
   if (!resourceVisible(state, sceneId)) {
     return resourceRightsBlockedReason(state, sceneId, "教学使用") || "该场景当前不可用于教学";
   }
-  if (!taskDetailById(sceneId, taskId)) return "任务不存在或尚未发布";
+  if (!taskDetailById(state, sceneId, taskId)) return "任务不存在或尚未发布";
   const existing = taskSubmissionFor(state, sceneId, taskId);
   if (existing?.status === "待评价") return "该任务正在等待教师评价";
   if (existing?.status === "已通过") return "该任务已通过";
@@ -553,7 +570,7 @@ export function workReview(work?: Work) {
 
 export function workBlockedReason(state: EnterpriseWorkspaceState, sceneId: string) {
   if (state.role !== "student") return "切换到学生学习身份后可提交成果";
-  const scene = sceneById(sceneId);
+  const scene = publishedSceneById(state, sceneId);
   if (!scene) return "场景不存在";
   if (!resourceVisible(state, scene.id)) return "该场景当前不可用于教学";
   const work = latestWork(state, sceneId);
@@ -565,6 +582,7 @@ export function workBlockedReason(state: EnterpriseWorkspaceState, sceneId: stri
 export function abilityScores(state: EnterpriseWorkspaceState, studentId = state.activeStudentId) {
   const sums = dimensions.map(() => 0);
   const weights = dimensions.map(() => 0);
+  const sceneCatalog = publishedScenes(state);
   const taskSceneIds = new Set(
     state.taskSubmissions.filter((item) => item.studentId === studentId).map((item) => item.sceneId),
   );
@@ -577,7 +595,7 @@ export function abilityScores(state: EnterpriseWorkspaceState, studentId = state
         submission.taskId,
         studentId,
       );
-      const scene = sceneById(submission.sceneId);
+      const scene = sceneCatalog.find((item) => item.id === submission.sceneId);
       const task = completion.task;
       const score = completion.score ?? 0;
       if (!scene || !task || !completion.completed) return;
@@ -596,7 +614,7 @@ export function abilityScores(state: EnterpriseWorkspaceState, studentId = state
         !taskSceneIds.has(item.sceneId),
     )
     .forEach((work) => {
-    const scene = sceneById(work.sceneId);
+    const scene = sceneCatalog.find((item) => item.id === work.sceneId);
     const score = workReview(work)?.total ?? 0;
     if (!scene) return;
     scene.abilityWeights.forEach((weight, index) => {
@@ -609,7 +627,10 @@ export function abilityScores(state: EnterpriseWorkspaceState, studentId = state
 }
 
 export function jobMatch(state: EnterpriseWorkspaceState, job: JobProfile, studentId = state.activeStudentId) {
-  const scores = abilityScores(state, studentId);
+  return jobMatchForScores(abilityScores(state, studentId), job);
+}
+
+export function jobMatchForScores(scores: number[], job: JobProfile) {
   const match = Math.round(
     job.target.reduce((sum, target, index) => sum + Math.min(scores[index] / target, 1), 0) /
       job.target.length *
@@ -622,7 +643,7 @@ export function jobMatch(state: EnterpriseWorkspaceState, job: JobProfile, stude
 }
 
 export function passedRequiredScene(state: EnterpriseWorkspaceState) {
-  return scenes.some(
+  return publishedScenes(state).some(
     (scene) =>
       scene.required &&
       (sceneProgressFor(state, scene.id).status === "已完成" ||
@@ -640,13 +661,12 @@ export function certificateEligibility(state: EnterpriseWorkspaceState) {
     .filter(
       (item) =>
         item.studentId === state.activeStudentId &&
-        (item.assessmentId === assessment.id ||
-          (item.jobId === assessment.jobId && item.assessmentKind === "试卷")),
+        (item.assessmentKind ?? "试卷") !== "题库",
     )
     .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0];
   const examReady = Boolean(
     latestExam &&
-      latestExam.score >= (latestExam.passScore ?? assessment.passScore),
+      latestExam.score >= (latestExam.passScore ?? 60),
   );
   const sceneReady = passedRequiredScene(state);
   return {
@@ -704,7 +724,7 @@ export function applicationTarget(state: EnterpriseWorkspaceState, application: 
 }
 
 export function projectEligibility(state: EnterpriseWorkspaceState, project: ProjectPosting) {
-  const job = jobById(project.jobId);
+  const job = publishedJobById(state, project.jobId);
   const match = job ? jobMatch(state, job) : { match: 0, missing: [], ready: false };
   const rightsReason = resourceRightsBlockedReason(state, project.jobId, "项目展示");
   if (rightsReason) return { ok: false, reason: rightsReason, match };
@@ -716,7 +736,7 @@ export function projectEligibility(state: EnterpriseWorkspaceState, project: Pro
 }
 
 export function jobPostingEligibility(state: EnterpriseWorkspaceState, posting: JobPosting) {
-  const job = jobById(posting.jobId);
+  const job = publishedJobById(state, posting.jobId);
   const match = job ? jobMatch(state, job) : { match: 0, missing: [], ready: false };
   const tier = match.match >= Math.max(80, posting.minMatch) && match.missing.length === 0
     ? "apply"

@@ -5,13 +5,11 @@ import {
   Archive,
   ArrowDown,
   ArrowUp,
-  Bot,
   Check,
   ChevronRight,
   Download,
   Eye,
   Plus,
-  Send,
   Settings2,
   ShieldCheck,
   Trash2,
@@ -24,15 +22,25 @@ import {
   type ApprovalIdentity,
   type PlatformRecord,
 } from "@/lib/platform-admin";
+import { isReadOnlyFor, moduleOwner, ownerLabel, roleOwner } from "@/lib/platform-admin/permissions";
+import { ConsoleAccessProvider } from "@/components/enterprise/console-access";
 import {
+  effectiveRightsStatus,
   publishedAssessments,
-  publishedCourses,
   publishedJobs,
   publishedScenes,
   type JobLearningPath,
 } from "@/lib/enterprise-workspace";
 import { useWorkspace } from "@/components/enterprise/workspace-store";
 import { RecordEditor } from "./record-editor";
+import { renderCatalogPage } from "./catalog-panels";
+import { renderCareerPage } from "./career-panels";
+import { renderScenePage } from "./scene-panels";
+import { renderCoursePage } from "./course-panels";
+import { renderAssessmentPage } from "./assessment-panels";
+import { renderServicePage } from "./service-panels";
+import { renderCertificatePage } from "./certificate-panels";
+import { renderAcademicPage } from "./academic-panels";
 
 function toneFor(status: string) {
   if (["已发布", "已通过", "已报名", "已归档"].includes(status)) return "success";
@@ -73,19 +81,28 @@ export function AcademyConsole({
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<PlatformRecord | null>(null);
   const [creating, setCreating] = useState(false);
-  const [aiDraft, setAiDraft] = useState("");
   const [approvalView, setApprovalView] = useState<"pending" | "done">("pending");
   const pathJobs = publishedJobs(state);
   const [pathJobId, setPathJobId] = useState(pathJobs[0]?.id ?? "service");
   const [learningPathDraft, setLearningPathDraft] = useState<JobLearningPath | null>(
     () => state.learningPaths.find((item) => item.jobId === (pathJobs[0]?.id ?? "service")) ?? null,
   );
-  const platformId = path[1] && platformDefinitions.some((item) => item.id === path[1]) ? path[1] : "system";
+  const platformId = path[1] && platformDefinitions.some((item) => item.id === path[1]) ? path[1] : "career";
   const platform = platformDefinitions.find((item) => item.id === platformId) ?? platformDefinitions[0];
   const defaultPage = platform.groups[0].pages[0].id;
   const pageId = path[2] && findPlatformPage(platform.id, path[2]).page ? path[2] : defaultPage;
   const definition = findPlatformPage(platform.id, pageId);
   const currentPage = definition.page!;
+  const readOnly = isReadOnlyFor(state.role, platform.id, pageId);
+  const owner = roleOwner(state.role);
+  const catalogPanel = renderCatalogPage(platform.id, pageId);
+  const careerPanel = renderCareerPage(platform.id, pageId, notify);
+  const scenePanel = renderScenePage(platform.id, pageId, notify);
+  const coursePanel = renderCoursePage(platform.id, pageId, notify);
+  const assessmentPanel = renderAssessmentPage(platform.id, pageId, notify);
+  const servicePanel = renderServicePage(platform.id, pageId);
+  const certificatePanel = renderCertificatePage(platform.id, pageId, notify);
+  const academicPanel = renderAcademicPage(platform.id, pageId);
   const linkedTypes =
     platform.id === "career" ? ["岗位"] :
       platform.id === "scene" ? ["场景"] :
@@ -239,8 +256,14 @@ export function AcademyConsole({
           : item,
       ),
     });
-    if (finished && request.resourceId) resourceAction(request.resourceId, "publish", "审批终审通过");
-    notify(finished ? "审批已通过并可进入发布授权" : `已通过，流转至${approvalIdentityLabels[steps[request.currentStep + 1]?.identity] ?? "下一节点"}`);
+    if (finished && request.resourceId) {
+      const resource = state.resources.find((item) => item.id === request.resourceId);
+      if (resource?.rights && effectiveRightsStatus(resource.rights) !== "已确权") {
+        resourceAction(request.resourceId, "confirm-rights", "审批终审通过，权属同步确认");
+      }
+      resourceAction(request.resourceId, "publish", "审批终审通过");
+    }
+    notify(finished ? "审批已通过并完成发布" : `已通过，流转至${approvalIdentityLabels[steps[request.currentStep + 1]?.identity] ?? "下一节点"}`);
   };
 
   const reject = (id: string) => {
@@ -271,134 +294,58 @@ export function AcademyConsole({
     notify("已驳回并回写资源状态");
   };
 
-  const askAi = () => {
-    const text = aiDraft.trim();
-    if (!text) return;
-    const jobs = publishedJobs(state);
-    const scenes = publishedScenes(state);
-    const courses = publishedCourses(state);
-    const assessments = publishedAssessments(state);
-    const corpus = [
-      ...jobs.map((item) => ({ label: `岗位 · ${item.name}`, text: `${item.description} ${item.skills.join(" ")}` })),
-      ...scenes.map((item) => ({ label: `场景 · ${item.name}`, text: `${item.description} ${item.tasks.join(" ")}` })),
-      ...courses.map((item) => ({ label: `课程 · ${item.name}`, text: item.chapters.map((chapter) => `${chapter.title} ${chapter.content}`).join(" ") })),
-      ...assessments.map((item) => ({ label: `测评 · ${item.name}`, text: `${item.durationMinutes} 分钟，${item.passScore} 分合格，${item.questions.length} 题` })),
-    ];
-    const chinese = text.replace(/[^\u4e00-\u9fa5]/g, "");
-    const chinesePairs = Array.from(chinese).flatMap((_, index) =>
-      index < chinese.length - 1 ? [chinese.slice(index, index + 2)] : [],
+
+  if (!owner) {
+    return (
+      <div className="ep-academy">
+        <div className="ep-empty">当前身份无权进入管理后台，请切换为科来管理或院校管理身份。</div>
+      </div>
     );
-    const terms = Array.from(
-      new Set([...text.split(/[，。；、\s]/).filter(Boolean), ...chinesePairs]),
-    );
-    const matches = corpus
-      .map((item) => ({ ...item, score: terms.reduce((sum, term) => sum + (item.text.includes(term) || item.label.includes(term) ? 1 : 0), 0) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 4);
-    const answer = matches.some((item) => item.score > 0)
-      ? `我找到 ${matches.length} 条相关内容：${matches.map((item) => `${item.label}（${item.text.slice(0, 72)}${item.text.length > 72 ? "…" : ""}）`).join("；")}`
-      : "当前资源库中没有直接匹配的内容。可以换用岗位名称、场景名称、课程名称或能力点关键词。";
-    const now = new Date().toLocaleString("zh-CN", { hour12: false });
-    updateAdmin({
-      aiMessages: [
-        ...state.platformAdmin.aiMessages,
-        { id: crypto.randomUUID(), role: "user", text, sources: [], at: now },
-        { id: crypto.randomUUID(), role: "assistant", text: answer, sources: matches.filter((item) => item.score > 0).map((item) => item.label), at: now },
-      ],
-    });
-    setAiDraft("");
-  };
+  }
 
   return (
+    <ConsoleAccessProvider value={{ readOnly, owner, pageTitle: currentPage.label }}>
     <div className="ep-academy">
-      <header className="ep-academy-head">
-        <div>
-          <span>院校工作台</span>
-          <h1>{platform.label}</h1>
-          <p>{platform.description}</p>
-        </div>
-        <label className="ep-reviewer-switch">
-          <ShieldCheck size={16} />
-          <span>审批身份</span>
-          <select
-            value={identity}
-            onChange={(event) => {
-              setApprovalIdentity(event.target.value as ApprovalIdentity);
-              notify(`已切换为${approvalIdentityLabels[event.target.value as ApprovalIdentity]}`);
-            }}
-          >
-            {(Object.entries(approvalIdentityLabels) as [ApprovalIdentity, string][]).map(([key, value]) => (
-              <option value={key} key={key}>{value}</option>
-            ))}
-          </select>
-        </label>
-      </header>
-
-      <div className="ep-academy-layout">
-        <aside className="ep-academy-menu">
-          {platform.groups.map((group) => (
-            <section key={group.id}>
-              <small>{group.label}</small>
-              {group.pages.map((item) => (
-                <a className={pageId === item.id ? "active" : ""} href={`/platform/admin/${platform.id}/${item.id}`} key={item.id}>
-                  {item.label}
-                  <ChevronRight size={13} />
-                </a>
-              ))}
-            </section>
-          ))}
-        </aside>
-
-        <main className="ep-academy-main">
-          <div className="ep-academy-title">
-            <div>
-              <span>{definition.group?.label}</span>
-              <h2>{currentPage.label}</h2>
-              <p>{currentPage.description}</p>
-            </div>
-            <div className="ep-actions">
-              {currentPage.capabilities.includes("export") && (
-                <button className="ep-button secondary" onClick={() => downloadCsv(currentPage.label, records)}>
-                  <Download size={15} />导出
-                </button>
-              )}
-              {currentPage.capabilities.includes("create") && pageId !== "learn-roads" && (
-                <button className="ep-button" onClick={createConfiguredItem}>
-                  <Plus size={15} />新建{currentPage.entity}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {platform.id === "ai" && pageId === "chat" ? (
-            <section className="ep-ai-console">
-              <div className="ep-ai-thread">
-                {state.platformAdmin.aiMessages.map((message) => (
-                  <article className={message.role} key={message.id}>
-                    {message.role === "assistant" && <span><Bot size={16} /></span>}
-                    <div>
-                      <p>{message.text}</p>
-                      {message.sources.length > 0 && <small>{message.sources.join(" · ")}</small>}
-                      <time>{message.at}</time>
-                    </div>
-                  </article>
+      <div className="ep-console-toolbar">
+        <span>{platform.label}</span>
+        <div className="ep-actions">
+          {pageId === "approvals" && (
+            <label className="ep-reviewer-switch">
+              <ShieldCheck size={16} />
+              <span>审批身份</span>
+              <select
+                value={identity}
+                onChange={(event) => {
+                  setApprovalIdentity(event.target.value as ApprovalIdentity);
+                  notify(`已切换为${approvalIdentityLabels[event.target.value as ApprovalIdentity]}`);
+                }}
+              >
+                {(Object.entries(approvalIdentityLabels) as [ApprovalIdentity, string][]).map(([key, value]) => (
+                  <option value={key} key={key}>{value}</option>
                 ))}
-              </div>
-              <div className="ep-ai-compose">
-                <input
-                  value={aiDraft}
-                  onChange={(event) => setAiDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") askAi();
-                  }}
-                  placeholder="询问岗位、场景、课程或测评"
-                />
-                <button onClick={askAi} disabled={!aiDraft.trim()} aria-label="发送">
-                  <Send size={16} />
-                </button>
-              </div>
-            </section>
-          ) : pageId === "learn-roads" ? (
+              </select>
+            </label>
+          )}
+          {currentPage.capabilities.includes("export") && (
+            <button className="ep-button secondary" onClick={() => downloadCsv(currentPage.label, records)}>
+              <Download size={15} />{pageId === "portraits" ? "导出 CSV" : "导出"}
+            </button>
+          )}
+          {!readOnly && !academicPanel && !certificatePanel && !servicePanel && !assessmentPanel && !coursePanel && !scenePanel && !careerPanel && !catalogPanel && currentPage.capabilities.includes("create") && pageId !== "learn-roads" && (
+            <button className="ep-button" onClick={createConfiguredItem}>
+              <Plus size={15} />新建{currentPage.entity}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {readOnly && (
+        <p className="ep-status warn">当前身份只读：该模块由{ownerLabel(moduleOwner(platform.id, pageId))}维护。</p>
+      )}
+
+      <div className="ep-academy-main">
+
+          {academicPanel ? academicPanel : certificatePanel ? certificatePanel : servicePanel ? servicePanel : assessmentPanel ? assessmentPanel : coursePanel ? coursePanel : scenePanel ? scenePanel : careerPanel ? careerPanel : catalogPanel ? catalogPanel : pageId === "learn-roads" ? (
             <section className="ep-path-editor">
               <div className="ep-path-editor-head">
                 <label className="ep-form">
@@ -505,7 +452,8 @@ export function AcademyConsole({
                   </div>
                   <footer className="ep-path-editor-footer">
                     <span>{selectedPathJob?.name} · {learningPathDraft.sceneNodes.length} 个场景 · {learningPathDraft.sceneNodes.filter((node) => node.required).length} 个必做</span>
-                    <button className="ep-button" disabled={!learningPathDraft.name.trim() || learningPathDraft.sceneNodes.length === 0} onClick={() => {
+                    <button className="ep-button" disabled={readOnly || !learningPathDraft.name.trim() || learningPathDraft.sceneNodes.length === 0} onClick={() => {
+                      if (readOnly) return;
                       saveLearningPath(learningPathDraft);
                       notify("岗位学习路径已保存，并同步至前台");
                     }}>保存路径</button>
@@ -560,10 +508,10 @@ export function AcademyConsole({
               {batches.map((batch) => (
                 <article key={batch.id}>
                   <header><div><h3>{batch.name}</h3><p>{batch.code} · {workflows.find((item) => item.id === batch.flowId)?.name}</p></div><span className={`ep-tag is-${batch.status === "开放中" ? "success" : "muted"}`}>{batch.status}</span></header>
-                  <footer><span>创建于 {batch.createdAt}</span><button className="ep-button secondary" onClick={() => {
+                  <footer><span>创建于 {batch.createdAt}</span>{!readOnly && <button className="ep-button secondary" onClick={() => {
                     updateAdmin({ batches: state.platformAdmin.batches.map((item) => item.id === batch.id ? { ...item, status: item.status === "开放中" ? "已截止" : "开放中" } : item) });
                     notify(batch.status === "开放中" ? "批次已截止" : "批次已重新开放");
-                  }}>{batch.status === "开放中" ? "截止批次" : "重新开放"}</button></footer>
+                  }}>{batch.status === "开放中" ? "截止批次" : "重新开放"}</button>}</footer>
                 </article>
               ))}
               {batches.length === 0 && <div className="ep-empty">尚未创建建设批次。</div>}
@@ -600,7 +548,7 @@ export function AcademyConsole({
               </div>
               {approvals.length === 0 ? <div className="ep-empty">{approvalView === "pending" ? "暂无待审批记录。" : "暂无已审批记录。"}</div> : approvals.map((request) => {
                 const step = request.steps[request.currentStep];
-                const canAct = request.status === "审批中" && step?.identity === identity;
+                const canAct = !readOnly && request.status === "审批中" && step?.identity === identity;
                 return (
                   <article key={request.id}>
                     <header>
@@ -636,6 +584,7 @@ export function AcademyConsole({
             </section>
           ) : (
             <>
+              <div className="ep-status warn">演示占位：该页面仍为通用业务记录，功能待接入真实数据。</div>
               {linkedResources.length > 0 && (
                 <section className="ep-linked-resources">
                   <div className="ep-section-title"><div><h3>已在公开资源馆使用的{linkedTypes.join("、")}资源</h3><p>进入资源详情可继续维护内容、权属和审核状态。</p></div></div>
@@ -673,8 +622,8 @@ export function AcademyConsole({
                         <td>{record.updatedAt}</td>
                         <td>
                           <div className="ep-actions">
-                            {currentPage.capabilities.includes("edit") && <button onClick={() => setEditing(record)}>编辑</button>}
-                            {currentPage.capabilities.includes("archive") && record.status !== "已归档" && (
+                            {!readOnly && currentPage.capabilities.includes("edit") && <button onClick={() => setEditing(record)}>编辑</button>}
+                            {!readOnly && currentPage.capabilities.includes("archive") && record.status !== "已归档" && (
                               <button onClick={() => {
                                 savePlatformRecord({ ...record, status: "已归档", updatedAt: new Date().toLocaleString("zh-CN", { hour12: false }) });
                                 notify("记录已归档");
@@ -690,10 +639,9 @@ export function AcademyConsole({
               </div>
             </>
           )}
-        </main>
       </div>
 
-      {(creating || editing) && (
+      {!readOnly && (creating || editing) && (
         <RecordEditor
           record={editing}
           platformId={platform.id}
@@ -708,5 +656,6 @@ export function AcademyConsole({
         />
       )}
     </div>
+    </ConsoleAccessProvider>
   );
 }

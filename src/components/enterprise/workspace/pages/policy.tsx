@@ -176,7 +176,7 @@ export function PolicyView() {
           <h2 id="policy-support-title">把政策方向落到每一段培养过程</h2>
           <p>场景化产教融合平台连接产业岗位、院校教学与人才评价，让岗位标准进入课堂，让学习成果形成能力证据。</p>
           <Link className="ep-policy-support-link" href="/platform/resources">
-            进入岗位与场景资源馆
+            进入岗位与场景
             <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </div>

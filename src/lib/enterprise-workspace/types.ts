@@ -260,6 +260,7 @@ export type ResourceContent =
   | { kind: "job"; data: JobProfile }
   | { kind: "scene"; data: SceneProfile }
   | { kind: "course"; data: CourseProfile }
+  | { kind: "textbook"; data: TextbookProfile }
   | { kind: "assessment"; data: AssessmentProfile }
   | { kind: "standard"; data: StandardProfile };
 
@@ -444,6 +445,7 @@ export interface Certificate {
   studentId: string;
   jobId: string;
   issuedAt: string;
+  definitionId?: string;
 }
 
 export interface Classroom {
@@ -543,10 +545,193 @@ export interface School {
   plan: string;
   contact: string;
   status: string;
+  contactPhone?: string;
+  address?: string;
+  validFrom?: string;
+  validUntil?: string;
 }
 
+export interface AbilityPointRecord {
+  id: string;
+  code: string;
+  name: string;
+  domain: string;
+  dimension: number;
+  level: string;
+  description: string;
+  status: "启用" | "停用";
+}
+
+export type TeachingMaterialType = TeachingResourceItem["type"];
+
+export interface TeachingMaterial {
+  id: string;
+  code: string;
+  type: TeachingMaterialType;
+  title: string;
+  description: string;
+  fileName: string;
+  owner: string;
+  status: "启用" | "停用";
+  updatedAt: string;
+}
+
+export interface KnowledgePoint {
+  id: string;
+  code: string;
+  name: string;
+  domain: string;
+  description: string;
+  tags: string[];
+  status: "启用" | "停用";
+  updatedAt: string;
+}
+
+export interface EvaluationMethodRecord {
+  id: string;
+  code: string;
+  name: string;
+  form: string;
+  duration: string;
+  use: string;
+  description: string;
+  passScore: number;
+  status: "启用" | "停用";
+}
+
+export interface CodeRule {
+  id: string;
+  resourceType: string;
+  prefix: string;
+  pattern: string;
+  nextNumber: number;
+  status: "启用" | "停用";
+}
+
+export interface Department {
+  id: string;
+  code: string;
+  name: string;
+  schoolId: string;
+  status: "启用" | "停用";
+}
+
+export interface SchoolMajor {
+  id: string;
+  code: string;
+  name: string;
+  departmentId: string;
+  schoolId: string;
+  description: string;
+  status: "启用" | "停用";
+}
+
+export interface ClassGroup {
+  id: string;
+  code: string;
+  name: string;
+  majorId: string;
+  schoolId: string;
+  teacherId: string;
+  studentIds: string[];
+  status: "在读" | "已毕业";
+}
+
+export interface StudentRecord {
+  id: string;
+  studentNo: string;
+  name: string;
+  classId: string;
+  schoolId: string;
+  majorId: string;
+  phone: string;
+  email: string;
+  status: "在读" | "休学" | "已毕业";
+}
+
+export interface TeacherRecord {
+  id: string;
+  teacherNo: string;
+  name: string;
+  departmentId: string;
+  schoolId: string;
+  title: string;
+  phone: string;
+  email: string;
+  status: "在职" | "离职";
+}
+
+export interface TrainingProgram {
+  id: string;
+  code: string;
+  name: string;
+  majorId: string;
+  jobIds: string[];
+  courseIds: string[];
+  description: string;
+  status: "启用" | "停用";
+  updatedAt: string;
+}
+
+export interface TeachingPlan {
+  id: string;
+  code: string;
+  name: string;
+  term: string;
+  programId: string;
+  classId: string;
+  courseIds: string[];
+  startDate: string;
+  endDate: string;
+  status: "草稿" | "执行中" | "已结束";
+}
+
+export interface LessonResult {
+  id: string;
+  studentId: string;
+  courseId: string;
+  chapterIndex: number;
+  score: number;
+  comment: string;
+  reviewer: string;
+  reviewedAt: string;
+}
+
+export interface ScheduleEntry {
+  id: string;
+  term: string;
+  classId: string;
+  teacherId: string;
+  courseId: string;
+  sceneId: string;
+  location: string;
+  weekday: string;
+  startTime: string;
+  endTime: string;
+  status: "待上课" | "已结束";
+}
+
+export type CatalogEntityMap = {
+  abilityCatalog: AbilityPointRecord;
+  knowledgeCatalog: KnowledgePoint;
+  teachingMaterials: TeachingMaterial;
+  evaluationMethodCatalog: EvaluationMethodRecord;
+  codeRules: CodeRule;
+  departments: Department;
+  schoolMajors: SchoolMajor;
+  classGroups: ClassGroup;
+  studentRecords: StudentRecord;
+  teacherRecords: TeacherRecord;
+  schools: School;
+  majorGroups: MajorGroup;
+  trainingPrograms: TrainingProgram;
+  teachingPlans: TeachingPlan;
+  scheduleEntries: ScheduleEntry;
+  lessonResults: LessonResult;
+};
+
 export interface EnterpriseWorkspaceState {
-  schemaVersion: 12;
+  schemaVersion: 15;
   role: Role | null;
   activeSchoolId: string;
   activeStudentId: string;
@@ -568,10 +753,24 @@ export interface EnterpriseWorkspaceState {
   jobPostings: JobPosting[];
   applications: Application[];
   schools: School[];
+  abilityCatalog: AbilityPointRecord[];
+  knowledgeCatalog: KnowledgePoint[];
+  teachingMaterials: TeachingMaterial[];
+  evaluationMethodCatalog: EvaluationMethodRecord[];
+  codeRules: CodeRule[];
+  departments: Department[];
+  schoolMajors: SchoolMajor[];
+  classGroups: ClassGroup[];
+  studentRecords: StudentRecord[];
+  teacherRecords: TeacherRecord[];
+  trainingPrograms: TrainingProgram[];
+  teachingPlans: TeachingPlan[];
+  scheduleEntries: ScheduleEntry[];
+  lessonResults: LessonResult[];
   resume: Resume;
   favorites: string[];
   standardWeights: number[];
   auditEvents: AuditEvent[];
-  courseProgress: Record<string, number[]>;
+  studentCourseProgress: Record<string, Record<string, number[]>>;
   platformAdmin: PlatformAdminState;
 }

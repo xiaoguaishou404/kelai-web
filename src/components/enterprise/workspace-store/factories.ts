@@ -2,7 +2,6 @@
 
 import {
   createAudit,
-  jobById,
   nowLabel,
   projectEligibility,
   type Application,
@@ -78,11 +77,13 @@ export function jobStatusOptions(application: Application) {
 }
 
 export function applicationJobScore(state: EnterpriseWorkspaceState, application: Application) {
-  const job =
-    application.kind === "project"
-      ? jobById(state.projects.find((item) => item.id === application.targetId)?.jobId ?? "")
-      : jobById(state.jobPostings.find((item) => item.id === application.targetId)?.jobId ?? "");
-  return job?.name ?? "岗位能力";
+  const jobId = application.kind === "project"
+    ? state.projects.find((item) => item.id === application.targetId)?.jobId ?? ""
+    : state.jobPostings.find((item) => item.id === application.targetId)?.jobId ?? "";
+  const resource = state.resources.find(
+    (item) => item.id === jobId && item.publishedContent?.kind === "job",
+  );
+  return resource?.publishedContent?.kind === "job" ? resource.publishedContent.data.name : "岗位能力";
 }
 
 export function canApplyProject(state: EnterpriseWorkspaceState, project: ProjectPosting) {

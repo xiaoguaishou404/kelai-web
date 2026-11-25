@@ -121,7 +121,7 @@ export function ReviewsView() {
         </div>
         {taskSubmissions.length === 0 ? <Empty>当前筛选下没有任务成果。</Empty> : taskSubmissions.map((submission) => {
           const scene = sceneById(submission.sceneId);
-          const task = taskDetailById(submission.sceneId, submission.taskId);
+          const task = taskDetailById(state, submission.sceneId, submission.taskId);
           const latestReview = submission.reviews[submission.reviews.length - 1];
           if (!scene || !task) return null;
           return (

@@ -16,6 +16,7 @@ type LegacyTrainingFields = {
 export type LegacyWorkspaceData = EnterpriseWorkspaceState & LegacyTrainingFields & {
   classroom: LegacyClassroom;
   classmates: LegacyLearner[];
+  courseProgress?: Record<string, number[]>;
 };
 
 export type LegacyWorkspaceMigration = Partial<EnterpriseWorkspaceState> & LegacyTrainingFields & {

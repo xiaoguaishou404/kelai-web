@@ -24,6 +24,8 @@ export type BuilderProps = {
   resource?: Resource;
   notify: (message: string) => void;
   onClose: () => void;
+  courseType?: CourseProfile["courseType"];
+  assessmentKind?: NonNullable<AssessmentProfile["kind"]>;
 };
 
 export function uid(prefix: string) {
@@ -118,26 +120,33 @@ export function createSceneTask(
   };
 }
 
-export function defaultCourse(jobId = "", sceneId = ""): CourseProfile {
+export function defaultCourse(jobId = "", sceneId = "", courseType: CourseProfile["courseType"] = "体系课"): CourseProfile {
   return {
     id: uid("course"),
     name: "",
     jobId,
     sceneId,
-    courseType: "体系课",
+    courseType,
     totalHours: 12,
     abilityPointIds: [],
     chapters: [],
   };
 }
 
-export function defaultAssessment(jobId = "", standardId = ""): AssessmentProfile {
+export function defaultAssessment(
+  jobId = "",
+  standardId = "",
+  kind: NonNullable<AssessmentProfile["kind"]> = "试卷",
+): AssessmentProfile {
   return {
     id: uid("assessment"),
     name: "",
     code: `KL-AS-${String(Date.now()).slice(-4)}`,
     jobId,
     standardId,
+    kind,
+    difficulty: "中级",
+    publisher: "科来网络",
     durationMinutes: 30,
     passScore: 80,
     questions: [],
@@ -323,7 +332,7 @@ export function useResourceSave(resource?: Resource) {
     createResource({
       id,
       ...meta,
-      type: content.kind === "job" ? "岗位" : content.kind === "scene" ? "场景" : content.kind === "course" ? "课程" : content.kind === "assessment" ? "测评" : "评价标准",
+      type: content.kind === "job" ? "岗位" : content.kind === "scene" ? "场景" : content.kind === "course" ? "课程" : content.kind === "textbook" ? "教材" : content.kind === "assessment" ? "测评" : "评价标准",
       status,
       version: "V1.0",
       updatedAt: nowLabel(),

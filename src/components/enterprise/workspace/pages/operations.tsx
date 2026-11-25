@@ -2,19 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowUpRight, Building2, Plus } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import {
-  effectiveRightsStatus,
   jobLearningReadiness,
-  publishedJobs,
-  resourceRightsBlockedReason,
   resourceRightsReady,
   rightsSummary,
-  type Resource,
 } from "@/lib/enterprise-workspace";
 import { jobStatusOptions, projectStatusOptions } from "@/components/enterprise/workspace-store";
-import { ResourceBuilder } from "@/components/enterprise/resource-builders";
 import { useWorkspacePage } from "@/components/enterprise/workspace/page-runtime";
+import { useConsoleAccess } from "@/components/enterprise/console-access";
 import { Btn, Card, Empty, History, Metric, Tag, applicationTone } from "@/components/enterprise/workspace/ui";
 
 export function ManageHome() {
@@ -34,9 +30,9 @@ export function ManageHome() {
       <div className="ep-split">
         <Card>
           <h2>业务待办</h2>
-          <Link className="ep-row" href="/platform/manage/resources"><div className="ep-grow"><b>资源审核</b><p>{pendingResources} 项等待审核</p></div><ArrowUpRight /></Link>
-          <Link className="ep-row" href="/platform/manage/projects"><div className="ep-grow"><b>项目验收</b><p>{projectApplications} 条项目申请记录</p></div><ArrowUpRight /></Link>
-          <Link className="ep-row" href="/platform/manage/recruitment"><div className="ep-grow"><b>人才投递</b><p>{jobApplications} 条岗位投递记录</p></div><ArrowUpRight /></Link>
+          <Link className="ep-row" href="/platform/admin/career/positions"><div className="ep-grow"><b>资源审核</b><p>{pendingResources} 项等待审核</p></div><ArrowUpRight /></Link>
+          <Link className="ep-row" href="/platform/admin/alliance/projects"><div className="ep-grow"><b>项目验收</b><p>{projectApplications} 条项目申请记录</p></div><ArrowUpRight /></Link>
+          <Link className="ep-row" href="/platform/admin/alliance/employment-job"><div className="ep-grow"><b>人才投递</b><p>{jobApplications} 条岗位投递记录</p></div><ArrowUpRight /></Link>
         </Card>
         <Card>
           <h2>最近操作</h2>
@@ -46,7 +42,7 @@ export function ManageHome() {
       <Card>
         <h2>资源概况</h2>
         <div className="ep-stats">
-          {(["岗位", "场景", "课程", "测评", "评价标准"] as const).map((type) => <Metric key={type} label={type} value={state.resources.filter((item) => item.type === type).length} />)}
+          {(["岗位", "场景", "课程", "教材", "测评", "评价标准"] as const).map((type) => <Metric key={type} label={type} value={state.resources.filter((item) => item.type === type).length} />)}
         </div>
         <div className="ep-rights-stats">
           <div><b>{rights.confirmed}</b><span>已确权</span></div>
@@ -59,88 +55,7 @@ export function ManageHome() {
   );
 }
 
-export function ManageResources() {
-  const {
-  creatingResource,
-  go,
-  notify,
-  resourceActionWithNotice,
-  resourceType,
-  setCreatingResource,
-  setResourceType,
-  state,
-  } = useWorkspacePage();
-  const types: Resource["type"][] = ["岗位", "场景", "课程", "测评", "评价标准"];
-  const resources = state.resources.filter((resource) => resource.type === resourceType);
-  return (
-    <>
-      <Card>
-        <div className="ep-section-title"><div><h1>资源建设与审核</h1><p>草稿 → 确权审核 → 发布使用</p></div><Tag>年度资源</Tag></div>
-        <div className="ep-tabs ep-resource-tabs">{types.map((type) => <button key={type} className={resourceType === type ? "active" : ""} onClick={() => { setResourceType(type); setCreatingResource(false); }}>{type}<small>{state.resources.filter((item) => item.type === type).length}</small></button>)}</div>
-        <div className="ep-toolbar ep-resource-toolbar"><div><b>{resourceType}资源</b><p>{resourceType === "岗位" ? "按真实工作任务建设能力模型并组织学习路径" : `管理${resourceType}资源与版本`}</p></div><Btn onClick={() => setCreatingResource(true)}><Plus size={16} />新建{resourceType}</Btn></div>
-        {creatingResource && <ResourceBuilder kind={resourceType} notify={notify} onClose={() => setCreatingResource(false)} />}
-        <div className="ep-tablewrap"><table>
-          <thead><tr><th>编码 / 名称</th><th>版本</th><th>状态</th><th>关联 / 完整性</th><th>资源确权</th><th>操作</th></tr></thead>
-          <tbody>{resources.map((resource) => {
-            const content = resource.draftContent.data;
-            const code = "code" in content ? content.code : undefined;
-            const readiness = resource.draftContent.kind === "job" ? jobLearningReadiness(state, resource.id) : { ready: false, reason: "" };
-            const rightsStatus = effectiveRightsStatus(resource.rights);
-            const rightsReason = resourceRightsBlockedReason(state, resource.id, "教学使用");
-            return (
-              <tr key={resource.id}>
-                <td><Link href={`/platform/resource/${resource.id}`}>{resource.name}</Link><small>{code ?? resource.id}</small>{resource.reviewNote && <small className="danger">{resource.reviewNote}</small>}</td>
-                <td>{resource.version}</td>
-                <td><Tag tone={resource.status === "已发布" ? "success" : resource.status === "已驳回" ? "danger" : "warning"}>{resource.status}</Tag></td>
-                <td>{resource.draftContent.kind === "job" ? <><Tag tone={readiness.ready ? "success" : "muted"}>{readiness.ready ? "可培养" : "待完善"}</Tag><small>{readiness.reason}</small></> : `${resource.relatedIds.length} 项关联`}</td>
-                <td><Tag tone={rightsStatus === "已确权" ? "success" : rightsStatus === "已驳回" || rightsStatus === "已过期" ? "danger" : "warning"}>{rightsStatus}</Tag><small>{rightsReason}</small></td>
-                <td><div className="ep-actions">
-                  {(rightsStatus === "待确权" || rightsStatus === "已驳回" || rightsStatus === "已过期") && <Btn secondary onClick={() => go(`resource/${resource.id}`)}>补录确权</Btn>}
-                  {resource.status === "草稿" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "submit", "")}>提交审核</Btn>}
-                  {resource.status === "待审核" && rightsStatus === "审核中" && <><Btn onClick={() => resourceActionWithNotice(resource.id, "confirm-rights", "")}>通过确权</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject-rights", "请补充权属材料")}>驳回权属</Btn></>}
-                  {resource.status === "待审核" && <><Btn disabled={Boolean(rightsReason)} title={rightsReason} onClick={() => resourceActionWithNotice(resource.id, "publish", "")}>审核发布</Btn><Btn secondary onClick={() => resourceActionWithNotice(resource.id, "reject", "请补充内容与关联资源")}>驳回内容</Btn></>}
-                  {resource.status === "已驳回" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "submit", "")}>重新提交</Btn>}
-                  {resource.status === "已发布" && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "offline", "")}>下线</Btn>}
-                  {(resource.status === "已下线" || resource.status === "已驳回") && <Btn secondary onClick={() => resourceActionWithNotice(resource.id, "revise", "")}>编辑新版本</Btn>}
-                </div></td>
-              </tr>
-            );
-          })}</tbody>
-        </table></div>
-      </Card>
-      {resourceType === "岗位" && <Card><h2>岗位选择状态</h2>{publishedJobs(state).map((job) => {
-        const readiness = jobLearningReadiness(state, job.id);
-        return <div className="ep-row" key={job.id}><div className="ep-grow"><b>{job.name}</b><p>{readiness.reason || "已具备场景与课程，可被项目和招聘选择"}</p></div><Tag tone={readiness.ready ? "success" : "warning"}>{readiness.ready ? "可培养" : "标准已发布"}</Tag></div>;
-      })}</Card>}
-    </>
-  );
-}
-
-export function StandardsView() {
-  const { jobById, notify, publishedStandardList } = useWorkspacePage();
-  const [creating, setCreating] = useState(false);
-  return (
-    <>
-      <Card>
-        <div className="ep-section-title"><div><h1>岗位能力评价标准</h1><p>配置岗位能力点权重、等级映射与认定规则。</p></div><Btn onClick={() => setCreating(true)}><Plus size={16} />新建标准</Btn></div>
-        {creating && <ResourceBuilder kind="评价标准" notify={notify} onClose={() => setCreating(false)} />}
-        {publishedStandardList.length === 0 ? <Empty>暂无已发布标准。</Empty> : publishedStandardList.map((standard) => <div className="ep-row" key={standard.id}><div className="ep-grow"><b>{standard.name}</b><p>{jobById(standard.jobId)?.name} · {standard.abilityPointWeights.length} 个能力点</p></div><Link className="ep-link" href={`/platform/standard/${standard.id}`}>查看</Link><Link className="ep-link" href={`/platform/resource/${standard.id}`}>编辑</Link></div>)}
-      </Card>
-    </>
-  );
-}
-
-export function SchoolsView() {
-  const { state } = useWorkspacePage();
-  return (
-    <Card>
-      <h1>合作院校与协议</h1>
-      {state.schools.map((school) => <div className="ep-row" key={school.id}><Building2 className="ep-blue" /><div className="ep-grow"><h2>{school.name}</h2><p>{school.college} · {school.plan} · {school.contact}</p></div><Tag tone={school.status === "服务中" ? "success" : "muted"}>{school.status}</Tag></div>)}
-    </Card>
-  );
-}
-
-export function ManageApplications({ kind }: { kind: "project" | "job" }) {
+export function ManageApplications({ kind, hideTitle = false }: { kind: "project" | "job"; hideTitle?: boolean }) {
   const {
   jobs,
   notify,
@@ -151,6 +66,7 @@ export function ManageApplications({ kind }: { kind: "project" | "job" }) {
   toggleJob,
   toggleProject,
   } = useWorkspacePage();
+  const { readOnly } = useConsoleAccess();
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [name, setName] = useState("");
   const [company, setCompany] = useState("科来网络");
@@ -184,8 +100,8 @@ export function ManageApplications({ kind }: { kind: "project" | "job" }) {
   return (
     <>
       <Card>
-        <div className="ep-section-title"><div><h1>{kind === "project" ? "项目派单与验收" : "招聘与人才库"}</h1><p>{kind === "project" ? "发布客户课题并跟踪申请、交付和验收" : "发布岗位并跟踪投递、面试和录用"}</p></div><Tag>{applications.length} 条记录</Tag></div>
-        <details>
+        <div className="ep-section-title">{!hideTitle && <div><h1>{kind === "project" ? "项目派单与验收" : "招聘与人才库"}</h1><p>{kind === "project" ? "发布客户课题并跟踪申请、交付和验收" : "发布岗位并跟踪投递、面试和录用"}</p></div>}<Tag>{applications.length} 条记录</Tag></div>
+        {!readOnly && <details>
           <summary>发布新的{kind === "project" ? "产业项目" : "招聘岗位"}</summary>
           <label className="ep-form">名称<input value={name} onChange={(event) => setName(event.target.value)} /></label>
           <label className="ep-form">单位<input value={company} onChange={(event) => setCompany(event.target.value)} /></label>
@@ -263,9 +179,9 @@ export function ManageApplications({ kind }: { kind: "project" | "job" }) {
             }
             setName(""); setDescription(""); notify("内容已发布至前台");
           }}>确认发布</Btn>
-        </details>
+        </details>}
         <h2>已发布内容</h2>
-        {(kind === "project" ? state.projects : state.jobPostings).map((item) => <div className="ep-row" key={item.id}><span className="ep-grow">{item.name} · {item.company}</span><Tag tone={item.status === "已发布" ? "success" : "muted"}>{item.status}</Tag><Btn secondary onClick={() => kind === "project" ? toggleProject(item.id) : toggleJob(item.id)}>{item.status === "已发布" ? "下线" : "发布"}</Btn></div>)}
+        {(kind === "project" ? state.projects : state.jobPostings).map((item) => <div className="ep-row" key={item.id}><span className="ep-grow">{item.name} · {item.company}</span><Tag tone={item.status === "已发布" ? "success" : "muted"}>{item.status}</Tag>{!readOnly && <Btn secondary onClick={() => kind === "project" ? toggleProject(item.id) : toggleJob(item.id)}>{item.status === "已发布" ? "下线" : "发布"}</Btn>}</div>)}
       </Card>
       <Card>
         <h2>申请与处理</h2>
@@ -276,7 +192,7 @@ export function ManageApplications({ kind }: { kind: "project" | "job" }) {
               <div className="ep-row"><div className="ep-grow"><h2>{application.studentName} · {application.name}</h2><p>{application.company}</p></div><Tag tone={applicationTone(application.status)}>{application.status}</Tag></div>
               {application.resumeSnapshot && <details><summary>简历快照</summary><p>{application.resumeSnapshot.phone} · {application.resumeSnapshot.education}</p><p>{application.resumeSnapshot.summary}</p></details>}
               {application.deliveryText && <p><b>交付内容</b>{application.deliveryText}</p>}
-              {options.length > 0 && <>
+              {!readOnly && options.length > 0 && <>
                 <input value={feedback[application.id] ?? ""} onChange={(event) => setFeedback({ ...feedback, [application.id]: event.target.value })} placeholder="处理意见 / 退回原因" />
                 <div className="ep-actions">{options.map((status) => <Btn key={status} secondary onClick={() => {
                   if ((status === "已驳回" || status === "已退回" || status === "未通过") && !(feedback[application.id] ?? "").trim()) return notify("请填写处理原因");

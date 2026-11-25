@@ -2559,3 +2559,169 @@
     flex-direction: column;
   }
 }
+
+.ep .ep-sidebar.ep-console-sidebar-aside {
+  position: sticky;
+  top: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+.ep .ep-console-tree {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--scale-base) * 2);
+}
+.ep .ep-console-tree > small {
+  display: block;
+  padding: calc(var(--scale-base) * 8) calc(var(--scale-base) * 14);
+  color: #8c99ab;
+  font-size: calc(var(--scale-base) * 12);
+}
+.ep .ep-console-tree-group {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--scale-base) * 2);
+}
+.ep .ep-console-tree-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 500;
+}
+.ep .ep-console-tree-head svg {
+  color: #9aa8ba;
+  transition: transform 0.2s ease;
+}
+.ep .ep-console-tree-group.is-open > .ep-console-tree-head svg {
+  transform: rotate(90deg);
+}
+.ep .ep-console-tree-head.is-current {
+  color: #3361e8;
+  background: #eef3ff;
+}
+.ep .ep-console-tree-pages {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--scale-base) * 2);
+  margin: calc(var(--scale-base) * 2) 0 calc(var(--scale-base) * 6);
+  padding-left: calc(var(--scale-base) * 12);
+  border-left: calc(var(--scale-base) * 1) solid #e8edf5;
+}
+.ep .ep-console-tree-section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--scale-base) * 2);
+}
+.ep .ep-console-tree-section > small {
+  display: block;
+  padding: calc(var(--scale-base) * 6) calc(var(--scale-base) * 10);
+  color: #8c99ab;
+  font-size: calc(var(--scale-base) * 12);
+}
+.ep .ep-console-tree-pages a {
+  padding: calc(var(--scale-base) * 8) calc(var(--scale-base) * 10);
+  font-size: calc(var(--scale-base) * 13);
+}
+.ep .ep-console-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--scale-base) * 16);
+  margin-bottom: calc(var(--scale-base) * 16);
+}
+.ep .ep-console-toolbar > span {
+  color: #71839a;
+  font-size: calc(var(--scale-base) * 13);
+}
+.ep .ep-console-toolbar .ep-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--scale-base) * 10);
+  margin: 0;
+}
+@media screen and (max-width: 1000px) {
+  .ep .ep-sidebar.ep-console-sidebar-aside {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+.ep .ep-catalog-panel {
+  margin-bottom: calc(var(--scale-base) * 18);
+}
+.ep .ep-catalog-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: calc(var(--scale-base) * 16);
+  margin-bottom: calc(var(--scale-base) * 12);
+}
+.ep .ep-catalog-head h3 {
+  margin: 0;
+}
+.ep .ep-catalog-head p {
+  margin: calc(var(--scale-base) * 4) 0 0;
+  color: #71839a;
+  font-size: calc(var(--scale-base) * 12);
+}
+.ep .ep-catalog-head-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--scale-base) * 12);
+}
+.ep .ep-catalog-head-actions > span {
+  color: #7a8ba0;
+  font-size: calc(var(--scale-base) * 12);
+}
+.ep .ep-catalog-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: calc(var(--scale-base) * 10);
+}
+.ep .ep-catalog-toolbar .ep-search {
+  width: min(calc(var(--scale-base) * 320), 100%);
+  margin: 0;
+}
+.ep .ep-catalog-form {
+  margin-top: calc(var(--scale-base) * 16);
+  padding: calc(var(--scale-base) * 16);
+  border: calc(var(--scale-base) * 1) solid #e5ebf4;
+  border-radius: calc(var(--scale-base) * 12);
+  background: #fff;
+}
+.ep .ep-catalog-form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: calc(var(--scale-base) * 12);
+}
+.ep .ep-catalog-form-head h3 {
+  margin: 0;
+}
+.ep .ep-catalog-form-head button {
+  color: #7a8ba0;
+}
+.ep .ep-material-picker {
+  display: flex;
+  gap: calc(var(--scale-base) * 8);
+  margin: 0 0 calc(var(--scale-base) * 10);
+}
+.ep .ep-material-picker select {
+  flex: 1;
+  min-width: 0;
+}
+.ep .ep-material-picker button {
+  flex-shrink: 0;
+  padding: calc(var(--scale-base) * 6) calc(var(--scale-base) * 12);
+  border: calc(var(--scale-base) * 1) solid #dce5f2;
+  border-radius: calc(var(--scale-base) * 8);
+  color: #3361e8;
+  background: #f4f7ff;
+}
+@media screen and (max-width: 900px) {
+  .ep .ep-catalog-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -12,6 +12,7 @@ export function ResourcePreview({ state, resource }: { state: EnterpriseWorkspac
   }
   if (published.kind === "scene") return <div className="ep-resource-preview"><h2>{published.data.name}</h2><p>{published.data.description}</p><h3>任务链</h3>{published.data.tasks.map((item, index) => <p key={`${item}-${index}`}>{index + 1}. {item}</p>)}</div>;
   if (published.kind === "course") return <div className="ep-resource-preview"><h2>{published.data.name}</h2><p>{published.data.courseType} · {published.data.totalHours} 学时</p>{published.data.chapters.map((item, index) => <p key={`${item.title}-${index}`}>{index + 1}. {item.title}</p>)}</div>;
+  if (published.kind === "textbook") return <div className="ep-resource-preview"><h2>{published.data.name}</h2><p>{published.data.code} · {published.data.creator} · {published.data.major}</p>{published.data.chapters.map((item, index) => <p key={`${item.title}-${index}`}>{index + 1}. {item.title}</p>)}</div>;
   if (published.kind === "assessment") return <div className="ep-resource-preview"><h2>{published.data.name}</h2><p>{published.data.questions.length} 题 · {published.data.durationMinutes} 分钟 · {published.data.passScore} 分合格</p></div>;
   return <div className="ep-resource-preview"><h2>{published.data.name}</h2><p>{published.data.recognitionRule}</p>{published.data.abilityPointWeights.map((item) => <p key={item.id}>{item.name} · {item.weight}% · {item.level}</p>)}</div>;
 }

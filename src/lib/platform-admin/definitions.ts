@@ -13,42 +13,22 @@ export const platformDefinitions: PlatformDefinition[] = [
     id: "system",
     label: "系统管理",
     short: "系统",
-    description: "租户、套餐、组织账号、角色与审计",
+    description: "院校租户、资源编码与操作审计",
     groups: [
       {
         id: "tenant",
-        label: "租户与系统资源",
-        description: "院校租户、套餐、行业专业和前台配置",
+        label: "租户与编码",
+        description: "院校租户与统一资源编码",
         pages: [
           page("tenant", "租户信息", "维护院校租户的基础资料与联系人", "租户"),
-          page("package", "套餐情况", "查看已开通平台、有效期与扩容情况", "套餐", ["export"]),
           page("codes", "资源编码", "统一岗位、场景、课程、能力点等资源编码", "编码"),
-          page("industries", "行业管理", "维护产业分类与启停状态", "行业"),
-          page("majors", "专业管理", "维护专业、别名和适用专业群", "专业"),
-          page("backgrounds", "前台背景", "配置各频道首页的封面与背景", "页面配置", ["edit"]),
-          page("mallpush", "商城推送", "将资源包推送至指定院校", "推送记录"),
-        ],
-      },
-      {
-        id: "organization",
-        label: "组织与用户",
-        description: "组织、师生、账号、角色和关系",
-        pages: [
-          page("org", "组织架构", "维护院系、专业和教学组织", "组织"),
-          page("students", "学生管理", "维护学生信息、班级和专业", "学生"),
-          page("teachers", "教职工管理", "维护教师、审核人与教务人员", "教职工"),
-          page("accounts", "账户列表", "管理登录账号、状态和所属角色", "账户"),
-          page("roles", "角色权限", "配置平台、模块和操作权限", "角色"),
-          page("positions", "职位管理", "维护教职工职位和职责范围", "职位"),
-          page("relations", "人员关系", "维护班主任、专业负责人等关系", "关系"),
         ],
       },
       {
         id: "audit",
         label: "审计日志",
-        description: "追踪登录及业务操作",
+        description: "追踪业务操作",
         pages: [
-          page("loglogin", "登录日志", "查看用户登录结果与来源", "日志", ["export"]),
           page("logoperation", "操作日志", "查看资源、审批和教学操作记录", "日志", ["export"]),
         ],
       },
@@ -58,7 +38,7 @@ export const platformDefinitions: PlatformDefinition[] = [
     id: "career",
     label: "职业岗位学习平台",
     short: "岗位",
-    description: "岗位建设、归档、审批、推荐与学习路径",
+    description: "岗位建设、专业群、审批与学习路径",
     groups: [
       {
         id: "catalog",
@@ -66,7 +46,7 @@ export const platformDefinitions: PlatformDefinition[] = [
         description: "岗位标准与版本管理",
         pages: [
           page("positions", "岗位管理", "建设岗位职责、能力模型、证书和关联资源", "岗位"),
-          page("archive", "岗位归档", "查阅已归档岗位与历史版本", "岗位", ["edit", "export"]),
+          page("major-groups", "专业群适配", "维护专业群与专业、岗位的对应关系", "专业群"),
         ],
       },
       {
@@ -80,10 +60,9 @@ export const platformDefinitions: PlatformDefinition[] = [
       },
       {
         id: "display",
-        label: "展示与路径",
-        description: "控制前台推荐与岗位学习路径",
+        label: "学习路径",
+        description: "编排岗位下的课程与场景顺序",
         pages: [
-          page("recommend", "岗位推荐", "配置前台推荐岗位及排序", "推荐位", ["edit"]),
           page("learn-roads", "学习路径", "编排岗位下的课程与场景顺序", "学习路径", ["create", "edit"]),
         ],
       },
@@ -101,7 +80,6 @@ export const platformDefinitions: PlatformDefinition[] = [
         description: "场景版本、任务链与关联岗位",
         pages: [
           page("scenarios", "场景管理", "建设业务背景、任务链、证据、资源和量规", "场景"),
-          page("archive", "场景归档", "查阅已归档场景及历史记录", "场景", ["edit", "export"]),
         ],
       },
       {
@@ -132,7 +110,6 @@ export const platformDefinitions: PlatformDefinition[] = [
           page("hybrid", "混合课模板", "组织线上章节与线下实践任务", "混合课"),
           page("culture", "文化思政课", "建设行业价值观、职业规范与案例内容", "文化思政课"),
           page("textbooks", "数字教材", "维护教材目录、章节正文与配套资源", "教材"),
-          page("archive", "历史档案", "查阅历史课程与教材版本", "课程", ["edit", "export"]),
         ],
       },
       {
@@ -205,16 +182,6 @@ export const platformDefinitions: PlatformDefinition[] = [
           page("doc", "文档资源", "管理课件、案例、报告和模板", "文档"),
           page("image", "图片资源", "管理封面、示意图和现场图片", "图片"),
           page("video", "视频资源", "管理课程视频、案例和演示素材", "视频"),
-          page("questions", "现场问答", "维护课堂与实训现场问答", "问答"),
-        ],
-      },
-      {
-        id: "private",
-        label: "我的资源",
-        description: "个人资源与复用范围",
-        pages: [
-          page("mine", "我的资源", "查看和复用本人上传的资源", "资源", ["create", "edit", "archive"]),
-          page("tags", "标签管理", "维护资源分类和检索标签", "标签"),
         ],
       },
     ],
@@ -228,14 +195,11 @@ export const platformDefinitions: PlatformDefinition[] = [
       {
         id: "organization",
         label: "教务管理",
-        description: "组织、专业、师生与职位",
+        description: "组织、师生与教学归属",
         pages: [
           page("org", "组织架构", "维护院系、专业和班级", "组织"),
-          page("majors", "专业管理", "维护专业标准与培养方向", "专业"),
           page("students", "学生管理", "维护在籍学生与班级归属", "学生"),
           page("teachers", "教职工管理", "维护授课教师与教务人员", "教职工"),
-          page("relations", "人员关系", "维护班主任、负责人和协作关系", "关系"),
-          page("positions", "职位管理", "维护校内岗位与职责", "职位"),
         ],
       },
       {
@@ -250,84 +214,36 @@ export const platformDefinitions: PlatformDefinition[] = [
         ],
       },
       {
-        id: "approval",
-        label: "审批管理",
-        description: "教务批次、工作流与审批",
+        id: "results",
+        label: "结果与认证",
+        description: "证书报名审核",
         pages: [
-          page("batches", "批次管理", "组织教务相关业务建设批次", "批次"),
-          page("workflows", "工作流管理", "配置教务审批节点", "工作流", ["create", "edit"]),
-          page("approvals", "审批中心", "处理教务提交与复核", "审批", ["approve", "export"]),
+          page("certificate-enrollments", "证书报名审核", "审核本校学生证书报名", "报名", ["edit"]),
         ],
       },
     ],
   },
   {
     id: "alliance",
-    label: "产业联盟与品牌运营平台",
-    short: "联盟",
-    description: "校企合作、品牌运营、专家和就业服务",
+    label: "院校与就业服务",
+    short: "院校就业",
+    description: "服务院校、产业项目与就业投递",
     groups: [
       {
         id: "cooperation",
-        label: "产教融合",
-        description: "学校、企业、项目、协议、成果和专家",
+        label: "院校与项目",
+        description: "服务院校与产业项目验收",
         pages: [
-          page("school", "学校信息", "维护合作院校与联系人", "学校"),
-          page("enterprises", "合作企业", "维护企业和行业合作方向", "企业"),
-          page("projects", "合作项目", "发布校企课题和验收要求", "项目"),
-          page("agreements", "合作协议", "管理协议范围与有效期", "协议"),
-          page("achievements", "合作成果", "沉淀共建课程、场景和项目成果", "成果"),
-          page("experts", "专家资源库", "维护行业专家与参与领域", "专家"),
-          page("permissions", "专家权限", "配置专家在资源与项目中的操作范围", "权限"),
-          page("dictionaries", "字典管理", "维护行业、合作类型等字典", "字典"),
-        ],
-      },
-      {
-        id: "brands",
-        label: "品牌运营",
-        description: "人才、雇主、岗位、专业、师资和文化品牌",
-        pages: [
-          page("brands", "品牌概览", "查看各品牌内容与运营状态", "品牌", ["export"]),
-          page("brands-talent", "人才品牌", "维护优秀学生与人才案例", "品牌"),
-          page("brands-employer", "雇主品牌", "维护合作企业与用人案例", "品牌"),
-          page("brands-job", "岗位品牌", "维护岗位成长与实战故事", "品牌"),
-          page("brands-major", "专业品牌", "维护专业建设成果", "品牌"),
-          page("brands-teacher", "师资品牌", "维护教师能力与教学成果", "品牌"),
-          page("brands-culture", "文化思政品牌", "维护思政案例与行业价值观内容", "品牌"),
+          page("school", "学校信息", "维护服务院校与联系人", "学校"),
+          page("projects", "产业项目", "发布产业项目与验收要求", "项目"),
         ],
       },
       {
         id: "employment",
         label: "就业服务",
-        description: "就业项目、岗位和投递",
+        description: "招聘岗位和学生投递",
         pages: [
-          page("employment-project", "就业项目", "组织实习、就业与校企联合招聘", "就业项目"),
           page("employment-job", "岗位与投递", "管理招聘岗位和学生投递", "就业岗位", ["edit", "export"]),
-        ],
-      },
-    ],
-  },
-  {
-    id: "ai",
-    label: "AI 智能服务平台",
-    short: "AI",
-    description: "知识问答、知识库、智能体和服务审核",
-    groups: [
-      {
-        id: "assistant",
-        label: "知识助手",
-        description: "基于本地知识库的业务问答",
-        pages: [page("chat", "AI 助手", "检索本站资源并生成有出处的业务回答", "会话", ["export"])],
-      },
-      {
-        id: "catalog",
-        label: "知识与智能体",
-        description: "知识库、智能体和外部服务",
-        pages: [
-          page("reviews", "上架审核", "审核知识库和智能体上架申请", "审核", ["approve", "export"]),
-          page("kbs", "知识库管理", "维护知识文档、标签与可用范围", "知识库"),
-          page("agents", "智能体管理", "配置智能体定位、知识和发布状态", "智能体"),
-          page("integrations", "外部服务", "配置模型服务与连接状态", "服务"),
         ],
       },
     ],

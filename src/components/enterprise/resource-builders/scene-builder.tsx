@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
-  publishedJobs,
   type ResourceRights,
   type SceneProfile,
   type SceneTaskDetail,
@@ -25,7 +24,9 @@ import {
 
 export function SceneBuilder({ resource, initial, notify, onClose }: BuilderProps & { initial?: SceneProfile }) {
   const { state, persist } = useResourceSave(resource);
-  const jobs = publishedJobs(state);
+  const jobs = state.resources.flatMap((item) => item.draftContent.kind === "job" ? [item.draftContent.data] : []);
+  const materials = state.teachingMaterials.filter((item) => item.status === "启用");
+  const [materialPick, setMaterialPick] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState<SceneProfile>(() => {
     const base = initial ?? defaultScene(jobs[0]?.id ?? "");
     if (base.taskDetails?.length) return base;
@@ -168,6 +169,28 @@ export function SceneBuilder({ resource, initial, notify, onClose }: BuilderProp
                   placeholder={"文档|任务说明|背景、步骤与交付要求\n视频|方法演示|关键操作演示"}
                 />
               </Field>
+              <div className="ep-material-picker">
+                <select
+                  value={materialPick[task.id] ?? ""}
+                  onChange={(event) => setMaterialPick({ ...materialPick, [task.id]: event.target.value })}
+                >
+                  <option value="">从素材库选择</option>
+                  {materials.map((material) => (
+                    <option value={material.id} key={material.id}>{material.type} · {material.title}</option>
+                  ))}
+                </select>
+                <button onClick={() => {
+                  const material = materials.find((item) => item.id === materialPick[task.id]);
+                  if (!material) return notify("请选择素材");
+                  updateTask(task.id, {
+                    resources: [
+                      ...task.resources,
+                      { id: material.id, type: material.type, title: material.title, description: material.description },
+                    ],
+                  });
+                  setMaterialPick({ ...materialPick, [task.id]: "" });
+                }}>添加素材</button>
+              </div>
               <div className="ep-builder-relations">
                 <ResourceChecks
                   title="考查能力点"

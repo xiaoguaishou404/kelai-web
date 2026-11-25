@@ -5,13 +5,13 @@ import { useState } from "react";
 import { ArrowUpRight, BookOpen, CheckCircle2, ChevronRight, Search } from "lucide-react";
 import { resourceName, resourceRightsBlockedReason, resourceVisible } from "@/lib/enterprise-workspace";
 import { ChannelHero } from "@/components/enterprise/channel-hero";
-import { enrichChapter, getChapterResources, textbooks } from "@/lib/resource-content";
+import { enrichChapter, getChapterResources } from "@/lib/resource-content";
 import { useWorkspacePage } from "@/components/enterprise/workspace/page-runtime";
 import { Btn, Card, Empty, Tag } from "@/components/enterprise/workspace/ui";
 import { ResourceCard } from "./public";
 
 export function CoursesView() {
-  const { courseById, courses, jobById, query, scenes, setQuery, state } = useWorkspacePage();
+  const { courseById, courses, jobById, query, scenes, setQuery, state, textbooks } = useWorkspacePage();
   const [courseMode, setCourseMode] = useState("全部");
   const visibleCourses = courses.filter((course) => resourceVisible(state, course.id));
   const visibleScenes = scenes.filter((scene) => resourceVisible(state, scene.id));
@@ -24,17 +24,19 @@ export function CoursesView() {
       (courseMode === "全部" || course.courseType === courseMode) &&
       `${course.name}${course.code ?? ""}${(course.majors ?? []).join("")}`.toLowerCase().includes(query.toLowerCase()),
   );
-  const shownTextbooks = textbooks.filter(
-    (textbook) =>
-      (courseMode === "全部" || courseMode === "数字教材") &&
-      `${textbook.name}${textbook.code}${textbook.major}`.toLowerCase().includes(query.toLowerCase()),
-  );
+  const shownTextbooks = textbooks
+    .filter((textbook) => state.role === "manage" || state.role === "schoolAdmin" || resourceVisible(state, textbook.id))
+    .filter(
+      (textbook) =>
+        (courseMode === "全部" || courseMode === "数字教材") &&
+        `${textbook.name}${textbook.code}${textbook.major}`.toLowerCase().includes(query.toLowerCase()),
+    );
   return (
     <>
       <ChannelHero
         variant="courses"
         kicker="COURSE & TEXTBOOK"
-        title="课程与教材资源馆"
+        title="课程与教材"
         description="把岗位任务、方法内容与真实场景组织成可教、可练、可评价的动态课程体系。"
         metrics={[
           { label: "岗位课程", value: String(visibleCourses.length).padStart(2, "0") },
@@ -96,7 +98,7 @@ export function CourseView({ id }: { id?: string }) {
   const chapterIndex = Math.min(selected, Math.max(0, course.chapters.length - 1));
   const chapter = enrichChapter(course.chapters[chapterIndex] ?? course.chapters[0], course, chapterIndex);
   const chapterResources = getChapterResources(course, chapterIndex);
-  const completed = state.courseProgress[course.id] ?? [];
+  const completed = state.studentCourseProgress[state.activeStudentId]?.[course.id] ?? [];
   return (
     <>
       <section className="ep-detail-hero">
@@ -155,9 +157,12 @@ export function CourseView({ id }: { id?: string }) {
 }
 
 export function TextbookView({ id }: { id: string }) {
-  const { selected, setSelected } = useWorkspacePage();
+  const { selected, setSelected, state, textbooks } = useWorkspacePage();
   const textbook = textbooks.find((item) => item.id === id);
   if (!textbook) return <Empty>数字教材不存在。</Empty>;
+  if (!resourceVisible(state, textbook.id) && state.role !== "manage" && state.role !== "schoolAdmin") {
+    return <Empty>{resourceRightsBlockedReason(state, textbook.id, "教学使用") || "教材当前不可用于教学。"}</Empty>;
+  }
   const chapterIndex = Math.min(selected, textbook.chapters.length - 1);
   const chapter = enrichChapter(
     textbook.chapters[chapterIndex],

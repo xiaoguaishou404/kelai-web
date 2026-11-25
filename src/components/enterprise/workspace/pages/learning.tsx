@@ -20,7 +20,6 @@ import {
   classMetrics,
   dimensions,
   examQuestions,
-  jobMatch,
   latestWork,
   learningPathProgress,
   nowLabel,
@@ -49,7 +48,6 @@ import {
   Empty,
   History,
   Metric,
-  RadarView,
   Tag,
   applicationTone,
 } from "@/components/enterprise/workspace/ui";
@@ -144,7 +142,7 @@ export function StudentHome() {
         <Card>
           <h2>任务成果与反馈 {taskPending > 0 && <small>{taskPending} 项待评价</small>}</h2>
           {state.taskSubmissions.length === 0 ? <Empty>从当前场景任务开始，提交第一份任务成果。</Empty> : state.taskSubmissions.slice(0, 8).map((submission) => {
-            const task = taskDetailById(submission.sceneId, submission.taskId);
+            const task = taskDetailById(state, submission.sceneId, submission.taskId);
             const review = submission.reviews[submission.reviews.length - 1];
             return (
               <div className="ep-row" key={submission.id}>
@@ -158,39 +156,6 @@ export function StudentHome() {
           <h2>班级进度</h2><p>已有 {metrics.learnersWithProgress} 名学员形成通过记录，班级平均 {metrics.average} 分。</p>
         </Card>
       </div>
-    </>
-  );
-}
-
-export function PortraitView() {
-  const { jobs, sceneById, state } = useWorkspacePage();
-  const scores = abilityScores(state);
-  const eligibility = certificateEligibility(state);
-  const passed = state.taskSubmissions.filter((item) => item.status === "已通过");
-  const completedScenes = state.sceneCompletions.filter((item) => item.status === "已完成");
-  return (
-    <>
-      <Card>
-        <div className="ep-section-title"><div><Tag>COMPETENCY PROFILE</Tag><h1>{state.resume.name}的岗位能力画像</h1></div><Btn secondary onClick={() => window.print()}><Download size={16} />导出报告</Btn></div>
-        <p>已通过 {passed.length} 个任务 · 完成 {completedScenes.length} 个场景 · 理论成绩 {eligibility.latestExam?.score ?? "待测评"}</p>
-        <RadarView values={scores} />
-        {dimensions.map((item, index) => <div className="ep-ability" key={item}><span>{item}</span><progress max={100} value={scores[index]} /><b>{scores[index]}</b></div>)}
-        <h2>岗位契合度</h2>
-        {jobs.map((job) => {
-          const match = jobMatch(state, job);
-          return <div className="ep-row" key={job.id}><span className="ep-grow">{job.name}{match.missing.length ? <small>缺少{match.missing.join("、")}</small> : null}</span><Tag tone={match.ready ? "success" : "muted"}>{match.match}%</Tag></div>;
-        })}
-        {eligibility.certificate && <h2>结业凭证 {eligibility.certificate.number}</h2>}
-      </Card>
-      <Card>
-        <h2>任务证据</h2>
-        {passed.length === 0 ? <Empty>通过教师评价后，任务成果会自动进入画像。</Empty> : passed.map((submission) => {
-          const task = taskDetailById(submission.sceneId, submission.taskId);
-          const review = submission.reviews[submission.reviews.length - 1];
-          return <div className="ep-row" key={submission.id}><div className="ep-grow"><b>{task?.title}</b><p>{review?.comment}</p><small>{sceneById(submission.sceneId)?.name}</small></div><Tag tone="success">{review?.total} 分</Tag></div>;
-        })}
-        {completedScenes.length > 0 && <><h2>已完成场景</h2>{completedScenes.map((completion) => <div className="ep-row" key={completion.id}><span className="ep-grow">{sceneById(completion.sceneId)?.name}</span><b>{completion.score} 分</b><Tag tone="success">已完成</Tag></div>)}</>}
-      </Card>
     </>
   );
 }
@@ -249,7 +214,7 @@ export function ResumeView() {
         <h2>个人介绍</h2><p>{draft.summary}</p>
         <h2>实战成果</h2>
         {state.taskSubmissions.filter((item) => item.status === "已通过").map((submission) => {
-          const task = taskDetailById(submission.sceneId, submission.taskId);
+          const task = taskDetailById(state, submission.sceneId, submission.taskId);
           const review = submission.reviews[submission.reviews.length - 1];
           return <div key={submission.id}><h3>{task?.title}</h3><p>{submission.analysis || submission.worksheet || submission.answer}</p><Tag>{review?.total} 分 · 已通过</Tag></div>;
         })}

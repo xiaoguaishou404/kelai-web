@@ -128,14 +128,6 @@ export interface ExamSchedule {
   status: "待开始" | "进行中" | "已结束";
 }
 
-export interface AIChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  sources: string[];
-  at: string;
-}
-
 export interface PlatformAdminState {
   reviewerIdentity: ApprovalIdentity;
   records: PlatformRecord[];
@@ -145,5 +137,4 @@ export interface PlatformAdminState {
   certificates: CertificateDefinition[];
   enrollments: CertificateEnrollment[];
   examSchedules: ExamSchedule[];
-  aiMessages: AIChatMessage[];
 }

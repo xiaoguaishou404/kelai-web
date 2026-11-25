@@ -8,13 +8,15 @@ export function AbilityRadar({
   scores,
   benchmark,
   color = "#3361E8",
+  labels,
 }: {
   scores: Record<AbilityKey, number>;
   benchmark?: Record<AbilityKey, number>;
   color?: string;
+  labels?: string[];
 }) {
-  const data = ABILITIES.map((ability) => ({
-    name: ability.name.replace("装机与环境部署", "环境部署"),
+  const data = ABILITIES.map((ability, index) => ({
+    name: labels?.[index] ?? ability.name.replace("装机与环境部署", "环境部署"),
     score: scores[ability.key],
     benchmark: benchmark?.[ability.key],
   }));

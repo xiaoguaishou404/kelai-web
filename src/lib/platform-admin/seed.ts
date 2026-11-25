@@ -216,7 +216,7 @@ export function createPlatformAdminSeed(): PlatformAdminState {
       id: "cert-platform",
       name: "岗位实战结业凭证",
       category: "平台认证",
-      issuer: "科来-知与场景化产教融合平台",
+      issuer: "科来网络场景化产教融合平台",
       level: "岗位达标",
       jobIds: ["service"],
       abilityCount: 6,
@@ -314,7 +314,7 @@ export function createPlatformAdminSeed(): PlatformAdminState {
       id: "cert-solution",
       name: "行业解决方案顾问认证",
       category: "平台认证",
-      issuer: "科来-知与场景化产教融合平台",
+      issuer: "科来网络场景化产教融合平台",
       level: "高级",
       jobIds: ["presales", "solution"],
       abilityCount: 22,
@@ -364,15 +364,6 @@ export function createPlatformAdminSeed(): PlatformAdminState {
         closeAt: "2026-11-22 18:00",
         durationMinutes: 40,
         status: "待开始",
-      },
-    ],
-    aiMessages: [
-      {
-        id: "ai-welcome",
-        role: "assistant",
-        text: "我会依据平台内的岗位、场景、课程和评价数据回答，并标注来源。",
-        sources: [],
-        at: "2026-11-18 16:30",
       },
     ],
   };

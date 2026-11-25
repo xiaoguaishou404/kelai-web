@@ -1,4 +1,5 @@
 import { createPlatformAdminSeed } from "@/lib/platform-admin";
+import { enrichScene, evaluationMethods, textbooks } from "@/lib/resource-content";
 import {
   assessments,
   courses,
@@ -11,17 +12,30 @@ import {
 } from "./catalog";
 import { createAudit } from "./shared";
 import {
+  AbilityPointRecord,
+  ClassGroup,
+  CodeRule,
+  Department,
   EnterpriseWorkspaceState,
+  EvaluationMethodRecord,
   JobPosting,
   JobProfile,
+  KnowledgePoint,
+  LessonResult,
   Resource,
   ResourceContent,
   ResourceRights,
   SampleLearner,
+  SchoolMajor,
+  ScheduleEntry,
+  StudentRecord,
   TaskSubmission,
+  TeacherRecord,
+  TeachingMaterial,
+  TeachingPlan,
+  TrainingProgram,
 } from "./types";
 import { dimensions } from "./types";
-import { taskDetailById } from "./selectors";
 
 const createdAt = "2026-11-10 09:00";
 
@@ -170,6 +184,21 @@ function initialResources(): Resource[] {
         },
       ),
     ),
+    ...textbooks.map((textbook) =>
+      seededResource(
+        {
+          id: textbook.id,
+          name: textbook.name,
+          type: "教材",
+          status: "已发布",
+          description: `${textbook.chapters.length} 章 · ${textbook.creator}`,
+          version: "V1.0",
+          relatedIds: [],
+          updatedAt: createdAt,
+        },
+        { kind: "textbook", data: textbook },
+      ),
+    ),
     ...assessments.map((item) =>
       seededResource(
         {
@@ -231,6 +260,291 @@ const classmates: SampleLearner[] = classNames.map((name, index) => {
   };
 });
 
+function buildAbilityCatalog(): AbilityPointRecord[] {
+  const domainPoints: AbilityPointRecord[] = dimensions.map((name, index) => ({
+    id: `ability-${index + 1}`,
+    code: `KL-AB-${String(index + 1).padStart(3, "0")}`,
+    name,
+    domain: name,
+    dimension: index,
+    level: index === 3 || index === 5 ? "L4" : "L3",
+    description: `围绕${name}形成的可观察能力点，可被岗位、场景和测评引用。`,
+    status: "启用",
+  }));
+  const skillNames = Array.from(new Set(jobs.flatMap((job) => job.skills)))
+    .filter((name) => !dimensions.includes(name));
+  const skillPoints: AbilityPointRecord[] = skillNames.map((name, index) => {
+    const job = jobs.find((item) => item.skills.includes(name));
+    const dimension = job ? job.target.indexOf(Math.max(...job.target)) : index % dimensions.length;
+    return {
+      id: `ability-skill-${index + 1}`,
+      code: `KL-AB-${String(index + 7).padStart(3, "0")}`,
+      name,
+      domain: job?.category ?? "综合能力",
+      dimension: Math.max(0, dimension),
+      level: "L3",
+      description: `${name}相关的岗位能力点，来源于岗位技能要求。`,
+      status: "启用",
+    };
+  });
+  return [...domainPoints, ...skillPoints];
+}
+
+function buildKnowledgePoints(): KnowledgePoint[] {
+  const names = Array.from(new Set(jobs.flatMap((job) => job.skills)));
+  return names.map((name, index) => {
+    const job = jobs.find((item) => item.skills.includes(name));
+    return {
+      id: `knowledge-${index + 1}`,
+      code: `KL-KP-${String(index + 1).padStart(3, "0")}`,
+      name,
+      domain: job?.category ?? "综合知识",
+      description: `与“${name}”相关的知识要点，可被岗位、场景和课程引用。`,
+      tags: [job?.industry ?? "通用", "岗位知识"],
+      status: "启用",
+      updatedAt: createdAt,
+    };
+  });
+}
+
+function buildTeachingMaterials(): TeachingMaterial[] {
+  const types: TeachingMaterial["type"][] = ["文档", "图片", "视频", "习题", "思维导图", "知识图谱", "录音"];
+  const samples = [
+    ["流量分析任务说明", "任务背景、操作步骤与交付要求"],
+    ["业务链路示意图", "从客户端到服务端的路径与关键节点"],
+    ["方法演示视频", "结合岗位案例演示分析步骤"],
+    ["章节自测题", "检验概念、方法与边界判断"],
+    ["问题定位思维导图", "从现象到证据的排查路径"],
+    ["岗位知识关系图", "岗位、场景、能力点与证据的关系"],
+    ["现场访谈录音", "脱敏后的客户报障与追问片段"],
+    ["故障复盘报告模板", "结论、证据、边界与下一步建议"],
+    ["采集点拓扑图片", "旁路采集与镜像点位置示意"],
+    ["课堂实操演示", "采集配置与质量验证过程"],
+    ["课后练习集", "按任务组织的巩固练习"],
+    ["能力点对照表", "能力点、任务与评价方式对照"],
+  ];
+  return samples.map(([title, description], index) => ({
+    id: `material-${index + 1}`,
+    code: `KL-MT-${String(index + 1).padStart(3, "0")}`,
+    type: types[index % types.length],
+    title,
+    description,
+    fileName: `${title}.${["pdf", "png", "mp4", "docx", "xmind", "json", "mp3"][index % 7]}`,
+    owner: "科来教学资源部",
+    status: "启用",
+    updatedAt: createdAt,
+  }));
+}
+
+function buildEvaluationMethodCatalog(): EvaluationMethodRecord[] {
+  return evaluationMethods.map((method, index) => ({
+    id: method.id,
+    code: `KL-EM-${String(index + 1).padStart(3, "0")}`,
+    name: method.name,
+    form: method.form,
+    duration: method.duration,
+    use: method.use,
+    description: `${method.name}：${method.form}，适用于${method.use}。`,
+    passScore: 60,
+    status: "启用",
+  }));
+}
+
+function buildCodeRules(): CodeRule[] {
+  const rules: [string, string][] = [
+    ["岗位", "KL-GW"],
+    ["场景", "KL-CJ"],
+    ["课程", "KL-KC"],
+    ["教材", "KL-JC"],
+    ["测评", "KL-CP"],
+    ["评价标准", "KL-BZ"],
+    ["能力点", "KL-AB"],
+    ["教学素材", "KL-MT"],
+    ["证书", "KL-ZS"],
+    ["测评方式", "KL-EM"],
+  ];
+  return rules.map(([resourceType, prefix], index) => ({
+    id: `code-rule-${index + 1}`,
+    resourceType,
+    prefix,
+    pattern: `${prefix}-{0000}`,
+    nextNumber: 1,
+    status: "启用",
+  }));
+}
+
+function buildDepartments(): Department[] {
+  return [
+    { id: "dept-cybersecurity", code: "DEPT-CS", name: "网络空间安全学院", schoolId: "school-1", status: "启用" },
+    { id: "dept-computer", code: "DEPT-CE", name: "计算机学院", schoolId: "school-1", status: "启用" },
+    { id: "dept-media", code: "DEPT-DM", name: "数字媒体学院", schoolId: "school-1", status: "启用" },
+  ];
+}
+
+function buildSchoolMajors(): SchoolMajor[] {
+  return [
+    { id: "major-network-engineering", code: "MAJ-NE", name: "网络工程", departmentId: "dept-cybersecurity", schoolId: "school-1", description: "面向网络采集、协议分析与运行保障。", status: "启用" },
+    { id: "major-cyber-security", code: "MAJ-CS", name: "网络空间安全", departmentId: "dept-cybersecurity", schoolId: "school-1", description: "面向安全研判、事件响应与证据组织。", status: "启用" },
+    { id: "major-computer", code: "MAJ-CE", name: "计算机科学与技术", departmentId: "dept-computer", schoolId: "school-1", description: "面向系统、数据与性能分析。", status: "启用" },
+    { id: "major-digital-media", code: "MAJ-DM", name: "数字媒体技术", departmentId: "dept-media", schoolId: "school-1", description: "面向数字内容与可视化表达。", status: "启用" },
+  ];
+}
+
+function buildTeacherRecords(): TeacherRecord[] {
+  return [
+    { id: "teacher-zhou", teacherNo: "T2024001", name: "周启明", departmentId: "dept-cybersecurity", schoolId: "school-1", title: "副教授", phone: "138-0000-1001", email: "zhou@example.edu", status: "在职" },
+    { id: "teacher-wang", teacherNo: "T2024002", name: "王明", departmentId: "dept-cybersecurity", schoolId: "school-1", title: "讲师", phone: "138-0000-1002", email: "wang@example.edu", status: "在职" },
+    { id: "teacher-li", teacherNo: "T2024003", name: "李静", departmentId: "dept-computer", schoolId: "school-1", title: "讲师", phone: "138-0000-1003", email: "li@example.edu", status: "在职" },
+    { id: "teacher-chen", teacherNo: "T2024004", name: "陈晨", departmentId: "dept-media", schoolId: "school-1", title: "副教授", phone: "138-0000-1004", email: "chen@example.edu", status: "在职" },
+  ];
+}
+
+function buildStudentRecords(): StudentRecord[] {
+  return [
+    {
+      id: "student-lin",
+      studentNo: "20240101",
+      name: "林知远",
+      classId: "class-1",
+      schoolId: "school-1",
+      majorId: "major-network-engineering",
+      phone: "138-0000-2027",
+      email: "lin@example.edu",
+      status: "在读",
+    },
+    ...classmates.map((learner, index) => ({
+      id: learner.id,
+      studentNo: `2024${String(index + 2).padStart(4, "0")}`,
+      name: learner.name,
+      classId: "class-1",
+      schoolId: "school-1",
+      majorId: "major-network-engineering",
+      phone: `138-0000-3${String(index + 1).padStart(3, "0")}`,
+      email: `student${index + 1}@example.edu`,
+      status: "在读" as const,
+    })),
+  ];
+}
+
+function buildStudentCourseProgress(): Record<string, Record<string, number[]>> {
+  const firstCourse = courses[0]?.id ?? "course-0";
+  const secondCourse = courses[1]?.id ?? "course-1";
+  return {
+    "student-lin": { [firstCourse]: [0, 1] },
+    "student-sample-1": { [firstCourse]: [0, 1, 2] },
+    "student-sample-2": { [firstCourse]: [0], [secondCourse]: [0] },
+    "student-sample-3": { [firstCourse]: [0, 1] },
+    "student-sample-4": { [firstCourse]: [0] },
+  };
+}
+
+function buildClassGroups(): ClassGroup[] {
+  return [
+    {
+      id: "class-1",
+      code: "CLS-2401",
+      name: "网络工程 2401",
+      majorId: "major-network-engineering",
+      schoolId: "school-1",
+      teacherId: "teacher-zhou",
+      studentIds: ["student-lin", ...classmates.map((item) => item.id)],
+      status: "在读",
+    },
+  ];
+}
+
+function buildTrainingPrograms(): TrainingProgram[] {
+  return [
+    {
+      id: "program-network",
+      code: "PGM-2026-01",
+      name: "网络工程人才培养方案",
+      majorId: "major-network-engineering",
+      jobIds: ["service", "security", "observability"],
+      courseIds: courses.slice(0, 4).map((course) => course.id),
+      description: "以网络分析岗位能力为主线，组织课程、场景与实训任务。",
+      status: "启用",
+      updatedAt: createdAt,
+    },
+  ];
+}
+
+function buildTeachingPlans(): TeachingPlan[] {
+  return [
+    {
+      id: "plan-2026-fall",
+      code: "PLAN-2026-01",
+      name: "2026 秋季教学计划",
+      term: "2026 秋季",
+      programId: "program-network",
+      classId: "class-1",
+      courseIds: courses.slice(0, 3).map((course) => course.id),
+      startDate: "2026-09-01",
+      endDate: "2027-01-15",
+      status: "执行中",
+    },
+  ];
+}
+
+function buildLessonResults(): LessonResult[] {
+  return [
+    {
+      id: "lesson-result-1",
+      studentId: "student-lin",
+      courseId: courses[0]?.id ?? "course-0",
+      chapterIndex: 0,
+      score: 88,
+      comment: "能够说明协议分析的基本路径，章节练习完成。",
+      reviewer: "周启明",
+      reviewedAt: createdAt,
+    },
+  ];
+}
+
+function buildScheduleEntries(): ScheduleEntry[] {
+  return [
+    {
+      id: "schedule-1",
+      term: "2026 秋季",
+      classId: "class-1",
+      teacherId: "teacher-zhou",
+      courseId: "",
+      sceneId: scenes[0]?.id ?? "",
+      location: "网络分析实训室",
+      weekday: "周一",
+      startTime: "09:00",
+      endTime: "10:40",
+      status: "待上课",
+    },
+    {
+      id: "schedule-2",
+      term: "2026 秋季",
+      classId: "class-1",
+      teacherId: "teacher-zhou",
+      courseId: courses[0]?.id ?? "",
+      sceneId: "",
+      location: "网络工程 2401 教室",
+      weekday: "周三",
+      startTime: "14:00",
+      endTime: "15:40",
+      status: "待上课",
+    },
+    {
+      id: "schedule-3",
+      term: "2026 秋季",
+      classId: "class-1",
+      teacherId: "teacher-wang",
+      courseId: "",
+      sceneId: scenes[1]?.id ?? "",
+      location: "安全分析实训室",
+      weekday: "周五",
+      startTime: "10:00",
+      endTime: "11:40",
+      status: "待上课",
+    },
+  ];
+}
+
 const additionalJobPostings: JobPosting[] = [
   ["job-posting-nfr", "应用性能保障工程师", "衡远金融科技", "nfr", "金融科技", "上海", "全职", 16, 24, 1, "应用性能基线与容量分析能力匹配"],
   ["job-posting-incident", "应急响应工程师", "安域应急中心", "incident", "网络与信息安全", "北京", "全职", 13, 21, 2, "事件取证与跨团队处置能力匹配"],
@@ -282,7 +596,8 @@ function seedTaskSubmissions(): TaskSubmission[] {
   ];
   const at = "2026-11-16 16:00";
   return samples.flatMap(([sceneId, taskId, total]) => {
-    const task = taskDetailById(sceneId, taskId);
+    const scene = scenes.find((item) => item.id === sceneId);
+    const task = scene ? enrichScene(scene).taskDetails?.find((item) => item.id === taskId) : undefined;
     if (!task) return [];
     const assessmentResults = task.assessmentMethods
       .filter((method) => method.required && ["随堂测", "题库"].includes(method.type))
@@ -336,7 +651,7 @@ function seedTaskSubmissions(): TaskSubmission[] {
 export function seedWorkspace(): EnterpriseWorkspaceState {
   const resources = initialResources();
   return {
-    schemaVersion: 12,
+    schemaVersion: 15,
     role: null,
     activeSchoolId: "school-1",
     activeStudentId: "student-lin",
@@ -766,6 +1081,20 @@ export function seedWorkspace(): EnterpriseWorkspaceState {
       { id: "school-5", name: "江南应用技术大学", college: "信息与智能学院", plan: "岗位培养专业版", contact: "林若川", status: "服务中" },
       { id: "school-6", name: "西部网络安全学院", college: "安全运营学院", plan: "试用", contact: "周明远", status: "方案确认" },
     ],
+    abilityCatalog: buildAbilityCatalog(),
+    knowledgeCatalog: buildKnowledgePoints(),
+    teachingMaterials: buildTeachingMaterials(),
+    evaluationMethodCatalog: buildEvaluationMethodCatalog(),
+    codeRules: buildCodeRules(),
+    departments: buildDepartments(),
+    schoolMajors: buildSchoolMajors(),
+    classGroups: buildClassGroups(),
+    studentRecords: buildStudentRecords(),
+    teacherRecords: buildTeacherRecords(),
+    trainingPrograms: buildTrainingPrograms(),
+    teachingPlans: buildTeachingPlans(),
+    scheduleEntries: buildScheduleEntries(),
+    lessonResults: buildLessonResults(),
     resume: {
       name: "林知远",
       phone: "138-0000-2027",
@@ -775,7 +1104,7 @@ export function seedWorkspace(): EnterpriseWorkspaceState {
     favorites: [],
     standardWeights: [15, 15, 20, 25, 10, 15],
     auditEvents: [],
-    courseProgress: {},
+    studentCourseProgress: buildStudentCourseProgress(),
     platformAdmin: createPlatformAdminSeed(),
   };
 }

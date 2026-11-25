@@ -9,6 +9,7 @@ import {
   taskReviewBlockers,
   type Application,
   type ApplicationStatus,
+  type CatalogEntityMap,
   type EnterpriseWorkspaceState,
   type JobLearningPath,
   type JobProfile,
@@ -17,12 +18,15 @@ import {
   type OfflineSession,
   type ProjectPosting,
   type Resource,
+  type ResourceContent,
   type Resume,
   type Review,
   type Role,
   type TaskAssessmentResult,
   type TaskReview,
   type TaskSubmission,
+  type TeachingMaterial,
+  type TeachingResourceItem,
   type Work,
 } from "@/lib/enterprise-workspace";
 import {
@@ -59,10 +63,12 @@ export type Action =
       passScore: number;
     }
   | { type: "certificate" }
+  | { type: "issue-certificate-for"; studentId: string; jobId: string; definitionId: string; number: string }
   | { type: "new-resource"; resource: Resource }
   | { type: "update-resource"; id: string; patch: Partial<Resource>; actor: string }
   | { type: "resource-action"; id: string; action: "submit" | "publish" | "reject" | "offline" | "revise" | "confirm-rights" | "reject-rights" | "revoke-rights"; note?: string }
   | { type: "update-major-group"; id: string; patch: Pick<MajorGroup, "majors" | "jobIds"> }
+  | { type: "save-major-group"; group: MajorGroup }
   | { type: "standard"; weights: number[] }
   | { type: "publish-project"; project: ProjectPosting }
   | { type: "toggle-project"; id: string }
@@ -76,7 +82,8 @@ export type Action =
   | { type: "platform-admin"; state: PlatformAdminState }
   | { type: "approval-identity"; identity: ApprovalIdentity }
   | { type: "platform-record"; record: PlatformRecord }
-  | { type: "certificate-enroll"; enrollment: CertificateEnrollment };
+  | { type: "certificate-enroll"; enrollment: CertificateEnrollment }
+  | { type: "catalog-item"; entity: keyof CatalogEntityMap; item: CatalogEntityMap[keyof CatalogEntityMap] };
 
 function audit(state: EnterpriseWorkspaceState, event: ReturnType<typeof createAudit>) {
   return { ...state, auditEvents: [event, ...state.auditEvents].slice(0, 120) };
@@ -90,6 +97,74 @@ function syncMajorGroupsForJob(groups: MajorGroup[], job: JobProfile) {
       : group.jobIds.filter((id) => id !== job.id);
     return { ...group, jobIds };
   });
+}
+
+const catalogEntityLabels: Record<string, string> = {
+  abilityCatalog: "能力点",
+  knowledgeCatalog: "知识点",
+  teachingMaterials: "教学素材",
+  evaluationMethodCatalog: "测评方式",
+  codeRules: "资源编码",
+  departments: "院系",
+  schoolMajors: "专业",
+  classGroups: "班级",
+  studentRecords: "学生",
+  teacherRecords: "教职工",
+  schools: "院校",
+  majorGroups: "专业群",
+  trainingPrograms: "培养方案",
+  teachingPlans: "教学计划",
+  scheduleEntries: "排课",
+  lessonResults: "课程节点评价",
+};
+
+function syncMaterialItem(items: TeachingResourceItem[] | undefined, material: TeachingMaterial) {
+  return items?.map((item) =>
+    item.id === material.id
+      ? { ...item, type: material.type, title: material.title, description: material.description }
+      : item,
+  );
+}
+
+function syncMaterialContent(content: ResourceContent, material: TeachingMaterial): ResourceContent {
+  if (content.kind === "scene") {
+    return {
+      kind: "scene",
+      data: {
+        ...content.data,
+        resourceItems: syncMaterialItem(content.data.resourceItems, material),
+        taskDetails: content.data.taskDetails?.map((task) => ({
+          ...task,
+          resources: syncMaterialItem(task.resources, material) ?? [],
+        })),
+      },
+    };
+  }
+  if (content.kind === "course") {
+    return {
+      kind: "course",
+      data: {
+        ...content.data,
+        chapters: content.data.chapters.map((chapter) => ({
+          ...chapter,
+          resources: syncMaterialItem(chapter.resources, material),
+        })),
+      },
+    };
+  }
+  if (content.kind === "textbook") {
+    return {
+      kind: "textbook",
+      data: {
+        ...content.data,
+        chapters: content.data.chapters.map((chapter) => ({
+          ...chapter,
+          resources: syncMaterialItem(chapter.resources, material),
+        })),
+      },
+    };
+  }
+  return content;
 }
 
 function syncSceneCompletion(state: EnterpriseWorkspaceState, sceneId: string, studentId: string) {
@@ -439,16 +514,50 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
     }
     case "certificate": {
       if (state.certificates.some((item) => item.studentId === state.activeStudentId)) return state;
+      const latestExam = [...state.examAttempts]
+        .filter(
+          (item) =>
+            item.studentId === state.activeStudentId &&
+            (item.assessmentKind ?? "试卷") !== "题库",
+        )
+        .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0];
+      const requiredScene = state.resources
+        .flatMap((resource) => resource.publishedContent?.kind === "scene" ? [resource.publishedContent.data] : [])
+        .find(
+          (scene) =>
+            scene.required &&
+            sceneProgressFor(state, scene.id, state.activeStudentId).status === "已完成",
+        );
+      const jobId = latestExam?.jobId ?? requiredScene?.jobId ?? "service";
+      const definition = state.platformAdmin.certificates.find(
+        (item) => item.category === "平台认证" && item.jobIds.includes(jobId),
+      ) ?? state.platformAdmin.certificates.find((item) => item.category === "平台认证");
       const certificate = {
         id: crypto.randomUUID(),
         number: generatedCertificateNumber(state),
         studentId: state.activeStudentId,
-        jobId: "service",
+        jobId,
         issuedAt: nowLabel(),
+        definitionId: definition?.id,
       };
       return audit(
         { ...state, certificates: [certificate, ...state.certificates] },
         createAudit(state.resume.name, "领取结业凭证", certificate.number, "岗位能力条件已满足"),
+      );
+    }
+    case "issue-certificate-for": {
+      if (state.certificates.some((item) => item.studentId === action.studentId && item.definitionId === action.definitionId)) return state;
+      const certificate = {
+        id: crypto.randomUUID(),
+        number: action.number,
+        studentId: action.studentId,
+        jobId: action.jobId,
+        issuedAt: nowLabel(),
+        definitionId: action.definitionId,
+      };
+      return audit(
+        { ...state, certificates: [certificate, ...state.certificates] },
+        createAudit("科来运营", "发放证书", certificate.number, action.definitionId),
       );
     }
     case "new-resource": {
@@ -630,6 +739,30 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
         createAudit("科来运营", "资源流转", action.id, action.action),
       );
     }
+    case "save-major-group": {
+      const exists = state.majorGroups.some((item) => item.id === action.group.id);
+      const majorGroups = exists
+        ? state.majorGroups.map((item) => item.id === action.group.id ? action.group : item)
+        : [action.group, ...state.majorGroups];
+      const resources = state.resources.map((resource) => {
+        if (resource.draftContent.kind !== "job") return resource;
+        const updateJob = (job: JobProfile) => ({
+          ...job,
+          majorGroupIds: majorGroups.filter((group) => group.jobIds.includes(job.id)).map((group) => group.id),
+        });
+        return {
+          ...resource,
+          draftContent: { kind: "job" as const, data: updateJob(resource.draftContent.data) },
+          publishedContent: resource.publishedContent?.kind === "job"
+            ? { kind: "job" as const, data: updateJob(resource.publishedContent.data) }
+            : resource.publishedContent,
+        };
+      });
+      return audit(
+        { ...state, majorGroups, resources },
+        createAudit("业务管理员", exists ? "更新专业群" : "新建专业群", action.group.name, `${action.group.majors.length} 专业 · ${action.group.jobIds.length} 岗位`),
+      );
+    }
     case "update-major-group": {
       const updatedGroups = state.majorGroups.map((group) =>
         group.id === action.id ? { ...group, ...action.patch, updatedAt: nowLabel() } : group,
@@ -690,6 +823,13 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
       const target = state.applications.find((item) => item.id === action.id);
       if (!target) return state;
       const event = createAudit("科来运营", `处理申请 · ${action.status}`, target.name, action.feedback || "状态已更新");
+      const projectWorkStatus = target.kind === "project"
+        ? action.status === "已接单"
+          ? "进行中" as const
+          : action.status === "已验收"
+            ? "已完成" as const
+            : undefined
+        : undefined;
       return audit(
         {
           ...state,
@@ -704,6 +844,11 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
                 }
               : item,
           ),
+          projects: projectWorkStatus
+            ? state.projects.map((project) =>
+                project.id === target.targetId ? { ...project, workStatus: projectWorkStatus } : project,
+              )
+            : state.projects,
         },
         event,
       );
@@ -725,14 +870,19 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
       );
     }
     case "course-progress": {
-      const current = state.courseProgress[action.courseId] ?? [];
+      const studentId = state.activeStudentId;
+      const studentProgress = state.studentCourseProgress[studentId] ?? {};
+      const current = studentProgress[action.courseId] ?? [];
       if (current.includes(action.chapterIndex)) return state;
       return audit(
         {
           ...state,
-          courseProgress: {
-            ...state.courseProgress,
-            [action.courseId]: [...current, action.chapterIndex].sort((a, b) => a - b),
+          studentCourseProgress: {
+            ...state.studentCourseProgress,
+            [studentId]: {
+              ...studentProgress,
+              [action.courseId]: [...current, action.chapterIndex].sort((a, b) => a - b),
+            },
           },
         },
         createAudit(
@@ -770,6 +920,37 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
           reviewerIdentity: action.identity,
         },
       };
+    case "catalog-item": {
+      const list = state[action.entity] as { id: string }[];
+      if (!Array.isArray(list)) return state;
+      const item = action.item as { id: string };
+      const exists = list.some((entry) => entry.id === item.id);
+      const next = exists
+        ? list.map((entry) => (entry.id === item.id ? item : entry))
+        : [item, ...list];
+      const material = action.entity === "teachingMaterials" ? action.item as TeachingMaterial : undefined;
+      const resources = material
+        ? state.resources.map((resource) => ({
+            ...resource,
+            draftContent: syncMaterialContent(resource.draftContent, material),
+            publishedContent: resource.publishedContent
+              ? syncMaterialContent(resource.publishedContent, material)
+              : undefined,
+          }))
+        : state.resources;
+      const entityLabel = catalogEntityLabels[action.entity] ?? action.entity;
+      const namedItem = item as { name?: string; title?: string };
+      const itemLabel = namedItem.name || namedItem.title || item.id;
+      return audit(
+        { ...state, [action.entity]: next, resources } as EnterpriseWorkspaceState,
+        createAudit(
+          state.role === "schoolAdmin" ? "院校管理员" : "科来运营",
+          exists ? `更新${entityLabel}` : `新建${entityLabel}`,
+          itemLabel,
+          action.entity,
+        ),
+      );
+    }
     case "platform-record": {
       const exists = state.platformAdmin.records.some((item) => item.id === action.record.id);
       return audit(

@@ -37,7 +37,7 @@ export function migrateV3(
   return {
     ...seed,
     ...legacy,
-    schemaVersion: 12,
+    schemaVersion: 15,
     resources,
     majorGroups: seed.majorGroups,
   } as EnterpriseWorkspaceState;

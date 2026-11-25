@@ -121,10 +121,13 @@ export function IndustryView() {
           </div>
         )}
       </Card>
-      <Card>
-        <h2>行业应用现场</h2>
+      <Card className="ep-industry-scenes">
+        <div className="ep-section-title">
+          <div><Tag>FIELD SCENES</Tag><h2>行业应用现场</h2></div>
+          <Link className="ep-link" href="/platform/resources">查看全部场景 <ArrowUpRight size={15} /></Link>
+        </div>
         <div className="ep-grid compact">
-          {visibleScenes.map((item) => {
+          {visibleScenes.slice(0, 4).map((item) => {
             const resource = resourceById(state, item.id);
             const rightsStatus = effectiveRightsStatus(resource?.rights);
             return (
@@ -228,7 +231,7 @@ export function ResourcesView() {
         </svg>
         <div className="ep-resource-hero-inner">
           <div className="ep-resource-hero-copy">
-            <h2>岗位与场景资源馆</h2>
+            <h2>岗位与场景</h2>
             <p>从岗位标准到场景实训，连接可教、可练、可评价的产业资源。</p>
             <div className="ep-resource-mode-switch">
               <button type="button" className={tab === "岗位" ? "is-active" : ""} onClick={() => browseResources("岗位")}>
@@ -682,7 +685,7 @@ export function ResourceView({ id }: { id?: string }) {
   if (!resource) return <Empty>资源不存在。</Empty>;
   const rightsStatus = effectiveRightsStatus(resource.rights);
   const rightsReason = resourceRightsBlockedReason(state, resource.id, "教学使用");
-  if (state.role === "manage" || state.role === "schoolAdmin") return (
+  if (state.role === "manage") return (
     <div>
       <Card>
         <div className="ep-section-title"><div><Tag>{resource.type} · {resource.version}</Tag><h1>{resource.name}</h1><p>{resource.status} · {resource.reviewNote || "资源内容与关联关系"}</p></div><div className="ep-actions"><Btn secondary={mode === "preview"} onClick={() => setMode("preview")}>预览</Btn><Btn secondary={mode === "edit"} onClick={() => setMode("edit")}>编辑草稿</Btn></div></div>

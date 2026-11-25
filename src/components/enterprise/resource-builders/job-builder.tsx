@@ -4,10 +4,6 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
   dimensions,
-  publishedAssessments,
-  publishedCourses,
-  publishedScenes,
-  publishedStandards,
   type JobProfile,
   type ResourceContent,
   type ResourceRights,
@@ -30,16 +26,34 @@ import {
 
 export function JobBuilder({ resource, initial, notify, onClose }: BuilderProps & { initial?: JobProfile }) {
   const { state, persist } = useResourceSave(resource);
-  const [draft, setDraft] = useState<JobProfile>(() => initial ?? defaultJob());
+  const [draft, setDraft] = useState<JobProfile>(() => {
+    if (initial) return initial;
+    const base = defaultJob();
+    return {
+      ...base,
+      abilityPoints: dimensions.map((name, index) => {
+        const point = state.abilityCatalog.find((item) => item.dimension === index && item.domain === name)
+          ?? state.abilityCatalog.find((item) => item.dimension === index);
+        return {
+          id: point?.id ?? `ability-${index + 1}`,
+          name: point?.name ?? name,
+          domain: point?.domain ?? name,
+          dimension: index,
+          level: point?.level ?? "L3",
+          weight: base.abilityPoints?.[index]?.weight ?? 0,
+        };
+      }),
+    };
+  });
   const [rights, setRights] = useState<ResourceRights>(() => initialRights(resource, draft.id));
   const [step, setStep] = useState(0);
   const [responsibilities, setResponsibilities] = useState((draft.responsibilities ?? []).join("\n"));
   const [requirements, setRequirements] = useState((draft.requirements ?? []).join("\n"));
   const [skills, setSkills] = useState((draft.skills ?? []).join("，"));
-  const scenes = publishedScenes(state);
-  const courses = publishedCourses(state);
-  const assessments = publishedAssessments(state);
-  const standards = publishedStandards(state);
+  const scenes = state.resources.flatMap((item) => item.draftContent.kind === "scene" ? [item.draftContent.data] : []);
+  const courses = state.resources.flatMap((item) => item.draftContent.kind === "course" ? [item.draftContent.data] : []);
+  const assessments = state.resources.flatMap((item) => item.draftContent.kind === "assessment" ? [item.draftContent.data] : []);
+  const standards = state.resources.flatMap((item) => item.draftContent.kind === "standard" ? [item.draftContent.data] : []);
   const missing = [
     !draft.name.trim() ? "岗位名称" : "",
     !draft.description.trim() ? "岗位简介" : "",

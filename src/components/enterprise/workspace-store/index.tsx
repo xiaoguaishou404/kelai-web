@@ -7,6 +7,7 @@ import {
   seedWorkspace,
   type Application,
   type ApplicationStatus,
+  type CatalogEntityMap,
   type EnterpriseWorkspaceState,
   type JobLearningPath,
   type JobPosting,
@@ -61,6 +62,7 @@ interface StoreValue {
     passScore: number,
   ) => void;
   issueCertificate: () => void;
+  issueCertificateFor: (studentId: string, jobId: string, definitionId: string, number: string) => void;
   createResource: (resource: Resource) => void;
   updateResource: (id: string, patch: Partial<Resource>, actor: string) => void;
   resourceAction: (
@@ -69,6 +71,7 @@ interface StoreValue {
     note?: string,
   ) => void;
   updateMajorGroup: (id: string, patch: Pick<MajorGroup, "majors" | "jobIds">) => void;
+  saveMajorGroup: (group: MajorGroup) => void;
   saveStandard: (weights: number[]) => void;
   publishProject: (project: ProjectPosting) => void;
   toggleProject: (id: string) => void;
@@ -83,6 +86,7 @@ interface StoreValue {
   setApprovalIdentity: (identity: ApprovalIdentity) => void;
   savePlatformRecord: (record: PlatformRecord) => void;
   enrollCertificate: (enrollment: CertificateEnrollment) => void;
+  saveCatalogItem: <K extends keyof CatalogEntityMap>(entity: K, item: CatalogEntityMap[K]) => void;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -97,9 +101,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (saved) {
         const parsed = stripTrainingData(JSON.parse(saved) as LegacyWorkspaceData);
         const savedVersion = Number((parsed as { schemaVersion?: number }).schemaVersion);
-        if (savedVersion >= 5 && savedVersion <= 12) {
+        if (savedVersion >= 5 && savedVersion <= 15) {
           const base = seedWorkspace();
           const mergingExpandedCatalog = savedVersion < 9;
+          const mergingSeedResources = savedVersion < 14;
           const savedResourceIds = new Set((parsed.resources ?? []).map((item) => item.id));
           const savedPostingIds = new Set((parsed.jobPostings ?? []).map((item) => item.id));
           const savedProjectIds = new Set((parsed.projects ?? []).map((item) => item.id));
@@ -112,8 +117,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             state: {
               ...base,
               ...parsed,
-              schemaVersion: 12,
-              resources: mergingExpandedCatalog
+              schemaVersion: 15,
+              resources: mergingExpandedCatalog || mergingSeedResources
                 ? [
                     ...base.resources.filter((item) => !savedResourceIds.has(item.id)),
                     ...(parsed.resources ?? []),
@@ -145,6 +150,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 assessmentResults: item.assessmentResults ?? [],
               })),
               sceneCompletions: parsed.sceneCompletions ?? [],
+              studentCourseProgress: parsed.studentCourseProgress ?? (savedVersion < 15
+                ? {
+                    ...base.studentCourseProgress,
+                    ...(parsed.courseProgress ? { [parsed.activeStudentId]: parsed.courseProgress } : {}),
+                  }
+                : parsed.courseProgress
+                  ? { [parsed.activeStudentId]: parsed.courseProgress }
+                  : base.studentCourseProgress),
               learningPaths: mergingExpandedCatalog
                 ? base.learningPaths
                 : parsed.learningPaths ?? base.learningPaths,
@@ -241,10 +254,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         passScore,
       }),
     issueCertificate: () => dispatch({ type: "certificate" }),
+    issueCertificateFor: (studentId, jobId, definitionId, number) => dispatch({ type: "issue-certificate-for", studentId, jobId, definitionId, number }),
     createResource: (resource) => dispatch({ type: "new-resource", resource }),
     updateResource: (id, patch, actor) => dispatch({ type: "update-resource", id, patch, actor }),
     resourceAction: (id, resourceAction, note) => dispatch({ type: "resource-action", id, action: resourceAction, note }),
     updateMajorGroup: (id, patch) => dispatch({ type: "update-major-group", id, patch }),
+    saveMajorGroup: (group) => dispatch({ type: "save-major-group", group }),
     saveStandard: (weights) => dispatch({ type: "standard", weights }),
     publishProject: (project) => dispatch({ type: "publish-project", project }),
     toggleProject: (id) => dispatch({ type: "toggle-project", id }),
@@ -259,6 +274,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setApprovalIdentity: (identity) => dispatch({ type: "approval-identity", identity }),
     savePlatformRecord: (record) => dispatch({ type: "platform-record", record }),
     enrollCertificate: (enrollment) => dispatch({ type: "certificate-enroll", enrollment }),
+    saveCatalogItem: (entity, item) => dispatch({ type: "catalog-item", entity, item }),
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

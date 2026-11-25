@@ -1,10 +1,11 @@
 import { Role } from "@/lib/enterprise-workspace";
+import { platformDefinitions } from "@/lib/platform-admin/definitions";
 
 export const channels = [
   ["industry", "首页"],
-  ["resources", "岗位与场景资源馆"],
-  ["courses", "课程与教材资源馆"],
-  ["assessment", "测评与证书资源馆"],
+  ["resources", "岗位与场景"],
+  ["courses", "课程与教材"],
+  ["assessment", "测评与证书"],
   ["projects", "产业项目实战"],
   ["employment", "就业服务中心"],
 ];
@@ -22,6 +23,7 @@ export const teacherNav = [
   ["teacher/classes", "班级与学生"],
   ["teacher/classroom", "课堂教学"],
   ["teacher/reviews", "成果评价"],
+  ["teacher/lessons", "课程节点评价"],
 ];
 
 export const schoolAdminNav = [
@@ -38,11 +40,6 @@ export const schoolAdminNav = [
 
 export const management = [
   ["manage", "企业看板"],
-  ["manage/resources", "资源建设与审核"],
-  ["manage/standards", "能力评价标准"],
-  ["manage/schools", "合作院校与协议"],
-  ["manage/projects", "项目派单与验收"],
-  ["manage/recruitment", "招聘与人才库"],
 ];
 
 const workspaceAreaByRoot: Record<string, Role> = {
@@ -60,6 +57,13 @@ const channelHeroPages = new Set(["courses", "assessment", "projects", "employme
 export const fullBleedPages = new Set(["industry", "resources", "policy", ...channelHeroPages, "industry/company"]);
 
 export function pageTitle(page: string) {
+  if (page === "admin") return "业务工作台";
+  if (page.startsWith("admin/")) {
+    const [, platformId, pageId] = page.split("/");
+    const platform = platformDefinitions.find((item) => item.id === platformId);
+    const pageDefinition = platform?.groups.flatMap((group) => group.pages).find((item) => item.id === pageId);
+    return pageDefinition?.label ?? platform?.label ?? "业务工作台";
+  }
   if (page.startsWith("employment/")) return "岗位详情";
   const detailTitles = {
     job: "岗位详情",

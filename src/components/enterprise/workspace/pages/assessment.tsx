@@ -14,7 +14,6 @@ import {
   type AssessmentProfile,
 } from "@/lib/enterprise-workspace";
 import { ChannelHero } from "@/components/enterprise/channel-hero";
-import { evaluationMethods } from "@/lib/resource-content";
 import { useWorkspacePage } from "@/components/enterprise/workspace/page-runtime";
 import { Btn, Card, Empty, Metric, Tag } from "@/components/enterprise/workspace/ui";
 
@@ -105,6 +104,7 @@ export function AssessmentView() {
   setQuery,
   state,
   } = useWorkspacePage();
+  const evaluationMethods = state.evaluationMethodCatalog;
   const [topTab, setTopTab] = useState<"assessment" | "certificate">("assessment");
   const [assessmentTab, setAssessmentTab] = useState("题库");
   const [assessmentJob, setAssessmentJob] = useState("全部岗位");
@@ -184,7 +184,7 @@ export function AssessmentView() {
       <ChannelHero
         variant="assessment"
         kicker="ASSESSMENT & CREDENTIAL"
-        title="测评与证书资源馆"
+        title="测评与证书"
         description="用岗位标准组织理论核验、场景实操与能力认定，让每一次达标都可追溯、可证明。"
         metrics={[
           { label: "测评资源", value: String(assessmentCount).padStart(2, "0") },
@@ -379,7 +379,7 @@ export function AssessmentView() {
             <Card>
               <h2>我的证书</h2>
               {state.certificates.length === 0 ? <Empty>通过岗位测评和场景实操后可获得平台凭证。</Empty> : state.certificates.map((certificate) => (
-                <div className="ep-row" key={certificate.id}><div className="ep-grow"><b>{jobById(certificate.jobId)?.name ?? "岗位实战"}结业凭证</b><p>{certificate.number}</p></div><Tag tone="success">{certificate.issuedAt}</Tag></div>
+                <div className="ep-row" key={certificate.id}><div className="ep-grow"><b>{(certificate.definitionId ? state.platformAdmin.certificates.find((item) => item.id === certificate.definitionId)?.name : undefined) ?? `${jobById(certificate.jobId)?.name ?? "岗位实战"}结业凭证`}</b><p>{certificate.number}</p></div><Tag tone="success">{certificate.issuedAt}</Tag></div>
               ))}
               {eligibility.certificate && <CertificateCard certificate={eligibility.certificate} />}
             </Card>
@@ -436,7 +436,8 @@ export function CertificateDetail({ id }: { id: string }) {
 }
 
 export function EvaluationMethodView({ id }: { id: string }) {
-  const method = evaluationMethods.find((item) => item.id === id);
+  const { state } = useWorkspacePage();
+  const method = state.evaluationMethodCatalog.find((item) => item.id === id);
   if (!method) return <Empty>测评方式不存在。</Empty>;
   return (
     <Card>
@@ -451,13 +452,13 @@ export function EvaluationMethodView({ id }: { id: string }) {
   );
 }
 
-function CertificateCard({ certificate }: { certificate: { number: string; issuedAt: string } }) {
-  const { state } = useWorkspacePage();
+function CertificateCard({ certificate }: { certificate: { number: string; issuedAt: string; jobId: string } }) {
+  const { jobById, state } = useWorkspacePage();
   return (
     <Card className="ep-certificate">
       <Tag>场景化产教融合平台</Tag>
       <h2>岗位实战结业凭证</h2><h1>{state.resume.name}</h1>
-      <p>完成技术服务岗位实训与综合测评</p>
+      <p>完成{jobById(certificate.jobId)?.name ?? "岗位"}实训与综合测评</p>
       <small>{certificate.number} · {certificate.issuedAt}</small>
       <Btn secondary onClick={() => window.print()}><Download size={16} />打印凭证</Btn>
     </Card>
