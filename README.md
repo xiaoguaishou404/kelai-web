@@ -29,17 +29,19 @@ Node 版本要求 `>= 20.19`。
 
 页面底部悬浮的“科来业务副驾”使用用户自填的 OpenAI 兼容 API Key：
 
+- 助手以独立自定义元素挂载在 `body`，内部是独立 React root，不进入业务 React 树；所有页面（包括登录页）都会显示。
 - 点击底部的“未配置 · 填写 API Key”，或展开面板后点击齿轮图标。
 - 默认服务为 DeepSeek：`https://api.deepseek.com` + `deepseek-flash`，可改为其他 OpenAI 兼容服务。
 - Key 仅保存在当前浏览器的 localStorage，不经过平台服务器，直接发送至所填模型服务。
 - 服务商需允许浏览器跨域调用（CORS）。DeepSeek 已验证支持。
+- 点击“保存并连接”后配置才会生效；修改未保存时发送任务会提示先保存。
 - 点击“清除”会删除本机配置并停用助手。
 
 页面内容发送给模型前会进行手机号、邮箱、证件号、密钥等敏感信息脱敏；提交审核、发布、确权等高风险操作不会被自动点击。
 
 ## 路由
 
-使用 BrowserRouter，路径统一挂载在 `/platform/*` 下。部署到静态服务器时，需要把未知路径回落到 `index.html`。
+使用 BrowserRouter，路径统一挂载在 `/platform/*` 下。当前按域名根目录部署；部署到静态服务器时，需要把未知路径回落到 `index.html`。
 
 Nginx 示例：
 
@@ -48,6 +50,8 @@ location / {
   try_files $uri $uri/ /index.html;
 }
 ```
+
+如果部署到子路径（例如 `/kelai/`），需要同时调整 Vite `base`、Router `basename` 以及 public 资源地址，不能只改 Nginx。
 
 ## 目录
 

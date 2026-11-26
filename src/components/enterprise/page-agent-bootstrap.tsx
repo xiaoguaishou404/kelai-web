@@ -11,7 +11,6 @@ export function PageAgentBootstrap() {
       existing.syncPath(pathname);
       return;
     }
-    if (!pathname.startsWith("/platform") || pathname === "/platform/login") return;
 
     void import("@/lib/page-agent-runtime").then(({ ensurePageAgentRuntime }) => {
       if (active) void ensurePageAgentRuntime(pathname);

@@ -141,7 +141,7 @@ export function IndustryView() {
       <Card className="ep-rights-overview">
         <div className="ep-section-title">
           <div><Tag>RIGHT CLEARANCE</Tag><h2>场景与资源确权</h2></div>
-          {manager && <Link className="ep-link" href="/platform/manage/resources">进入资源管理 <ArrowUpRight size={15} /></Link>}
+          {manager && <Link className="ep-link" href="/platform/admin/scene/scenarios">进入场景管理 <ArrowUpRight size={15} /></Link>}
         </div>
         <p className="ep-rights-intro">科来对知与的场景与资源进行确权授权，明确资源用途、使用范围与有效期，让产业内容合规进入课程、实训与人才评价。</p>
         <div className="ep-rights-flow" aria-label="资源授权链路">
