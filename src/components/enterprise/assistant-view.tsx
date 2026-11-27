@@ -269,7 +269,7 @@ export function AssistantView({ store, host }: { store: AssistantStore; host: HT
             <>
               <div className="ep-ai-panel-head">
                 <div>
-                  <span><SparkIcon />科来业务副驾</span>
+                  <span><SparkIcon />科工产业副驾</span>
                   <small>{state.binding.model} · {state.binding.maxSteps >= 1_000_000 ? "不限步数" : `${state.binding.maxSteps} 步`}</small>
                 </div>
                 <div className="ep-ai-panel-actions">

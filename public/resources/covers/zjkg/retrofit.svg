@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" role="img" aria-label="">
+  <defs>
+    <linearGradient id="retrofit-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c3d6d"/>
+      <stop offset=".55" stop-color="#125c98"/>
+      <stop offset="1" stop-color="#1f7ab3"/>
+    </linearGradient>
+    <radialGradient id="retrofit-glow" cx=".72" cy=".24" r=".8">
+      <stop offset="0" stop-color="#8ecbf0" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#8ecbf0" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="retrofit-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0v40" fill="none" stroke="#d7ebfb" stroke-opacity=".09" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="520" fill="url(#retrofit-bg)"/>
+  <rect width="800" height="520" fill="url(#retrofit-grid)"/>
+  <rect width="800" height="520" fill="url(#retrofit-glow)"/>
+  <g stroke="#eaf5ff" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke-width="2.2" stroke-opacity=".8">
+      <path d="M206 430V222l166-70 166 70v208l-166 68z" fill="#dff1ff" fill-opacity=".05"/>
+      <path d="M206 222l166 70 166-70M372 292v276M206 430l166-68 166 68" stroke-opacity=".66"/>
+      <g stroke-width="1.3" stroke-opacity=".34">
+        <path d="M246 238v164M296 258v146M448 258v146M498 238v164"/>
+        <path d="M206 318l332 134M206 376l332-134" stroke-opacity=".16"/>
+      </g>
+      <path d="M172 456c60-40 122-48 188-24 68 24 130 18 190-18" stroke-width="1.6" stroke-opacity=".45"/>
+      <g stroke-dasharray="5 7" stroke-width="1.3" stroke-opacity=".45">
+        <circle cx="372" cy="384" r="70"/>
+        <path d="M372 314v140M302 384h140"/>
+      </g>
+    </g>
+    <g stroke="#f0a65f" stroke-width="1.6" stroke-opacity=".8">
+      <circle cx="372" cy="384" r="8" fill="#f0a65f" fill-opacity=".2"/>
+      <path d="M372 384l92-64M464 320h34"/>
+    </g>
+  </g>
+  <g fill="#f0a65f">
+    <circle cx="654" cy="112" r="3.6" opacity=".9"/>
+    <circle cx="702" cy="150" r="2.4" opacity=".55"/>
+  </g>
+</svg>

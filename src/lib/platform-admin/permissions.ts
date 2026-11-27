@@ -26,5 +26,5 @@ export function canEnterAdmin(role: Role | null) {
 }
 
 export function ownerLabel(owner: ModuleOwner) {
-  return owner === "platform" ? "科来平台方" : "院校管理方";
+  return owner === "platform" ? "中建科工平台方" : "院校管理方";
 }

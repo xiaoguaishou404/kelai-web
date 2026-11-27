@@ -316,7 +316,7 @@
   border: calc(var(--scale-base) * 1) solid #dfe8f5;
   border-radius: calc(var(--scale-base) * 16);
   background:
-    radial-gradient(circle at 88% 12%, rgb(112 203 191 / 12%), transparent 32%),
+    radial-gradient(circle at 88% 12%, rgb(116 179 214 / 12%), transparent 32%),
     linear-gradient(120deg, #f6f9ff, #edf3fc);
 }
 

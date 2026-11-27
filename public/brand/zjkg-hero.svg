@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1000" role="img" aria-label="钢结构与智能建造工程场景">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6fafe"/>
+      <stop offset=".52" stop-color="#eaf3fb"/>
+      <stop offset="1" stop-color="#dcebf8"/>
+    </linearGradient>
+    <linearGradient id="tower" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a6ba9" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#0b3a69" stop-opacity=".4"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2c83c4" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#2c83c4" stop-opacity=".34"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".72" cy=".4" r=".55">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="56" height="56" patternUnits="userSpaceOnUse">
+      <path d="M56 0H0v56" fill="none" stroke="#2f7fbd" stroke-opacity=".13" stroke-width="1"/>
+    </pattern>
+    <pattern id="fine" width="14" height="14" patternUnits="userSpaceOnUse">
+      <path d="M14 0H0v14" fill="none" stroke="#2f7fbd" stroke-opacity=".06" stroke-width=".7"/>
+    </pattern>
+  </defs>
+  <rect width="2000" height="1000" fill="url(#sky)"/>
+  <rect width="2000" height="1000" fill="url(#fine)"/>
+  <rect x="760" width="1240" height="1000" fill="url(#grid)" mask="url(#fade)"/>
+  <mask id="fade">
+    <rect x="760" width="1240" height="1000" fill="#fff"/>
+    <rect x="760" width="1240" height="1000" fill="url(#glow)"/>
+  </mask>
+  <rect width="2000" height="1000" fill="url(#glow)"/>
+
+  <!-- isometric steel tower cluster -->
+  <g stroke="#123a66" fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <!-- main high-rise -->
+    <path d="M1268 726V228l220-104 220 104v498l-220 96z" fill="url(#tower)" stroke-width="2.6" stroke-opacity=".55"/>
+    <path d="M1268 228l220 104 220-104M1488 332v490M1268 726l220-96 220 96" stroke-width="2.4" stroke-opacity=".5"/>
+    <g stroke-width="1.6" stroke-opacity=".38">
+      <path d="M1310 250v470M1354 271v452M1398 292v434M1442 313v416M1534 313v416M1578 292v434M1622 271v452M1666 250v470"/>
+      <path d="M1268 350l440 208M1268 440l440 208M1268 530l440 208M1268 620l440 208" stroke-opacity=".22"/>
+      <path d="M1488 140v192M1488 822v-490" stroke-opacity=".3"/>
+    </g>
+    <!-- diagrid crown -->
+    <path d="M1268 228l110 52 110-52 110 52 110-52M1330 594l158-74 158 74" stroke-width="2" stroke-opacity=".42"/>
+    <!-- secondary low-rise -->
+    <path d="M1062 780V526l132-62 132 62v254l-132 58z" fill="#2f7fbd" fill-opacity=".06" stroke-width="2.2" stroke-opacity=".4"/>
+    <path d="M1062 526l132 62 132-62M1194 588v256M1062 780l132-58 132 58" stroke-width="2" stroke-opacity=".34"/>
+    <!-- long-span roof -->
+    <path d="M1690 720c54-128 148-194 280-202v112c-92 6-156 48-202 128z" fill="url(#beam)" stroke-width="2.2" stroke-opacity=".42"/>
+    <path d="M1690 720c54-128 148-194 280-202M1690 758c54-128 148-194 280-202" stroke-width="1.8" stroke-opacity=".28"/>
+    <path d="M1738 612l232-78M1774 660l196-88M1814 702l156-92" stroke-width="1.2" stroke-opacity=".22"/>
+    <!-- cranes / masts -->
+    <path d="M1000 760V330M1000 330l-96 62M1000 330l96 62M1000 330v-84M940 372l-42 18M1060 372l42 18" stroke-width="2" stroke-opacity=".38"/>
+    <path d="M904 748h192" stroke-width="1.6" stroke-opacity=".24"/>
+  </g>
+
+  <!-- dimension and annotation lines -->
+  <g stroke="#2f7fbd" stroke-opacity=".38" fill="none" stroke-width="1.2">
+    <path d="M1240 860h496M1240 850v20M1736 850v20"/>
+    <path d="M1180 180v546M1170 180h20M1170 726h20"/>
+    <circle cx="1488" cy="332" r="7"/>
+    <circle cx="1488" cy="332" r="24" stroke-dasharray="3 7" stroke-opacity=".24"/>
+  </g>
+  <g fill="#2f7fbd" font-family="Arial, sans-serif" font-size="18" letter-spacing="2" opacity=".64">
+    <text x="1400" y="890">SPAN · 496</text>
+    <text x="1150" y="470" transform="rotate(-90 1150 470)">HEIGHT · 546</text>
+  </g>
+
+  <!-- measurement dots and accent nodes -->
+  <g fill="#e28a3d">
+    <circle cx="1488" cy="332" r="4.4"/>
+    <circle cx="1272" cy="726" r="4.4"/>
+    <circle cx="1704" cy="726" r="4.4"/>
+    <circle cx="1194" cy="588" r="3.4"/>
+  </g>
+  <g stroke="#e28a3d" stroke-opacity=".7" stroke-width="1.2" fill="none">
+    <path d="M1488 332l96-58M1272 726l-74 42M1704 726l76 34"/>
+  </g>
+
+  <!-- soft foreground haze -->
+  <rect y="820" width="2000" height="180" fill="url(#sky)" opacity=".55"/>
+</svg>

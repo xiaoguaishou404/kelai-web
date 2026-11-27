@@ -169,7 +169,7 @@
   place-items: center;
   border-radius: calc(var(--scale-base) * 11);
   background: #eaf1ff;
-  color: #2958cb;
+  color: #0b4f8f;
 }
 
 .ep .ep-company-entry-grid {
@@ -243,7 +243,7 @@
       border-top: 1px solid var(--company-rule);
     }
 
-    svg { color: #2958cb; }
+    svg { color: #0b4f8f; }
 
     p { grid-column: 1 / -1; margin-top: 0; }
   }
@@ -297,11 +297,11 @@
     border-radius: calc(var(--scale-base) * 15);
     background: #fff;
 
-    > svg { vertical-align: middle; color: #2958cb; }
+    > svg { vertical-align: middle; color: #0b4f8f; }
 
     > strong {
       margin-left: calc(var(--scale-base) * 8);
-      color: #2958cb;
+      color: #0b4f8f;
       font-size: max(.875rem, calc(var(--scale-base) * 15));
       letter-spacing: .035em;
       vertical-align: middle;
@@ -368,7 +368,7 @@
     height: calc(var(--scale-base) * 9);
     border: 2px solid #f5f7fb;
     border-radius: 50%;
-    background: #3361e8;
+    background: #0f5fa8;
     content: "";
   }
 
@@ -378,7 +378,7 @@
 
   time {
     grid-row: span 2;
-    color: #2958cb;
+    color: #0b4f8f;
     font-size: max(.8125rem, calc(var(--scale-base) * 13));
     font-weight: 650;
     font-variant-numeric: tabular-nums;
@@ -552,7 +552,12 @@
 }
 
 .ep .ep-company-detail-hero {
-  background: radial-gradient(ellipse at 94% 12%, #dce9ff 0, transparent 64%), #edf4ff;
+  background:
+    linear-gradient(rgb(15 95 168 / 5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(15 95 168 / 5%) 1px, transparent 1px),
+    radial-gradient(ellipse at 94% 12%, #dce9ff 0, transparent 64%),
+    #edf4ff;
+  background-size: calc(var(--scale-base) * 52) calc(var(--scale-base) * 52), calc(var(--scale-base) * 52) calc(var(--scale-base) * 52), auto, auto;
   border-bottom: 1px solid #dfe8f5;
 
   > div {

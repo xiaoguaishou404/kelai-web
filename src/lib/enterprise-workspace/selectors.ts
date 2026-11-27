@@ -83,7 +83,7 @@ export function publishedAssessments(state: EnterpriseWorkspaceState) {
       ...item,
       kind: item.kind ?? "试卷",
       difficulty: item.difficulty ?? "中级",
-      publisher: item.publisher ?? "科来网络",
+      publisher: item.publisher ?? "中建科工",
       abilityPointCount: item.abilityPointCount ?? jobMap.get(item.jobId)?.abilityPoints?.length ?? 6,
       averageScore: item.averageScore,
       usageCount: item.usageCount,
@@ -679,7 +679,7 @@ export function certificateEligibility(state: EnterpriseWorkspaceState) {
 }
 
 export function generatedCertificateNumber(state: EnterpriseWorkspaceState) {
-  return `KL-TD-2026-${String(state.certificates.length + 1).padStart(4, "0")}`;
+  return `ZJKG-TD-2026-${String(state.certificates.length + 1).padStart(4, "0")}`;
 }
 
 export function resumeComplete(resume: Resume) {

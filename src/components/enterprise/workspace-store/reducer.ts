@@ -555,7 +555,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
       };
       return audit(
         { ...state, certificates: [certificate, ...state.certificates] },
-        createAudit("科来运营", "发放证书", certificate.number, action.definitionId),
+        createAudit("中建科工运营", "发放证书", certificate.number, action.definitionId),
       );
     }
     case "new-resource": {
@@ -564,7 +564,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
         : state.majorGroups;
       return audit(
         { ...state, resources: [action.resource, ...state.resources], majorGroups },
-        createAudit("科来运营", "新建资源", action.resource.name, `${action.resource.type}草稿`),
+        createAudit("中建科工运营", "新建资源", action.resource.name, `${action.resource.type}草稿`),
       );
     }
     case "update-resource": {
@@ -613,7 +613,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
       }
       const event = {
         id: crypto.randomUUID(),
-        actor: "科来运营",
+        actor: "中建科工运营",
         note: action.note || action.action,
         at: nowLabel(),
       };
@@ -635,7 +635,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
                       reviewNote: confirmed ? "" : revoked ? "权属已撤回，需重新确认" : action.note || "请补充权属证明材料",
                       history: [
                         createAudit(
-                          "科来运营",
+                          "中建科工运营",
                           confirmed ? "确认资源权属" : revoked ? "撤回资源权属" : "驳回资源权属",
                           item.name,
                           confirmed ? `${rights.ownership} · ${rights.agreementNo}` : revoked ? "权属状态撤回，前台停止使用" : action.note || "权属材料不完整",
@@ -648,7 +648,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
                 : item,
             ),
           },
-          createAudit("科来运营", confirmed ? "确认资源权属" : revoked ? "撤回资源权属" : "驳回资源权属", target.name, action.note || target.rights.agreementNo),
+          createAudit("中建科工运营", confirmed ? "确认资源权属" : revoked ? "撤回资源权属" : "驳回资源权属", target.name, action.note || target.rights.agreementNo),
         );
       }
       const approvalPlatform =
@@ -673,7 +673,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
             code: target.code ?? target.id,
             batchId: approvalBatch?.id,
             flowId: approvalFlow.id,
-            submittedBy: "科来运营",
+            submittedBy: "中建科工运营",
             submittedAt: event.at,
             status: "审批中" as const,
             currentStep: 0,
@@ -695,7 +695,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
                     ...item.rights,
                     status: item.rights.status === "已确权" ? "已确权" as const : "审核中" as const,
                     reviewNote: "",
-                    history: [createAudit("科来运营", "提交资源审核", item.name, "资源内容与权属材料进入审核"), ...item.rights.history],
+                    history: [createAudit("中建科工运营", "提交资源审核", item.name, "资源内容与权属材料进入审核"), ...item.rights.history],
                   }
                 : item.rights;
               return {
@@ -734,7 +734,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
               }
             : state.platformAdmin,
         },
-        createAudit("科来运营", "资源流转", action.id, action.action),
+        createAudit("中建科工运营", "资源流转", action.id, action.action),
       );
     }
     case "save-major-group": {
@@ -780,18 +780,18 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
       });
       return audit(
         { ...state, majorGroups: updatedGroups, resources },
-        createAudit("科来运营", "维护专业群适配", updatedGroups.find((group) => group.id === action.id)?.name ?? action.id, `专业 ${action.patch.majors.length} 个 · 岗位 ${action.patch.jobIds.length} 个`),
+        createAudit("中建科工运营", "维护专业群适配", updatedGroups.find((group) => group.id === action.id)?.name ?? action.id, `专业 ${action.patch.majors.length} 个 · 岗位 ${action.patch.jobIds.length} 个`),
       );
     }
     case "standard":
       return audit(
         { ...state, standardWeights: action.weights },
-        createAudit("科来运营", "更新评价标准", "技术服务工程师能力评价标准", `权重 ${action.weights.join(" / ")}`),
+        createAudit("中建科工运营", "更新评价标准", "钢结构深化设计工程师能力评价标准", `权重 ${action.weights.join(" / ")}`),
       );
     case "publish-project":
       return audit(
         { ...state, projects: [action.project, ...state.projects] },
-        createAudit("科来运营", "发布产业项目", action.project.name, action.project.company),
+        createAudit("中建科工运营", "发布产业项目", action.project.name, action.project.company),
       );
     case "toggle-project":
       return {
@@ -803,7 +803,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
     case "publish-job":
       return audit(
         { ...state, jobPostings: [action.posting, ...state.jobPostings] },
-        createAudit("科来运营", "发布招聘岗位", action.posting.name, action.posting.company),
+        createAudit("中建科工运营", "发布招聘岗位", action.posting.name, action.posting.company),
       );
     case "toggle-job":
       return {
@@ -820,7 +820,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
     case "process-application": {
       const target = state.applications.find((item) => item.id === action.id);
       if (!target) return state;
-      const event = createAudit("科来运营", `处理申请 · ${action.status}`, target.name, action.feedback || "状态已更新");
+      const event = createAudit("中建科工运营", `处理申请 · ${action.status}`, target.name, action.feedback || "状态已更新");
       const projectWorkStatus = target.kind === "project"
         ? action.status === "已接单"
           ? "进行中" as const
@@ -942,7 +942,7 @@ export function reducer(state: EnterpriseWorkspaceState, action: Action): Enterp
       return audit(
         { ...state, [action.entity]: next, resources } as EnterpriseWorkspaceState,
         createAudit(
-          state.role === "schoolAdmin" ? "院校管理员" : "科来运营",
+          state.role === "schoolAdmin" ? "院校管理员" : "中建科工运营",
           exists ? `更新${entityLabel}` : `新建${entityLabel}`,
           itemLabel,
           action.entity,

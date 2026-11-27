@@ -1,17 +1,17 @@
 import type { ReactNode } from "react";
 import { Image } from "@/components/router/image";
 import { Link } from "@/components/router/link";
-import { BadgeCheck, BookOpen, BriefcaseBusiness, GraduationCap, Network, UsersRound } from "lucide-react";
+import { BadgeCheck, BookOpen, BriefcaseBusiness, DraftingCompass, GraduationCap, UsersRound } from "lucide-react";
 import { IndustryHero } from "@/components/enterprise/industry-hero";
 import {
-  capabilities, companyMetrics, companyOverview, companySources, csnaPrograms,
+  capabilities, companyMetrics, companyOverview, companySources, trainingPrograms,
   industryPractices, milestones, products, recognitions, strengths,
 } from "@/components/enterprise/company-profile-data";
 
 const companyPath = "/platform/industry/company";
 
 const platformEntries = [
-  { icon: Network, title: "岗位与场景", detail: "岗位能力与一线实训", href: "/platform/resources" },
+  { icon: DraftingCompass, title: "岗位与场景", detail: "岗位能力与一线实训", href: "/platform/resources" },
   { icon: BookOpen, title: "课程与教材", detail: "数字课程与配套教材", href: "/platform/courses" },
   { icon: BadgeCheck, title: "测评与证书", detail: "能力评价与结业认证", href: "/platform/assessment" },
   { icon: BriefcaseBusiness, title: "产业项目实战", detail: "企业项目与成果交付", href: "/platform/projects" },
@@ -20,11 +20,11 @@ const platformEntries = [
 
 const detailSections = [
   { id: "company-strengths", label: "企业概况" },
-  { id: "company-products", label: "核心产品" },
-  { id: "company-practices", label: "行业实践" },
+  { id: "company-products", label: "业务与产品" },
+  { id: "company-practices", label: "工程实践" },
   { id: "company-history", label: "发展历程" },
-  { id: "company-csna", label: "认证培训" },
-  { id: "company-contact", label: "联系科来" },
+  { id: "company-csna", label: "产业培训" },
+  { id: "company-contact", label: "联系中建科工" },
 ];
 
 function OfficialLink({ href, children }: { href: string; children: ReactNode }) {
@@ -34,7 +34,7 @@ function OfficialLink({ href, children }: { href: string; children: ReactNode })
 function CompanyMetrics() {
   return (
     <div className="ep-company-metrics ep-full-bleed">
-      <dl className="ep-company-metrics-inner" aria-label="科来网络概况">
+      <dl className="ep-company-metrics-inner" aria-label="中建科工概况">
         {companyMetrics.map(({ label, value }) => (
           <div key={label}>
             <dt>{label}</dt>
@@ -68,18 +68,18 @@ function CompanyOverview({ detailed = false }: { detailed?: boolean }) {
     <section className="ep-company-section ep-company-strengths" id="company-strengths" aria-labelledby="company-strengths-title">
       <div className="ep-company-strength-visual">
         <Image
-          src="/brand/colasoft-company-strength.webp"
-          alt="蓝色网络数据流与可观测基础设施"
+          src="/brand/zjkg-company.svg"
+          alt="钢结构节点与模块化建筑"
           fill
           sizes="(max-width: 800px) 100vw, 42vw"
         />
       </div>
       <div>
         <div className="ep-company-section-lead">
-          <h2 id="company-strengths-title">{detailed ? "企业概况" : "认识科来网络"}</h2>
+          <h2 id="company-strengths-title">{detailed ? "企业概况" : "认识中建科工"}</h2>
           {companyOverview.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
           {detailed
-            ? <OfficialLink href={companySources.about}>科来官网 · 企业介绍</OfficialLink>
+            ? <OfficialLink href={companySources.about}>中建科工官网 · 企业介绍</OfficialLink>
             : <Link className="ep-company-text-link" href={companyPath}>查看企业详情</Link>}
         </div>
         <div className="ep-company-strength-grid">
@@ -100,9 +100,9 @@ function CompanyCapabilities() {
   return (
     <section className="ep-company-section" aria-labelledby="company-capabilities-title">
       <div className="ep-company-section-lead">
-        <h2 id="company-capabilities-title">从一条报文到一次故障复盘</h2>
-        <p>科来的可观测产品以流量为数据基础，让性能指标、网络路径和故障证据落到同一次排查中。</p>
-        <OfficialLink href={companySources.technology}>科来官网 · 技术能力</OfficialLink>
+        <h2 id="company-capabilities-title">从一张图纸到一次竣工交付</h2>
+        <p>中建科工以数字模型为线索，把设计、工厂制造、现场建造和更新运营连接为同一条可追溯的工程链路。</p>
+        <OfficialLink href={companySources.products}>中建科工官网 · 业务与产品</OfficialLink>
       </div>
       <ol className="ep-company-capability-grid">
         {capabilities.map(({ icon: Icon, title, detail }) => (
@@ -122,12 +122,12 @@ function ProductPortfolio({ detailed = false }: { detailed?: boolean }) {
     <section className="ep-company-section" id="company-products" aria-labelledby="company-products-title">
       <div className="ep-company-section-lead ep-company-section-lead-actions">
         <div>
-          <h2 id="company-products-title">核心产品体系</h2>
-          <p>以 UPM 汇集运行指标与业务体验，以 RAS 保留原始报文。云网观测、告警治理、交易分析和小科 AI 可结合这两类数据参与诊断。</p>
-          {detailed && <p>科来早期推出的 CSNAS 网络分析系统面向协议解析与故障诊断。产品此后延伸至工控安全、云资源池和智算中心，覆盖设备、网络、应用与业务链路。</p>}
+          <h2 id="company-products-title">业务与产品体系</h2>
+          <p>以钢结构与装配式建筑为底座，把数字设计、智能工厂、现场机器人和城市更新运营组合为可交付的产品与服务。</p>
+          {detailed && <p>从超高层钢结构到模块化建筑，产品能力沿着设计、制造、施工和运维四个环节持续延伸，并通过统一编码与数据平台实现贯通。</p>}
         </div>
         {detailed
-          ? <OfficialLink href={companySources.products}>科来官网 · 产品中心</OfficialLink>
+          ? <OfficialLink href={companySources.products}>中建科工官网 · 产品中心</OfficialLink>
           : <Link className="ep-company-text-link" href={`${companyPath}#company-products`}>查看完整产品体系</Link>}
       </div>
       <div className="ep-company-products-grid">
@@ -152,11 +152,11 @@ function IndustryPractices({ detailed = false }: { detailed?: boolean }) {
     <section className="ep-company-section" id="company-practices" aria-labelledby="company-practices-title">
       <div className="ep-company-section-lead ep-company-section-lead-actions">
         <div>
-          <h2 id="company-practices-title">关键行业的运行现场</h2>
-          <p>根据科来公开案例与解决方案整理，覆盖交易连续性、生产调度和云资源池服务质量。</p>
+          <h2 id="company-practices-title">智能建造与城市更新实践</h2>
+          <p>根据中建科工公开项目与业务资料整理，覆盖超高层、大跨度场馆、模块化建筑和既有城区更新。</p>
         </div>
         {detailed
-          ? <OfficialLink href={companySources.cases}>科来官网 · 客户案例</OfficialLink>
+          ? <OfficialLink href={companySources.cases}>中建科工官网 · 客户案例</OfficialLink>
           : <Link className="ep-company-text-link" href={`${companyPath}#company-practices`}>查看更多行业实践</Link>}
       </div>
       <div className="ep-company-practice-grid">
@@ -183,8 +183,8 @@ function CompanyHistory() {
     <section className="ep-company-section ep-company-story" id="company-history" aria-labelledby="company-history-title">
       <div className="ep-company-section-lead">
         <h2 id="company-history-title">发展历程</h2>
-        <p>从独立的网络分析工具，到面向大型数据中心、混合云和智算集群的可观测性产品。</p>
-        <OfficialLink href={companySources.about}>科来官网 · 企业介绍</OfficialLink>
+        <p>从超高层钢结构施工能力，到建筑工业化、智能建造与城市更新一体化服务。</p>
+        <OfficialLink href={companySources.about}>中建科工官网 · 企业介绍</OfficialLink>
       </div>
       <ol className="ep-company-timeline">
         {milestones.map(({ phase, title, detail }) => (
@@ -218,13 +218,13 @@ function CompanyTraining() {
     <section className="ep-company-section" id="company-csna" aria-labelledby="company-csna-title">
       <div className="ep-company-section-lead ep-company-section-lead-actions">
         <div>
-          <h2 id="company-csna-title">CSNA 认证与技术培训</h2>
-          <p>科来于 2005 年开办 CSNA 网络分析认证培训，把协议分析、业务性能排查和安全事件研判中的实际经验用于技术教学。公开资料介绍了以下三个认证方向。</p>
+          <h2 id="company-csna-title">产业人才培训与技术认证</h2>
+          <p>中建科工把钢结构深化、智能建造和城市更新中的工程经验转化为培训与认证内容，面向院校和产业工人提供岗位能力培养路径。</p>
         </div>
-        <OfficialLink href={companySources.protocolMap}>下载《网络通讯协议图》2023 版</OfficialLink>
+        <OfficialLink href={companySources.about}>查看中建科工官网</OfficialLink>
       </div>
       <div className="ep-company-csna-grid">
-        {csnaPrograms.map(({ code, name, detail }) => (
+        {trainingPrograms.map(({ code, name, detail }) => (
           <article key={code}>
             <GraduationCap size={22} strokeWidth={1.7} aria-hidden="true" />
             <strong>{code}</strong>
@@ -234,7 +234,7 @@ function CompanyTraining() {
         ))}
       </div>
       <div className="ep-company-training-note">
-        <p>本平台将网络部署、需求理解、链路分析、故障定位、安全研判和交付汇报融入场景实训。学生可以通过课程掌握基础知识，再使用任务成果验证岗位能力。</p>
+        <p>本平台将识图建模、工艺实施、现场施工、质量安全、成本进度和协作交付融入场景实训。学生先通过课程掌握方法，再用任务成果验证岗位能力。</p>
         <Link className="ep-company-text-link" href="/platform/courses">查看平台课程</Link>
       </div>
     </section>
@@ -275,15 +275,15 @@ function CompanyContact() {
   return (
     <section className="ep-company-section ep-company-contact" id="company-contact" aria-labelledby="company-contact-title">
       <div className="ep-company-section-lead">
-        <h2 id="company-contact-title">联系科来</h2>
-        <p>产品咨询、运行支持与培训信息可通过科来官网及客户服务渠道获取。</p>
-        <OfficialLink href={companySources.offices}>查看分支机构地址</OfficialLink>
+        <h2 id="company-contact-title">联系中建科工</h2>
+        <p>产品咨询、运行支持与培训信息可通过中建科工官网及客户服务渠道获取。</p>
+        <OfficialLink href={companySources.about}>查看中建科工官网</OfficialLink>
       </div>
       <dl>
-        <div><dt>企业名称</dt><dd>科来网络技术股份有限公司</dd></div>
-        <div><dt>成都总部</dt><dd>成都市高新区天府大道北段 966 号 4 号楼 12–14 层</dd></div>
-        <div><dt>客户服务</dt><dd><a href="tel:4006869069">400-6869-069</a></dd></div>
-        <div><dt>服务邮箱</dt><dd><a href="mailto:support@colasoft.com.cn">support@colasoft.com.cn</a></dd></div>
+        <div><dt>企业名称</dt><dd>中建科工集团有限公司</dd></div>
+        <div><dt>总部</dt><dd>深圳市南山区</dd></div>
+        <div><dt>核心业务</dt><dd>钢结构 · 装配式建筑 · 智能建造 · 城市更新</dd></div>
+        <div><dt>校企合作</dt><dd>通过中建科工官网及产业学院渠道联系</dd></div>
       </dl>
     </section>
   );
@@ -295,8 +295,8 @@ export function CompanyDetail() {
       <section className="ep-company-detail-hero ep-full-bleed" aria-labelledby="company-detail-title">
         <div>
           <Link href="/platform/industry">返回平台首页</Link>
-          <h1 id="company-detail-title">关于科来网络</h1>
-          <p>科来专注于网络流量采集与分析，为企业的网络、业务应用与 AI 基础设施提供可观测性产品与技术服务。</p>
+          <h1 id="company-detail-title">关于中建科工</h1>
+          <p>中建科工以钢结构为核心能力，面向智能建造与城市有机更新提供设计、制造、施工、检测与运营一体化服务。</p>
         </div>
       </section>
       <nav className="ep-company-detail-nav ep-full-bleed" aria-label="企业详情导航">

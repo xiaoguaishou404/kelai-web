@@ -96,8 +96,10 @@ function WorkspaceShell({ path }: { path: string[] }) {
       : state.role === "schoolAdmin"
         ? "院校管理员"
         : state.role === "manage"
-          ? "科来运营"
-          : state.resume.name;
+          ? "中建科工运营"
+          : state.role === "student"
+            ? state.resume.name
+            : "演示访客";
   const workspaceHome =
     state.role === "teacher"
       ? "teacher"
@@ -105,15 +107,19 @@ function WorkspaceShell({ path }: { path: string[] }) {
         ? "admin/system/tenant"
         : state.role === "manage"
           ? "manage"
-          : "learning";
+          : state.role === "student"
+            ? "learning"
+            : "login";
   const workspaceLabel =
     state.role === "teacher"
       ? "院校教学服务"
       : state.role === "schoolAdmin"
         ? "院校管理服务台"
         : state.role === "manage"
-          ? "科来企业服务台"
-          : "学生学习空间";
+          ? "中建科工企业服务台"
+          : state.role === "student"
+            ? "学生学习空间"
+            : "选择演示身份";
   const notify = (message: string) => setNotice(message);
   const go = (target: string) => navigate(`/platform/${target}`);
   const switchRole = (role: Role, target: string) => {
@@ -144,8 +150,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
       <header className="ep-header">
         <Link className="ep-brand" href="/platform/industry">
           <span className="ep-brand-lockup">
-            <Image src="/brand/colasoft-logo.png" alt="科来" width={34} height={32} priority />
-            <strong>科来网络</strong>
+            <Image src="/brand/zjkg-mark.svg" alt="中建科工" width={34} height={32} priority />
+            <strong>中建科工</strong>
           </span>
           <span className="ep-brand-product">
             <b>场景化产教融合平台</b>
@@ -153,7 +159,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
           </span>
         </Link>
         <div className="ep-header-right">
-          <div className="ep-account">
+          {page !== "login" && <div className="ep-account">
             <button className="ep-user" type="button" aria-haspopup="menu" aria-label={`${accountName} · ${workspaceLabel}`}>
               <span className="ep-user-avatar" aria-hidden="true">{accountName.slice(0, 1)}</span>
               <span className="ep-user-copy">
@@ -176,7 +182,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
                 <span><b>切换身份</b></span>
               </Link>
             </div>
-          </div>
+          </div>}
         </div>
       </header>
       {page !== "login" && (
@@ -196,7 +202,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
                 <ConsoleSidebar path={path} />
               ) : (
                 <>
-                  <small>{state.role === "manage" ? "科来企业服务台" : state.role === "schoolAdmin" ? "院校管理服务台" : state.role === "teacher" ? "院校教学服务" : "学生学习空间"}</small>
+                  <small>{state.role === "manage" ? "中建科工企业服务台" : state.role === "schoolAdmin" ? "院校管理服务台" : state.role === "teacher" ? "院校教学服务" : "学生学习空间"}</small>
                   {(state.role === "manage" ? management : state.role === "schoolAdmin" ? schoolAdminNav : state.role === "teacher" ? teacherNav : studentNav).map(([url, label]) => (
                     <Link
                       className={
@@ -225,12 +231,12 @@ function WorkspaceShell({ path }: { path: string[] }) {
             {consoleBlocked ? (
               <Card>
                 <h2>当前身份无法进入管理后台</h2>
-                <p>后台仅对科来管理或院校管理身份开放。</p>
+                <p>后台仅对中建科工管理或院校管理身份开放。</p>
                 <Link className="ep-button" href="/platform/login">选择身份</Link>
               </Card>
             ) : requiredRole && state.role !== requiredRole ? (
               <Card>
-                <h2>需要{requiredRole === "student" ? "学生" : requiredRole === "teacher" ? "院校教职工" : requiredRole === "schoolAdmin" ? "院校管理" : "科来管理"}身份</h2>
+                <h2>需要{requiredRole === "student" ? "学生" : requiredRole === "teacher" ? "院校教职工" : requiredRole === "schoolAdmin" ? "院校管理" : "中建科工管理"}身份</h2>
                 <p>请选择对应演示身份后继续。</p>
                 <Link className="ep-button" href="/platform/login">选择身份</Link>
               </Card>
@@ -245,8 +251,8 @@ function WorkspaceShell({ path }: { path: string[] }) {
         <div className="ep-footer-main">
           <div className="ep-footer-brand">
             <Link href="/platform/industry">
-              <Image src="/brand/colasoft-logo.png" alt="" width={34} height={32} />
-              <strong>科来-知与</strong>
+              <Image src="/brand/zjkg-mark.svg" alt="" width={34} height={32} />
+              <strong>中建科工 × 知与</strong>
             </Link>
             <p>场景化产教融合平台，连接产业岗位、院校教学与人才评价。</p>
             <small className="ep-footer-copyright">© 2026 场景化产教融合平台</small>
@@ -254,7 +260,7 @@ function WorkspaceShell({ path }: { path: string[] }) {
           <nav className="ep-footer-links" aria-label="平台功能">
             <strong>平台功能</strong>
             <Link href="/platform/industry">首页</Link>
-            <Link href="/platform/industry/company">关于科来</Link>
+            <Link href="/platform/industry/company">关于中建科工</Link>
             <Link href="/platform/resources">岗位与场景</Link>
             <Link href="/platform/projects">产业项目</Link>
             <Link href="/platform/employment">就业服务</Link>

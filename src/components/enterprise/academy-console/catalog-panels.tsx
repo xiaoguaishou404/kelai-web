@@ -46,7 +46,7 @@ export function AbilityCatalogPanel() {
       ]}
       blank={() => ({
         id: crypto.randomUUID(),
-        code: `KL-AB-${String(state.abilityCatalog.length + 1).padStart(3, "0")}`,
+        code: `ZJKG-AB-${String(state.abilityCatalog.length + 1).padStart(3, "0")}`,
         name: "",
         domain: "",
         dimension: 0,
@@ -83,7 +83,7 @@ export function KnowledgeCatalogPanel() {
       ]}
       blank={() => ({
         id: crypto.randomUUID(),
-        code: `KL-KP-${String(state.knowledgeCatalog.length + 1).padStart(3, "0")}`,
+        code: `ZJKG-KP-${String(state.knowledgeCatalog.length + 1).padStart(3, "0")}`,
         name: "",
         domain: "",
         description: "",
@@ -122,12 +122,12 @@ export function MaterialCatalogPanel({ type }: { type: TeachingMaterial["type"] 
       ]}
       blank={() => ({
         id: crypto.randomUUID(),
-        code: `KL-MT-${String(state.teachingMaterials.length + 1).padStart(3, "0")}`,
+        code: `ZJKG-MT-${String(state.teachingMaterials.length + 1).padStart(3, "0")}`,
         type,
         title: "",
         description: "",
         fileName: "",
-        owner: "科来教学资源部",
+        owner: "中建科工产业学院",
         status: "启用",
         updatedAt: new Date().toLocaleString("zh-CN", { hour12: false }),
       })}
@@ -162,7 +162,7 @@ export function EvaluationMethodPanel() {
       ]}
       blank={() => ({
         id: crypto.randomUUID(),
-        code: `KL-EM-${String(state.evaluationMethodCatalog.length + 1).padStart(3, "0")}`,
+        code: `ZJKG-EM-${String(state.evaluationMethodCatalog.length + 1).padStart(3, "0")}`,
         name: "",
         form: "",
         duration: "",
@@ -200,8 +200,8 @@ export function CodeRulePanel() {
       blank={() => ({
         id: crypto.randomUUID(),
         resourceType: "岗位",
-        prefix: "KL-NEW",
-        pattern: "KL-NEW-{0000}",
+        prefix: "ZJKG-NEW",
+        pattern: "ZJKG-NEW-{0000}",
         nextNumber: 1,
         status: "启用",
       })}

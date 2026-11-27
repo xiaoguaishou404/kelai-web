@@ -208,7 +208,7 @@ export function SceneBuilder({ resource, initial, notify, onClose }: BuilderProp
           ))}
         </div>
         <button className="ep-add-row" onClick={addTask}><Plus size={15} />新增任务</button>
-        <div className="ep-builder-section-head"><div><h3>可观测证据</h3><small>任务可引用同一批证据，也可设置不同必选组合。</small></div></div>
+        <div className="ep-builder-section-head"><div><h3>场景证据</h3><small>任务可引用同一批证据，也可设置不同必选组合。</small></div></div>
         {draft.evidence.map((item, index) => (
           <div className="ep-builder-item" key={item.id}>
             <span className="ep-number">{index + 1}</span>

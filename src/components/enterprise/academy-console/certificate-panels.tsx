@@ -14,7 +14,7 @@ function blankCertificate(): CertificateDefinition {
     id: crypto.randomUUID(),
     name: "",
     category: "平台认证",
-    issuer: "科来网络场景化产教融合平台",
+    issuer: "中建科工场景化产教融合平台",
     level: "初级",
     jobIds: [],
     abilityCount: 6,
@@ -104,7 +104,7 @@ export function CertificateLibraryPanel({ notify }: { notify: (message: string) 
                               enrollment.studentId,
                               certificate?.jobIds[0] ?? "service",
                               enrollment.certificateId,
-                              `KL-ZS-${new Date().getFullYear()}-${String(state.certificates.length + 1).padStart(4, "0")}`,
+                              `ZJKG-ZS-${new Date().getFullYear()}-${String(state.certificates.length + 1).padStart(4, "0")}`,
                             );
                             notify("证书已发放");
                           }}>发证</button>

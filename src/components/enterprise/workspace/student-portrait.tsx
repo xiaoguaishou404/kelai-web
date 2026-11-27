@@ -280,7 +280,7 @@ function PortraitReport({ report, reportRef }: { report: StudentPortraitData; re
         <div className="ep-student-report-person">
           <div className="ep-student-report-avatar" aria-hidden="true">{report.name.slice(0, 1)}</div>
           <div>
-            <p className="ep-student-report-brand">科来网络 · 学生能力画像</p>
+            <p className="ep-student-report-brand">中建科工 · 学生能力画像</p>
             <div className="ep-student-report-name">
               <h2>{report.name}</h2>
               {report.status && <span>{report.status}</span>}
@@ -415,7 +415,7 @@ function PortraitReport({ report, reportRef }: { report: StudentPortraitData; re
           </ul>
         </section>
       )}
-      <footer className="ep-student-report-footer">科来网络 · 场景化产教融合平台</footer>
+      <footer className="ep-student-report-footer">中建科工 · 场景化产教融合平台</footer>
     </div>
   );
 }

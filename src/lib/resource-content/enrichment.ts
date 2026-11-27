@@ -8,62 +8,87 @@ import {
   TeachingResourceItem,
 } from "@/lib/enterprise-workspace/types";
 
+const sceneCodeIndex: Record<string, number> = {
+  bank: 1,
+  energy: 2,
+  hospital: 3,
+  factory: 4,
+  "payment-peak": 5,
+  "cloud-migration": 6,
+  "ranch-encryption": 7,
+  "branch-cutover": 8,
+  "poc-value": 9,
+  "dc-change": 10,
+  "tap-quality": 11,
+  "trace-degradation": 12,
+  "incident-handoff": 13,
+  "customer-scope": 14,
+  "delivery-defense": 15,
+  "asset-baseline": 16,
+  "dns-investigation": 17,
+  "security-defense": 18,
+  "baseline-analysis": 19,
+  "joint-troubleshooting": 20,
+  "observability-defense": 21,
+};
+
 const jobDetails: Record<string, Pick<JobProfile, "aliases" | "salaryRange" | "careerPaths" | "recommended">> = {
   service: {
-    aliases: ["技术服务顾问", "网络分析工程师"],
+    aliases: ["钢结构深化设计师", "BIM 深化工程师"],
     salaryRange: "10-18K",
-    careerPaths: ["技术服务工程师", "高级现场专家", "交付负责人", "行业解决方案专家"],
+    careerPaths: ["深化设计工程师", "专业负责人", "设计经理", "技术总监"],
     recommended: true,
   },
   security: {
-    aliases: ["安全分析师", "全流量研判工程师"],
-    salaryRange: "12-22K",
-    careerPaths: ["安全分析师", "高级研判工程师", "安全运营负责人", "行业安全专家"],
+    aliases: ["智慧工地实施工程师", "智能建造专员"],
+    salaryRange: "11-19K",
+    careerPaths: ["智能建造实施工程师", "智慧工地负责人", "项目数字化经理"],
     recommended: true,
   },
   presales: {
-    aliases: ["售前顾问", "解决方案工程师"],
-    salaryRange: "12-24K",
-    careerPaths: ["售前工程师", "高级解决方案顾问", "行业方案负责人"],
+    aliases: ["模块化产品工程师", "MiC 产品经理"],
+    salaryRange: "12-22K",
+    careerPaths: ["产品工程师", "产品经理", "模块化业务负责人"],
+    recommended: true,
   },
   observability: {
-    aliases: ["可观测性工程师", "业务性能分析师"],
-    salaryRange: "12-20K",
-    careerPaths: ["性能分析工程师", "可观测性专家", "平台架构顾问"],
+    aliases: ["城市更新策划师", "更新项目前期经理"],
+    salaryRange: "13-24K",
+    careerPaths: ["更新策划师", "片区负责人", "城市更新总监"],
     recommended: true,
   },
   deployment: {
-    aliases: ["实施工程师", "采集部署工程师"],
-    salaryRange: "8-14K",
-    careerPaths: ["实施工程师", "交付专家", "项目技术负责人"],
+    aliases: ["构件工艺工程师", "产线工艺工程师"],
+    salaryRange: "9-16K",
+    careerPaths: ["工艺工程师", "产线经理", "制造基地负责人"],
   },
   operations: {
-    aliases: ["网络运维工程师", "运行保障工程师"],
-    salaryRange: "8-15K",
-    careerPaths: ["网络运维工程师", "运行专家", "稳定性负责人"],
+    aliases: ["钢结构安装工程师", "吊装工程师"],
+    salaryRange: "10-20K",
+    careerPaths: ["安装工程师", "施工经理", "项目总工"],
+    recommended: true,
   },
   nfr: {
-    aliases: ["应用性能工程师", "性能保障工程师"],
-    salaryRange: "14-24K",
-    careerPaths: ["应用性能工程师", "性能架构师", "可观测性负责人"],
+    aliases: ["BIM 工程师", "数字孪生工程师"],
+    salaryRange: "12-22K",
+    careerPaths: ["BIM 工程师", "数字建造负责人", "数字化总监"],
     recommended: true,
   },
   incident: {
-    aliases: ["应急响应工程师", "安全事件分析师"],
-    salaryRange: "13-22K",
-    careerPaths: ["应急响应工程师", "安全事件负责人", "安全运营专家"],
-    recommended: true,
+    aliases: ["结构检测工程师", "加固改造工程师"],
+    salaryRange: "10-18K",
+    careerPaths: ["检测加固工程师", "鉴定负责人", "城市更新技术总监"],
   },
   delivery: {
-    aliases: ["实施交付工程师", "项目交付工程师"],
-    salaryRange: "9-16K",
-    careerPaths: ["项目交付工程师", "交付经理", "项目负责人"],
+    aliases: ["项目管理工程师", "施工项目经理"],
+    salaryRange: "11-21K",
+    careerPaths: ["项目管理工程师", "项目经理", "区域项目总监"],
+    recommended: true,
   },
   solution: {
-    aliases: ["解决方案顾问", "行业售前顾问"],
+    aliases: ["智能建造顾问", "建筑数字化方案顾问"],
     salaryRange: "15-26K",
     careerPaths: ["解决方案顾问", "行业方案专家", "方案总监"],
-    recommended: true,
   },
 };
 
@@ -87,23 +112,23 @@ export function enrichScene(scene: SceneProfile): SceneProfile {
   const taskWeights = [20, 25, 30, 25];
   const taskRubrics: SceneTaskDetail["rubric"][] = [
     [
-      { id: "evidence", label: "事实梳理", description: "能区分业务现象、时间范围和已知事实。", weight: 40 },
-      { id: "method", label: "分析方法", description: "任务步骤完整，方法选择符合问题。", weight: 40 },
-      { id: "boundary", label: "边界意识", description: "能说明当前证据无法覆盖的范围。", weight: 20 },
+      { id: "evidence", label: "事实梳理", description: "能区分工程现象、时间窗口和已知条件。", weight: 40 },
+      { id: "method", label: "分析方法", description: "任务步骤完整，方法选择符合工程问题。", weight: 40 },
+      { id: "boundary", label: "边界意识", description: "能说明当前资料无法覆盖的范围。", weight: 20 },
     ],
     [
-      { id: "evidence", label: "链路证据", description: "关键链路节点与流量证据匹配。", weight: 40 },
-      { id: "reasoning", label: "判断推理", description: "能够区分传输等待与应用处理等待。", weight: 40 },
+      { id: "evidence", label: "过程证据", description: "关键工序、测量数据与现场记录匹配。", weight: 40 },
+      { id: "reasoning", label: "判断推理", description: "能够区分设计、制造与施工环节的影响。", weight: 40 },
       { id: "delivery", label: "成果表达", description: "图示或结论能够支持下一步协作。", weight: 20 },
     ],
     [
-      { id: "accuracy", label: "判断准确性", description: "选择的异常会话与结论一致。", weight: 45 },
-      { id: "evidence", label: "证据支撑", description: "证据数量、来源和时间窗相互印证。", weight: 35 },
+      { id: "accuracy", label: "判断准确性", description: "选择的证据与工程结论一致。", weight: 45 },
+      { id: "evidence", label: "证据支撑", description: "数据、图纸与现场记录相互印证。", weight: 35 },
       { id: "reasoning", label: "排除替代原因", description: "能解释为什么排除其他可能。", weight: 20 },
     ],
     [
       { id: "evidence", label: "证据完整", description: "结论逐条对应可追溯证据。", weight: 30 },
-      { id: "reasoning", label: "复盘推理", description: "说明定位路径、替代原因和未知边界。", weight: 40 },
+      { id: "reasoning", label: "复盘推理", description: "说明处理路径、替代方案和未知边界。", weight: 40 },
       { id: "delivery", label: "交付表达", description: "结论与下一步建议清晰、可执行。", weight: 30 },
     ],
   ];
@@ -129,21 +154,21 @@ export function enrichScene(scene: SceneProfile): SceneProfile {
   ];
   return {
     ...scene,
-    code: scene.code ?? `KL-CJ-${String(["bank", "energy", "hospital", "factory"].indexOf(scene.id) + 1).padStart(3, "0")}`,
-    department: scene.department ?? "网络空间安全学院",
-    majors: scene.majors ?? ["网络工程", "网络空间安全"],
+    code: scene.code ?? `ZJKG-CJ-${String(sceneCodeIndex[scene.id] ?? 99).padStart(3, "0")}`,
+    department: scene.department ?? "智能建造学院",
+    majors: scene.majors ?? ["智能建造技术", "土木工程"],
     learningGoal:
       scene.learningGoal ??
-      `能够围绕“${scene.name}”完成问题界定、证据筛选、链路判断与交付表达。`,
+      `能够围绕“${scene.name}”完成条件界定、证据筛选、专业判断与交付表达。`,
     taskDetails: scene.tasks.map((title, index) => ({
       id: `${scene.id}-task-${index + 1}`,
       title,
       description:
         [
-          "明确业务现象、时间范围和受影响对象，形成第一版问题界定。",
-          "从流量证据中提炼关键事实，并区分传输等待与应用等待。",
-          "选择最能支撑结论的证据，完成一页式定位判断。",
-          "说明采集边界、不可见范围和下一步验证建议，形成可交付成果。",
+          "明确任务目标、现场条件和已知约束，形成第一版工作界定。",
+          "按工序或专业要求完成任务，记录关键数据、依据和现场反馈。",
+          "依据规范与证据完成专业判断，说明取舍理由和替代方案。",
+          "说明检测边界、未验证事项和下一步建议，形成可交付成果。",
         ][index] ?? "完成本任务并提交可复核成果。",
       type: taskTypes[index] ?? "训练",
       minutes: [20, 35, 30, 25][index] ?? 30,
@@ -151,7 +176,7 @@ export function enrichScene(scene: SceneProfile): SceneProfile {
       evidenceIds: scene.evidence.slice(0, index < 2 ? 2 : 4).map((item) => item.id),
       resources: [
         resource(`${scene.id}-task-${index + 1}-doc`, "文档", `${title}任务说明`, "任务背景、操作步骤与交付要求"),
-        resource(`${scene.id}-task-${index + 1}-video`, "视频", "方法演示", "结合当前场景的方法操作演示"),
+        resource(`${scene.id}-task-${index + 1}-video`, "视频", "方法演示", "结合当前场景的工艺与管理方法演示"),
         resource(`${scene.id}-task-${index + 1}-quiz`, "习题", "任务自检", "提交前检查关键证据与边界"),
       ],
       abilityPointIds: dimensionsForScene(scene),
@@ -159,23 +184,23 @@ export function enrichScene(scene: SceneProfile): SceneProfile {
       required: true,
       requiredEvidenceIds:
         scene.id === "bank" && index === 2
-          ? ["wait", "retry"]
+          ? ["wind", "datum"]
           : scene.evidence.slice(0, Math.min(2, scene.evidence.length)).map((item) => item.id),
       deliverable:
         [
           "问题界定记录",
-          "端到端链路草图与证据说明",
-          "一页式异常会话判断",
-          "故障复盘报告与下一步建议",
+          "施工组织草案与证据说明",
+          "一页式专业判断",
+          "复盘报告与下一步建议",
         ][index] ?? "任务过程记录与成果摘要",
       rubric: taskRubrics[index] ?? taskRubrics[0],
       deliveryMode: "混合",
       assessmentMethods: assessmentSets[index] ?? assessmentSets[0],
     })),
     resourceItems: [
-      resource(`${scene.id}-r1`, "视频", "现场问题还原", "客户报障与业务现场背景"),
-      resource(`${scene.id}-r2`, "文档", "脱敏流量样本说明", "样本字段、时间范围和采集点"),
-      resource(`${scene.id}-r3`, "思维导图", "分析路径", "从问题到证据的方法路径"),
+      resource(`${scene.id}-r1`, "视频", "现场问题还原", "项目背景、施工阶段与关键约束"),
+      resource(`${scene.id}-r2`, "文档", "脱敏工程资料说明", "图纸、监测数据与现场记录的范围"),
+      resource(`${scene.id}-r3`, "思维导图", "处理路径", "从问题到证据的专业判断路径"),
       resource(`${scene.id}-r4`, "知识图谱", "场景知识关系", "岗位、能力点、任务和证据关系"),
     ],
     abilityPointIds: dimensionsForScene(scene),
@@ -208,7 +233,7 @@ export function enrichChapter(chapter: CourseChapter, course: CourseProfile, ind
     ...chapter,
     objectives:
       chapter.objectives ??
-      [`理解${chapter.title}的核心方法`, "能够结合岗位案例完成判断", "说明分析过程与不可见边界"],
+      [`理解${chapter.title}的核心方法`, "能够结合岗位案例完成判断", "说明处理过程与不可见边界"],
     points:
       chapter.points ??
       (course.chapters[index].method

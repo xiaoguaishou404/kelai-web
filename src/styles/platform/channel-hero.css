@@ -1,8 +1,8 @@
 
 /* Shared channel hero */
 .ep .ep-channel-hero {
-  --channel-accent: rgb(112 203 191 / 20%);
-  --channel-accent-soft: rgb(202 241 236 / 12%);
+  --channel-accent: rgb(226 138 61 / 18%);
+  --channel-accent-soft: rgb(255 214 175 / 12%);
   position: relative;
   isolation: isolate;
   margin-block: calc(var(--scale-base) * -24) calc(var(--scale-base) * 28);
@@ -10,7 +10,7 @@
   background:
     radial-gradient(circle at 84% 18%, rgb(255 255 255 / 34%), transparent 25%),
     radial-gradient(circle at 63% 91%, var(--channel-accent), transparent 31%),
-    linear-gradient(108deg, #203fac 0%, #315acb 31%, #6b8de4 59%, #b7d3f6 82%, #edf7ff 100%);
+    linear-gradient(108deg, #082e56 0%, #0e4c82 31%, #2f7fb8 59%, #b9d8ee 82%, #eef6fd 100%);
   box-shadow:
     0 calc(var(--scale-base) * 22) calc(var(--scale-base) * 48) rgb(29 61 139 / 14%),
     inset 0 calc(var(--scale-base) * 1) 0 rgb(255 255 255 / 30%);
@@ -18,8 +18,8 @@
 }
 
 .ep .ep-channel-hero.is-assessment {
-  --channel-accent: rgb(85 207 188 / 21%);
-  --channel-accent-soft: rgb(201 247 239 / 13%);
+  --channel-accent: rgb(116 179 214 / 20%);
+  --channel-accent-soft: rgb(205 228 244 / 13%);
 }
 
 .ep .ep-channel-hero.is-projects {
@@ -28,8 +28,8 @@
 }
 
 .ep .ep-channel-hero.is-employment {
-  --channel-accent: rgb(115 211 205 / 19%);
-  --channel-accent-soft: rgb(214 244 244 / 12%);
+  --channel-accent: rgb(226 138 61 / 16%);
+  --channel-accent-soft: rgb(255 224 194 / 11%);
 }
 
 .ep .ep-channel-hero:after {
@@ -108,7 +108,7 @@
 .ep .ep-channel-hero-kicker i {
   width: calc(var(--scale-base) * 22);
   height: calc(var(--scale-base) * 1);
-  background: linear-gradient(90deg, #c7f8ef, rgb(255 255 255 / 16%));
+  background: linear-gradient(90deg, #cfe6f3, rgb(255 255 255 / 16%));
 }
 
 .ep .ep-channel-hero-copy h1 {
@@ -259,7 +259,7 @@
 .ep .ep-channel-hero.is-courses .ep-channel-hero-metrics li:nth-child(3) .ep-channel-metric-icon,
 .ep .ep-channel-hero.is-assessment .ep-channel-hero-metrics li:nth-child(3) .ep-channel-metric-icon,
 .ep .ep-channel-hero.is-employment .ep-channel-hero-metrics li:nth-child(3) .ep-channel-metric-icon {
-  background: rgb(112 203 191 / 14%);
+  background: rgb(226 138 61 / 12%);
   color: #dffbf6;
 }
 
@@ -616,7 +616,7 @@
   height: calc(var(--scale-base) * 3);
   justify-self: end;
   border-radius: calc(var(--scale-base) * 3);
-  background: linear-gradient(90deg, #6d92d9, #72cbbf);
+  background: linear-gradient(90deg, #4a83b3, #6aa8c4);
 }
 
 .course-guide-track {

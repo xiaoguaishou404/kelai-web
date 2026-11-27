@@ -248,9 +248,9 @@ function CourseCards() {
         </header>
         <div className="course-system-list">
           {[
-            ["01", "协议与流量分析"],
-            ["02", "采集与环境部署"],
-            ["03", "性能诊断实务"],
+            ["01", "钢结构识图与深化"],
+            ["02", "焊接与构件工艺"],
+            ["03", "智能建造与施工"],
           ].map(([index, label]) => (
             <div key={index}>
               <span>{index}</span>
@@ -306,7 +306,7 @@ function ProjectCards() {
         <header className="ep-channel-card-head">
           <div>
             <strong>待接单工单</strong>
-            <small>银行网点交易异常复盘</small>
+            <small>超高层钢结构智慧建造实践</small>
           </div>
           <BriefcaseBusiness size={18} />
         </header>
@@ -321,9 +321,9 @@ function ProjectCards() {
           </span>
         </div>
         <div className="project-brief-tags">
-          <span>定位报告</span>
-          <span>证据清单</span>
-          <span>验证建议</span>
+          <span>合龙方案</span>
+          <span>部署清单</span>
+          <span>复盘报告</span>
         </div>
       </article>
 
@@ -613,7 +613,7 @@ function EmploymentPathScene() {
             </g>
             <g className="employment-label">
               <rect x="610" y="226" width="88" height="22" rx="7" />
-              <text x="654" y="241" textAnchor="middle">技术服务</text>
+              <text x="654" y="241" textAnchor="middle">数字设计</text>
             </g>
           </g>
           <g className="job-platform job-secondary">
@@ -628,7 +628,7 @@ function EmploymentPathScene() {
             </g>
             <g className="employment-label">
               <rect x="626" y="408" width="78" height="22" rx="7" />
-              <text x="665" y="423" textAnchor="middle">安全分析</text>
+              <text x="665" y="423" textAnchor="middle">智能建造</text>
             </g>
           </g>
           <g className="job-platform job-tertiary">
@@ -643,7 +643,7 @@ function EmploymentPathScene() {
             </g>
             <g className="employment-label">
               <rect x="573" y="130" width="84" height="22" rx="7" />
-              <text x="615" y="145" textAnchor="middle">可观测性</text>
+              <text x="615" y="145" textAnchor="middle">城市更新</text>
             </g>
           </g>
         </g>

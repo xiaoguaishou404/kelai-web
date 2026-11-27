@@ -60,7 +60,7 @@
 .ep .ep-project-tabs button.active {
   border-color: #c5d4ef;
   background: #eef4ff;
-  color: #315fbf;
+  color: #0f5fa8;
 }
 
 .ep .ep-project-tabs button span {
@@ -77,7 +77,7 @@
 
 .ep .ep-project-tabs button.active span {
   background: #dfe9ff;
-  color: #315fbf;
+  color: #0f5fa8;
 }
 
 .ep .ep-project-filters {
@@ -287,7 +287,7 @@
 }
 
 .ep .ep-project-order-foot b {
-  color: #315fbf;
+  color: #0f5fa8;
   font-family: var(--font-numeric);
   font-size: calc(var(--scale-base) * 12);
 }
@@ -430,13 +430,13 @@
 }
 
 .ep .ep-project-flow li.is-active {
-  color: #315fbf;
+  color: #0f5fa8;
 }
 
 .ep .ep-project-flow li.is-active i {
   border-color: #9eb6e6;
   background: #edf4ff;
-  color: #315fbf;
+  color: #0f5fa8;
   box-shadow: 0 0 0 calc(var(--scale-base) * 4) rgb(62 103 181 / 7%);
 }
 

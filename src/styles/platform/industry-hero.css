@@ -65,10 +65,10 @@
   }
 
   a.ep-industry-hero-primary {
-    background: #2556cb;
+    background: #0d5495;
     color: white;
 
-    &:hover { background: #1948b7; }
+    &:hover { background: #083a68; }
   }
 
   a.ep-industry-hero-secondary {
@@ -79,4 +79,22 @@
     &:hover { border-color: #5e84cb; background: #fff; }
   }
 
+}
+
+@media (max-width: 760px) {
+  .ep .ep-industry-hero {
+    .ep-industry-hero-visual {
+      object-position: 72% top;
+      opacity: .58;
+    }
+
+    .ep-industry-hero-inner {
+      min-height: calc(var(--scale-base) * 500);
+      background: linear-gradient(90deg, rgb(241 246 254 / 97%) 0%, rgb(241 246 254 / 86%) 56%, rgb(241 246 254 / 22%) 100%);
+    }
+
+    .ep-industry-hero-description {
+      max-width: calc(var(--scale-base) * 330);
+    }
+  }
 }

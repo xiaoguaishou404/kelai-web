@@ -22,10 +22,10 @@ function defaultTextbook(): TextbookProfile {
   return {
     id: uid("textbook"),
     name: "",
-    code: `KL-JC-${String(Date.now()).slice(-4)}`,
-    creator: "科来教学资源部",
-    industry: "金融",
-    major: "网络工程",
+    code: `ZJKG-JC-${String(Date.now()).slice(-4)}`,
+    creator: "中建科工产业学院",
+    industry: "建筑工程",
+    major: "智能建造技术",
     coverTone: "blue",
     chapters: [],
   };

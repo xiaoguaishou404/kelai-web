@@ -15,7 +15,7 @@ export function migrateV3(
   const resources = (legacy.resources?.length ? legacy.resources : seed.resources).map((resource) => {
     const seeded = seed.resources.find((item) => item.id === resource.id);
     const fallback = seeded?.rights ?? createResourceRights(resource.id, {
-      ownership: "科来自有",
+      ownership: "科工自有",
       ownerName: "待补录权属人",
       sourceNote: "历史资源迁移，需补录来源与授权说明。",
       desensitizationNote: "尚未确认脱敏范围。",
@@ -35,7 +35,7 @@ export function migrateV3(
   return {
     ...seed,
     ...legacy,
-    schemaVersion: 15,
+    schemaVersion: 16,
     resources,
     majorGroups: seed.majorGroups,
   } as EnterpriseWorkspaceState;
@@ -90,7 +90,7 @@ export function migrateV2(legacyInput: LegacyWorkspaceMigration & { resources?: 
             id,
             name,
             category: "待完善",
-            stage: "技术服务",
+            stage: "现场施工",
             industry: "待完善",
             description,
             skills: [],

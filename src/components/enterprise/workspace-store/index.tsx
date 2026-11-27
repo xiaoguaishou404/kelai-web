@@ -99,7 +99,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (saved) {
         const parsed = stripTrainingData(JSON.parse(saved) as LegacyWorkspaceData);
         const savedVersion = Number((parsed as { schemaVersion?: number }).schemaVersion);
-        if (savedVersion >= 5 && savedVersion <= 15) {
+        if (savedVersion >= 16) {
           const base = seedWorkspace();
           const mergingExpandedCatalog = savedVersion < 9;
           const mergingSeedResources = savedVersion < 14;
@@ -115,7 +115,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             state: {
               ...base,
               ...parsed,
-              schemaVersion: 15,
+              schemaVersion: 16,
               resources: mergingExpandedCatalog || mergingSeedResources
                 ? [
                     ...base.resources.filter((item) => !savedResourceIds.has(item.id)),
@@ -205,7 +205,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         if (legacyV3) {
           dispatch({ type: "hydrate", state: migrateV3(JSON.parse(legacyV3)) });
         } else {
-          const legacy = window.localStorage.getItem("colasoft-enterprise-v2");
+          const legacy = window.localStorage.getItem("zjkg-enterprise-legacy-v2");
           if (legacy) dispatch({ type: "hydrate", state: migrateV2(JSON.parse(legacy)) });
         }
       }

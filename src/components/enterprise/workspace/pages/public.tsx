@@ -71,7 +71,7 @@ export function IndustryView() {
     <>
       <Card className="ep-major-matrix" id="major-groups">
         <div className="ep-section-title">
-          <div><Tag>MAJOR GROUP FIT</Tag><h2>科来适配的专业群</h2></div>
+          <div><Tag>MAJOR GROUP FIT</Tag><h2>中建科工适配的专业群</h2></div>
           <button className="ep-button secondary" onClick={() => setGroupFilter("全部")}>全部专业群</button>
         </div>
         <div className="ep-filters">
@@ -143,7 +143,7 @@ export function IndustryView() {
           <div><Tag>RIGHT CLEARANCE</Tag><h2>场景与资源确权</h2></div>
           {manager && <Link className="ep-link" href="/platform/admin/scene/scenarios">进入场景管理 <ArrowUpRight size={15} /></Link>}
         </div>
-        <p className="ep-rights-intro">科来对知与的场景与资源进行确权授权，明确资源用途、使用范围与有效期，让产业内容合规进入课程、实训与人才评价。</p>
+        <p className="ep-rights-intro">中建科工对平台的场景与资源进行确权授权，明确资源用途、使用范围与有效期，让产业内容合规进入课程、实训与人才评价。</p>
         <div className="ep-rights-flow" aria-label="资源授权链路">
           <span><i>01</i>资源归属</span>
           <span><i>02</i>授权确认</span>
@@ -296,10 +296,10 @@ export function ResourcesView() {
                     <circle cx="91" cy="116" r="5" />
                     <circle className="is-core" cx="136" cy="88" r="9" />
                   </svg>
-                  <span className="map-label label-collect">采集</span>
-                  <span className="map-label label-analyze">分析</span>
-                  <span className="map-label label-locate">定位</span>
-                  <span className="map-label label-deliver">交付</span>
+                  <span className="map-label label-collect">建模</span>
+                  <span className="map-label label-analyze">制造</span>
+                  <span className="map-label label-locate">安装</span>
+                  <span className="map-label label-deliver">验收</span>
                 </div>
               </article>
 
@@ -405,7 +405,7 @@ export function ResourcesView() {
         <div className="ep-grid">
           {courses.filter((item) => resourceVisible(state, item.id) && matching(item.name)).map((item, index) => (
             <Card key={item.id}>
-              <div className={`ep-art art-${index}`}><BookOpen size={64} /><span>COLASOFT ACADEMY</span></div>
+              <div className={`ep-art art-${index}`}><BookOpen size={64} /><span>中建科工产业学院</span></div>
               <div className="ep-cardbody"><Tag>岗位核心课程</Tag><h2>{resourceName(state, item.id, item.name)}</h2><p>{item.chapters.length} 个章节 · 案例与实训联动</p><Link className="ep-link" href={`/platform/course/${item.id}`}>进入课程 <ArrowUpRight size={16} /></Link></div>
             </Card>
           ))}
@@ -526,7 +526,7 @@ export function JobView({ id }: { id?: string }) {
             <h1>{resourceName(state, job.id, job.name)}</h1>
             <p>{job.description}</p>
             <div className="ep-detail-meta">
-              <span>岗位编码 {job.code ?? `KL-GW-${job.id.toUpperCase()}`}</span>
+              <span>岗位编码 {job.code ?? `ZJKG-GW-${job.id.toUpperCase()}`}</span>
               <span>{job.industry} · {job.stage}</span>
               <span>{job.salaryRange ?? "能力导向"}</span>
             </div>

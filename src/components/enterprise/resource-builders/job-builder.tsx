@@ -87,10 +87,10 @@ export function JobBuilder({ resource, initial, notify, onClose }: BuilderProps 
       <WizardSteps current={step} steps={["基础信息", "工作任务", "能力模型", "关联资源", "提交"]} />
       <div className="ep-builder-body">
         {step === 0 && <div className="ep-form-grid">
-          <Field label="岗位名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="如：网络性能诊断工程师" /></Field>
+          <Field label="岗位名称"><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="如：钢结构深化设计工程师" /></Field>
           <Field label="岗位编码"><input value={draft.code ?? ""} readOnly /></Field>
-          <Field label="所属行业"><select value={draft.industry} onChange={(event) => setDraft({ ...draft, industry: event.target.value })}>{["金融", "能源", "医疗", "制造", "政务", "运营商"].map((item) => <option key={item}>{item}</option>)}</select></Field>
-          <Field label="产业链阶段"><select value={draft.stage} onChange={(event) => setDraft({ ...draft, stage: event.target.value })}>{["采集基础设施", "分析研判", "技术服务"].map((item) => <option key={item}>{item}</option>)}</select></Field>
+          <Field label="所属行业"><select value={draft.industry} onChange={(event) => setDraft({ ...draft, industry: event.target.value })}>{["建筑工程", "城市更新", "智能建造", "建筑工业化", "建筑数字化", "基础设施"].map((item) => <option key={item}>{item}</option>)}</select></Field>
+          <Field label="产业链阶段"><select value={draft.stage} onChange={(event) => setDraft({ ...draft, stage: event.target.value })}>{["数字设计", "工厂制造", "现场施工", "更新运营"].map((item) => <option key={item}>{item}</option>)}</select></Field>
           <Field label="面向专业" wide><input value={(draft.majors ?? []).join("，")} onChange={(event) => setDraft({ ...draft, majors: comma(event.target.value) })} /></Field>
           <div className="wide"><ResourceChecks title="适配专业群" items={state.majorGroups.map((item) => [item.id, item.name])} selected={draft.majorGroupIds ?? []} onChange={(majorGroupIds) => setDraft({ ...draft, majorGroupIds })} /></div>
           <Field label="岗位简介" wide><textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></Field>

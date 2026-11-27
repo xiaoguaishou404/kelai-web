@@ -20,7 +20,7 @@ export function RecordEditor({
   onClose: () => void;
 }) {
   const [name, setName] = useState(record?.name ?? "");
-  const [code, setCode] = useState(() => record?.code ?? `KL-${Date.now().toString().slice(-6)}`);
+  const [code, setCode] = useState(() => record?.code ?? `ZJKG-${Date.now().toString().slice(-6)}`);
   const [status, setStatus] = useState(record?.status ?? "草稿");
   const [owner, setOwner] = useState(record?.owner ?? "院校管理员");
   const [note, setNote] = useState(String(record?.data["说明"] ?? ""));

@@ -200,7 +200,7 @@ export function AcademyConsole({
           ...state.platformAdmin.certificates,
           {
             id: crypto.randomUUID(),
-            name: "网络分析专项能力证书（示例）",
+            name: "智能建造专项能力证书（示例）",
             category: "行业认证",
             issuer: "行业能力认证机构（示例）",
             level: "初级",
@@ -296,7 +296,7 @@ export function AcademyConsole({
   if (!owner) {
     return (
       <div className="ep-academy">
-        <div className="ep-empty">当前身份无权进入管理后台，请切换为科来管理或院校管理身份。</div>
+        <div className="ep-empty">当前身份无权进入管理后台，请切换为中建科工管理或院校管理身份。</div>
       </div>
     );
   }
@@ -519,7 +519,7 @@ export function AcademyConsole({
               {schedules.map((schedule) => (
                 <article key={schedule.id}>
                   <header><div><h3>{schedule.name}</h3><p>{schedule.openAt} 至 {schedule.closeAt} · {schedule.durationMinutes} 分钟</p></div><span className={`ep-tag is-${schedule.status === "进行中" ? "success" : schedule.status === "待开始" ? "warning" : "muted"}`}>{schedule.status}</span></header>
-                  <footer><span>考试对象：网络工程 2401</span><button className="ep-button secondary" onClick={() => {
+                  <footer><span>考试对象：智能建造技术 2401</span><button className="ep-button secondary" onClick={() => {
                     updateAdmin({ examSchedules: state.platformAdmin.examSchedules.map((item) => item.id === schedule.id ? { ...item, status: item.status === "进行中" ? "已结束" : "进行中" } : item) });
                     notify(schedule.status === "进行中" ? "考试已结束" : "考试已开启");
                   }}>{schedule.status === "进行中" ? "结束考试" : "开启考试"}</button></footer>

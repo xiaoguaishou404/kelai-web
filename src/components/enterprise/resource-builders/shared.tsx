@@ -33,13 +33,13 @@ export function uid(prefix: string) {
 export function defaultJob(): JobProfile {
   return {
     id: uid("job"),
-    code: `KL-GW-${String(Date.now()).slice(-4)}`,
+    code: `ZJKG-GW-${String(Date.now()).slice(-4)}`,
     name: "",
-    category: "网络分析",
-    stage: "技术服务",
-    industry: "金融",
+    category: "智能建造",
+    stage: "现场施工",
+    industry: "建筑工程",
     description: "",
-    majors: ["网络工程"],
+    majors: ["智能建造技术"],
     majorGroupIds: [],
     responsibilities: [],
     requirements: [],
@@ -69,7 +69,7 @@ export function defaultScene(jobId = ""): SceneProfile {
   return {
     id: uid("scene"),
     name: "",
-    industry: "金融",
+    industry: "建筑工程",
     jobId,
     difficulty: "进阶",
     description: "",
@@ -139,12 +139,12 @@ export function defaultAssessment(
   return {
     id: uid("assessment"),
     name: "",
-    code: `KL-AS-${String(Date.now()).slice(-4)}`,
+    code: `ZJKG-AS-${String(Date.now()).slice(-4)}`,
     jobId,
     standardId,
     kind,
     difficulty: "中级",
-    publisher: "科来网络",
+    publisher: "中建科工",
     durationMinutes: 30,
     passScore: 80,
     questions: [],
@@ -155,7 +155,7 @@ export function defaultStandard(jobId = ""): StandardProfile {
   return {
     id: uid("standard"),
     name: "",
-    code: `KL-ST-${String(Date.now()).slice(-4)}`,
+    code: `ZJKG-ST-${String(Date.now()).slice(-4)}`,
     jobId,
     abilityPointWeights: dimensions.map((name, index) => ({
       id: uid("point"),
@@ -237,13 +237,13 @@ export function RightsFields({
       <div className="ep-form-grid">
         <label className="ep-form">权属类型
           <select value={rights.ownership} onChange={(event) => update({ ownership: event.target.value as ResourceRights["ownership"] })}>
-            {["科来自有", "客户授权", "校企共建", "公开资料改编"].map((item) => <option key={item}>{item}</option>)}
+            {["科工自有", "客户授权", "校企共建", "公开资料改编"].map((item) => <option key={item}>{item}</option>)}
           </select>
         </label>
         <label className="ep-form">权属人<input value={rights.ownerName} onChange={(event) => update({ ownerName: event.target.value })} /></label>
         <label className="ep-form wide">来源说明<textarea value={rights.sourceNote} onChange={(event) => update({ sourceNote: event.target.value })} /></label>
         <label className="ep-form wide">脱敏说明<textarea value={rights.desensitizationNote} onChange={(event) => update({ desensitizationNote: event.target.value })} /></label>
-        <label className="ep-form">协议 / 授权编号<input value={rights.agreementNo} onChange={(event) => update({ agreementNo: event.target.value })} placeholder="如 KL-RIGHTS-2026-001" /></label>
+        <label className="ep-form">协议 / 授权编号<input value={rights.agreementNo} onChange={(event) => update({ agreementNo: event.target.value })} placeholder="如 ZJKG-RIGHTS-2026-001" /></label>
         <label className="ep-form">权属材料<input value={rights.evidenceName} onChange={(event) => update({ evidenceName: event.target.value })} placeholder="模拟文件名" /></label>
         <label className="ep-form">生效日期<input type="date" value={rights.validFrom} onChange={(event) => update({ validFrom: event.target.value })} /></label>
         <label className="ep-form">有效期至<input type="date" value={rights.validUntil} onChange={(event) => update({ validUntil: event.target.value })} /></label>
@@ -322,7 +322,7 @@ export function useResourceSave(resource?: Resource) {
   ) => {
     const status = "草稿" as const;
     if (resource) {
-      updateResource(resource.id, { ...meta, draftContent: content }, "科来运营");
+      updateResource(resource.id, { ...meta, draftContent: content }, "中建科工运营");
       if (submit) resourceAction(resource.id, "submit");
       return resource.id;
     }

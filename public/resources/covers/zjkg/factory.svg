@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" role="img" aria-label="">
+  <defs>
+    <linearGradient id="factory-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c3d6d"/>
+      <stop offset=".55" stop-color="#125c98"/>
+      <stop offset="1" stop-color="#1f7ab3"/>
+    </linearGradient>
+    <radialGradient id="factory-glow" cx=".72" cy=".24" r=".8">
+      <stop offset="0" stop-color="#8ecbf0" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#8ecbf0" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="factory-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0v40" fill="none" stroke="#d7ebfb" stroke-opacity=".09" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="520" fill="url(#factory-bg)"/>
+  <rect width="800" height="520" fill="url(#factory-grid)"/>
+  <rect width="800" height="520" fill="url(#factory-glow)"/>
+  <g stroke="#eaf5ff" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke-width="2.2" stroke-opacity=".8">
+      <path d="M118 412V270l200-86 200 86v142l-200 82z" fill="#dff1ff" fill-opacity=".05"/>
+      <path d="M118 270l200 82 200-82M318 352v142M118 412l200-82 200 82" stroke-opacity=".65"/>
+      <path d="M154 418V306h74v88M262 434V322h74v88M370 434V322h74v88" stroke-width="1.4" stroke-opacity=".35"/>
+      <g stroke-width="2" stroke-opacity=".7">
+        <path d="M494 392V248h40v144M534 392h92M626 392v-70M584 248l84 50"/>
+        <path d="M568 260v68M624 288v54" stroke-width="1.2" stroke-opacity=".4"/>
+      </g>
+      <path d="M150 458h500" stroke-width="1.2" stroke-opacity=".3"/>
+      <path d="M170 200h190M170 184v32M360 184v32" stroke-width="1.2" stroke-opacity=".32"/>
+    </g>
+    <g stroke="#f0a65f" stroke-width="1.6" stroke-opacity=".7">
+      <path d="M494 392l-34 36M626 322l-28 30"/>
+    </g>
+  </g>
+  <g fill="#f0a65f">
+    <circle cx="654" cy="112" r="3.6" opacity=".9"/>
+    <circle cx="702" cy="150" r="2.4" opacity=".55"/>
+  </g>
+</svg>

@@ -8,8 +8,8 @@ export type AiSettingsValidation =
   | { ok: true; settings: AiSettings }
   | { ok: false; error: string };
 
-export const AI_SETTINGS_STORAGE_KEY = "colasoft-ai-config-v1";
-export const AI_SETTINGS_CHANGE_EVENT = "colasoft:ai-settings-change";
+export const AI_SETTINGS_STORAGE_KEY = "zjkg-ai-config-v1";
+export const AI_SETTINGS_CHANGE_EVENT = "zjkg:ai-settings-change";
 export const DEFAULT_AI_BASE_URL = "https://api.deepseek.com";
 export const DEFAULT_AI_MODEL = "deepseek-flash";
 

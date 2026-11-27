@@ -10,8 +10,8 @@
   border-radius: 0;
   background:
     radial-gradient(circle at 84% 18%, rgb(255 255 255 / 34%), transparent 25%),
-    radial-gradient(circle at 59% 92%, rgb(112 203 191 / 22%), transparent 30%),
-    linear-gradient(107deg, #203fac 0%, #315acb 32%, #6b8de4 59%, #b7d3f6 82%, #edf7ff 100%);
+    radial-gradient(circle at 59% 92%, rgb(226 138 61 / 18%), transparent 30%),
+    linear-gradient(107deg, #082e56 0%, #0e4c82 32%, #2f7fb8 59%, #b9d8ee 82%, #eef6fd 100%);
   box-shadow:
     0 calc(var(--scale-base) * 24) calc(var(--scale-base) * 52) rgb(29 61 139 / 17%),
     inset 0 calc(var(--scale-base) * 1) 0 rgb(255 255 255 / 30%);
@@ -187,7 +187,7 @@
 }
 
 .ep .ep-resource-metric.metric-1 .ep-resource-metric-icon {
-  background: rgb(112 203 191 / 14%);
+  background: rgb(226 138 61 / 12%);
   color: #dffbf6;
 }
 

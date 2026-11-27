@@ -2,7 +2,7 @@ import type { PageAgentCore } from "@page-agent/core";
 import type { PageController } from "@page-agent/page-controller";
 import {
   definePageAgentElement,
-  type ColasoftPageAgentElement,
+  type ZjkgPageAgentElement,
 } from "@/components/enterprise/page-agent-element";
 import {
   AI_SETTINGS_CHANGE_EVENT,
@@ -12,7 +12,7 @@ import {
 } from "@/lib/ai-settings";
 
 export type PageAgentRuntime = {
-  host: ColasoftPageAgentElement;
+  host: ZjkgPageAgentElement;
   agent: PageAgentCore | null;
   pageController: PageController | null;
   syncPath: (pathname: string) => void;
@@ -21,7 +21,7 @@ export type PageAgentRuntime = {
 
 declare global {
   interface Window {
-    __COLASOFT_PAGE_AGENT_RUNTIME__?: PageAgentRuntime;
+    __ZJKG_PAGE_AGENT_RUNTIME__?: PageAgentRuntime;
   }
 }
 
@@ -172,7 +172,7 @@ async function refreshRuntime(runtime: PageAgentRuntime) {
 
 async function createRuntime(pathname: string): Promise<PageAgentRuntime> {
   definePageAgentElement();
-  const host = document.createElement("colasoft-page-agent") as ColasoftPageAgentElement;
+  const host = document.createElement("zjkg-page-agent") as ZjkgPageAgentElement;
   document.body.appendChild(host);
   setupHighRiskProtection(host);
 
@@ -198,13 +198,13 @@ async function createRuntime(pathname: string): Promise<PageAgentRuntime> {
   });
   host.setPath(pathname);
 
-  window.__COLASOFT_PAGE_AGENT_RUNTIME__ = runtime;
+  window.__ZJKG_PAGE_AGENT_RUNTIME__ = runtime;
   await runtime.refresh();
   return runtime;
 }
 
 export async function ensurePageAgentRuntime(pathname: string) {
-  const existing = window.__COLASOFT_PAGE_AGENT_RUNTIME__;
+  const existing = window.__ZJKG_PAGE_AGENT_RUNTIME__;
   if (existing) {
     existing.syncPath(pathname);
     return existing;

@@ -63,7 +63,7 @@ const initialState: AssistantState = {
 
 function inferRole() {
   const user = document.querySelector(".ep-user")?.textContent?.trim() ?? "";
-  return user.includes("科来运营") ? "科来管理" : user.includes("周启明") ? "教师" : user ? "学生" : "页面助手";
+  return user.includes("中建科工运营") ? "中建科工管理" : user.includes("周启明") ? "教师" : user ? "学生" : "页面助手";
 }
 
 export function friendlyError(message: string) {

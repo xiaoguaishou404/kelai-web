@@ -73,7 +73,7 @@ export function pageTitle(page: string) {
     resource: "资源详情",
     standard: "岗位评价标准",
     project: "项目详情",
-    "industry/company": "关于科来",
+    "industry/company": "关于中建科工",
     textbook: "数字教材",
     certificate: "证书详情",
     "evaluation-method": "测评方式",

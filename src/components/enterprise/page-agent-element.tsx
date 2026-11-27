@@ -3,14 +3,14 @@ import { createRoot, type Root } from "react-dom/client";
 import { AssistantStore, type AgentBinding } from "./assistant-store";
 import { AssistantView } from "./assistant-view";
 
-export class ColasoftPageAgentElement extends HTMLElement {
+export class ZjkgPageAgentElement extends HTMLElement {
   #store = new AssistantStore();
   #container: HTMLDivElement | null = null;
   #root: Root | null = null;
 
   connectedCallback() {
     if (this.#root) return;
-    this.id = "colasoft-ai-copilot";
+    this.id = "zjkg-ai-copilot";
     this.className = "ep-ai-copilot";
     this.setAttribute("data-page-agent-ignore", "true");
     this.setAttribute("data-page-agent-not-interactive", "true");
@@ -51,7 +51,7 @@ export class ColasoftPageAgentElement extends HTMLElement {
 }
 
 export function definePageAgentElement() {
-  if (!customElements.get("colasoft-page-agent")) {
-    customElements.define("colasoft-page-agent", ColasoftPageAgentElement);
+  if (!customElements.get("zjkg-page-agent")) {
+    customElements.define("zjkg-page-agent", ZjkgPageAgentElement);
   }
 }

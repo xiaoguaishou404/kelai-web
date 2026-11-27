@@ -140,7 +140,7 @@ export function ReviewsView() {
                   {submission.analysis && <p>{submission.analysis}</p>}
                   {submission.nextStep && <p><b>下一步</b>{submission.nextStep}</p>}
                   <div className="ep-chips">{submission.evidenceIds.map((id) => <Tag key={id}>{scene.evidence.find((item) => item.id === id)?.title ?? id}</Tag>)}</div>
-                  {task.type === "复盘" && <small>边界确认：{submission.boundaryAcknowledged ? "已说明采集范围" : "未确认"}</small>}
+                  {task.type === "复盘" && <small>边界确认：{submission.boundaryAcknowledged ? "已说明检测范围" : "未确认"}</small>}
                 </div>
                 <div>
                   <h3>评价量规</h3>
@@ -198,7 +198,7 @@ export function ClassroomView() {
   const [newSessionTitle, setNewSessionTitle] = useState("场景现场答辩");
   const [newSessionSceneId, setNewSessionSceneId] = useState("bank");
   const [newSessionDate, setNewSessionDate] = useState("2026-12-02");
-  const [newSessionLocation, setNewSessionLocation] = useState("网络分析实训室");
+  const [newSessionLocation, setNewSessionLocation] = useState("智能建造实训室");
   const sessions = state.offlineSessions;
   const session = sessions[Math.min(selected, Math.max(0, sessions.length - 1))];
   const attendees = session
@@ -336,7 +336,7 @@ function TaskReviewForm({
   const [comment, setComment] = useState("任务证据完整，过程与结论基本一致，可以进入下一任务。");
   const [tags, setTags] = useState<string[]>(["证据清楚", "过程完整"]);
   const [defenseScore, setDefenseScore] = useState(86);
-  const [defenseComment, setDefenseComment] = useState("能够说明判断依据，并清楚回应采集边界。");
+  const [defenseComment, setDefenseComment] = useState("能够说明判断依据，并清楚回应检测边界。");
   const total = task.rubric.reduce((sum, item) => sum + (scores[item.id] ?? 0), 0);
   const blockers = taskReviewBlockers(
     state,
@@ -439,7 +439,7 @@ function ReviewForm({ onSubmit }: { onSubmit: (review: Review) => void }) {
   const [evidence, setEvidence] = useState(32);
   const [reasoning, setReasoning] = useState(32);
   const [delivery, setDelivery] = useState(16);
-  const [comment, setComment] = useState("证据完整，能够说明定位依据与采集边界。");
+  const [comment, setComment] = useState("证据完整，能够说明处理依据与检测边界。");
   const [tags, setTags] = useState<string[]>(["证据充分", "边界清楚"]);
   const total = Math.round(evidence + reasoning + delivery);
   const passScore = evaluationStandard.passScore ?? 60;

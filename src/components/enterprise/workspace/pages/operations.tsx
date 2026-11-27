@@ -67,11 +67,11 @@ export function ManageApplications({ kind, hideTitle = false }: { kind: "project
   const { readOnly } = useConsoleAccess();
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [name, setName] = useState("");
-  const [company, setCompany] = useState("科来网络");
+  const [company, setCompany] = useState("中建科工");
   const [description, setDescription] = useState("");
   const [jobId, setJobId] = useState("");
   const [deliverables, setDeliverables] = useState("分析报告\n证据清单");
-  const [acceptance, setAcceptance] = useState("结论有证据支撑\n说明采集边界");
+  const [acceptance, setAcceptance] = useState("结论有证据支撑\n说明检测边界");
   const [projectCategory, setProjectCategory] = useState("运行分析");
   const [teamSize, setTeamSize] = useState(4);
   const [duration, setDuration] = useState("4 周");
@@ -79,7 +79,7 @@ export function ManageApplications({ kind, hideTitle = false }: { kind: "project
   const [deliveryMode, setDeliveryMode] = useState<"远程" | "驻场" | "混合">("远程");
   const [projectOutcome, setProjectOutcome] = useState("形成可复核的分析报告、证据清单和交付建议");
   const [minMatch, setMinMatch] = useState(kind === "job" ? 80 : 60);
-  const [industry, setIndustry] = useState("网络与信息安全");
+  const [industry, setIndustry] = useState("建筑工程");
   const [city, setCity] = useState("杭州");
   const [employmentType, setEmploymentType] = useState<"全职" | "实习" | "远程">("全职");
   const [experience, setExperience] = useState("1-3年");
@@ -124,7 +124,7 @@ export function ManageApplications({ kind, hideTitle = false }: { kind: "project
           )}
           {kind === "project" && <>
             <div className="ep-form-grid">
-              <label className="ep-form">工单分类<select value={projectCategory} onChange={(event) => setProjectCategory(event.target.value)}><option>运行分析</option><option>安全研判</option><option>云网可观测</option><option>安全应急</option><option>采集验收</option><option>项目验证</option></select></label>
+              <label className="ep-form">工单分类<select value={projectCategory} onChange={(event) => setProjectCategory(event.target.value)}><option>超高层施工</option><option>城市更新</option><option>智能建造</option><option>检测加固</option><option>模块化建筑</option><option>项目验证</option></select></label>
               <label className="ep-form">团队规模<input type="number" min="1" max="30" value={teamSize} onChange={(event) => setTeamSize(Number(event.target.value))} /></label>
               <label className="ep-form">项目周期<input value={duration} onChange={(event) => setDuration(event.target.value)} /></label>
               <label className="ep-form">项目激励<input value={reward} onChange={(event) => setReward(event.target.value)} /></label>

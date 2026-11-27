@@ -1,15 +1,15 @@
 import { PlatformAdminState } from "@/lib/platform-admin/types";
 
-export const WORKSPACE_STORAGE_KEY = "colasoft-enterprise-v5";
-export const LEGACY_WORKSPACE_STORAGE_KEY = "colasoft-enterprise-v3";
+export const WORKSPACE_STORAGE_KEY = "zjkg-enterprise-v2";
+export const LEGACY_WORKSPACE_STORAGE_KEY = "zjkg-enterprise-legacy";
 
-export const dimensions = ["环境部署", "需求理解", "链路分析", "故障定位", "安全研判", "交付汇报"];
+export const dimensions = ["识图建模", "工艺实施", "现场施工", "质量安全", "成本进度", "协作交付"];
 
 export type Role = "student" | "teacher" | "schoolAdmin" | "manage";
 export type ResourceType = "岗位" | "场景" | "课程" | "教材" | "测评" | "评价标准";
 export type ResourceStatus = "草稿" | "待审核" | "已通过" | "已发布" | "已下线" | "已驳回" | "已归档";
 export type ResourceRightsStatus = "待确权" | "审核中" | "已确权" | "已驳回" | "已过期";
-export type ResourceOwnership = "科来自有" | "客户授权" | "校企共建" | "公开资料改编";
+export type ResourceOwnership = "科工自有" | "客户授权" | "校企共建" | "公开资料改编";
 export type ResourceUseScope = "教学使用" | "实训交付" | "项目展示" | "招聘引用";
 export type WorkStatus = "待评价" | "已通过" | "已退回";
 export type TaskSubmissionStatus = "草稿" | "待评价" | "已通过" | "已退回";
@@ -731,7 +731,7 @@ export type CatalogEntityMap = {
 };
 
 export interface EnterpriseWorkspaceState {
-  schemaVersion: 15;
+  schemaVersion: 16;
   role: Role | null;
   activeSchoolId: string;
   activeStudentId: string;

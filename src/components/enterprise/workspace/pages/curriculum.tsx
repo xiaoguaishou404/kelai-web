@@ -103,7 +103,7 @@ export function CourseView({ id }: { id?: string }) {
         <div>
           <div className="ep-chips"><Tag>{course.courseType ?? "体系课"}</Tag><Tag>{course.totalHours ?? course.chapters.length * 4} 学时</Tag><Tag>{completed.length}/{course.chapters.length} 已完成</Tag></div>
           <h1>{resourceName(state, course.id, course.name)}</h1>
-          <p>{course.industry ?? jobById(course.jobId)?.industry ?? "通用"} · {course.department ?? "数字媒体学院"} · 主编 {course.creator ?? "科来教学资源部"}</p>
+          <p>{course.industry ?? jobById(course.jobId)?.industry ?? "通用"} · {course.department ?? "智能建造学院"} · 主编 {course.creator ?? "中建科工产业学院"}</p>
         </div>
         {resourceVisible(state, course.sceneId) && <Link className="ep-button secondary" href={`/platform/scene/${course.sceneId}`}>进入关联场景<ArrowUpRight size={15} /></Link>}
       </section>

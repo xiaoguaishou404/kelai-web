@@ -519,7 +519,7 @@ function TaskWorkspace({
     if (task.type === "训练" && !worksheet.trim()) return "请填写任务过程记录";
     if (task.type === "测评" && !answer.trim()) return "请填写本任务判断结果";
     if (task.type === "复盘" && (!analysis.trim() || !nextStep.trim())) return "请填写分析结论与下一步建议";
-    if (task.type === "复盘" && !boundary) return "请确认采集范围与不可见边界";
+    if (task.type === "复盘" && !boundary) return "请确认检测范围与不可见边界";
     return "";
   };
   return (
@@ -629,7 +629,7 @@ function TaskWorkspace({
               <>
                 <textarea aria-label="分析结论" value={analysis} onChange={(event) => setAnalysis(event.target.value)} placeholder="写清问题范围、证据与判断依据" />
                 <textarea aria-label="下一步建议" value={nextStep} onChange={(event) => setNextStep(event.target.value)} placeholder="写清仍需补充验证的边界与下一步建议" />
-                <label className="ep-check"><input type="checkbox" checked={boundary} onChange={(event) => setBoundary(event.target.checked)} />已说明采集范围与不可见边界</label>
+                <label className="ep-check"><input type="checkbox" checked={boundary} onChange={(event) => setBoundary(event.target.checked)} />已说明检测范围与不可见边界</label>
               </>
             )}
             <div className="ep-actions">

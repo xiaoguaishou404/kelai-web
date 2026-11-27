@@ -229,7 +229,7 @@
     color: #3d5f8c;
   }
   .ep-ai-settings-save {
-    background: #3361e8;
+    background: #0f5fa8;
     color: #fff;
     box-shadow: 0 calc(var(--scale-base) * 5) calc(var(--scale-base) * 14) #315fcb2c;
   }
@@ -342,7 +342,7 @@
     flex-shrink: 0;
     border: 0;
     border-radius: calc(var(--scale-base) * 10);
-    background: #3361e8;
+    background: #0f5fa8;
     color: #fff;
   }
   .ep-ai-send:disabled {
@@ -432,7 +432,7 @@
     flex-shrink: 0;
   }
   .ep-ai-config:hover {
-    color: #3361e8;
+    color: #0f5fa8;
   }
   .ep-ai-privacy kbd {
     padding: calc(var(--scale-base) * 1) calc(var(--scale-base) * 5);

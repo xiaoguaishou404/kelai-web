@@ -6,7 +6,7 @@ export function PageAgentBootstrap() {
 
   useEffect(() => {
     let active = true;
-    const existing = window.__COLASOFT_PAGE_AGENT_RUNTIME__;
+    const existing = window.__ZJKG_PAGE_AGENT_RUNTIME__;
     if (existing) {
       existing.syncPath(pathname);
       return;

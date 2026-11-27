@@ -1,7 +1,7 @@
 import { PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer } from "recharts";
 
 const ABILITY_KEYS = ["deploy", "listen", "path", "locate", "alert", "report"] as const;
-const ABILITY_LABELS = ["环境部署", "需求理解", "链路分析", "故障定位", "安全研判", "交付汇报"];
+const ABILITY_LABELS = ["识图建模", "工艺实施", "现场施工", "质量安全", "成本进度", "协作交付"];
 
 type AbilityKey = (typeof ABILITY_KEYS)[number];
 

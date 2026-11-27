@@ -22,13 +22,13 @@ type PolicyItem = {
 const policyPaths = [
   {
     title: "产业岗位",
-    detail: "把岗位标准、真实任务与产业项目带进培养过程。",
+    detail: "把智能建造与城市更新的一线任务带进培养过程。",
     href: "/platform/resources",
     icon: BriefcaseBusiness,
   },
   {
     title: "院校教学",
-    detail: "把资源转化为可教、可练的课程与教材。",
+    detail: "把工程资源转化为可教、可练的课程与教材。",
     href: "/platform/courses",
     icon: GraduationCap,
   },
@@ -50,6 +50,16 @@ const policies: PolicyItem[] = [
     summary: "明确职业教育与普通教育是不同类型、同等重要的教育，系统部署产教融合、校企双元育人等改革任务。",
     audiences: ["产业岗位", "院校教学", "人才评价"],
     href: "https://www.gov.cn/zhengce/content/2019-02/13/content_5365341.htm",
+  },
+  {
+    date: "2020.07",
+    year: "2020",
+    category: "智能建造",
+    title: "关于推动智能建造与建筑工业化协同发展的指导意见",
+    issuer: "住房和城乡建设部等 13 部门",
+    summary: "提出到 2025 年基本建立智能建造政策体系和产业体系，推动 BIM、建筑机器人、建筑产业互联网与装配式建筑协同发展。",
+    audiences: ["产业岗位", "院校教学", "人才评价"],
+    href: "https://www.gov.cn/zhengce/zhengceku/2020-07/28/content_5530762.htm",
   },
   {
     date: "2021.10",
@@ -92,6 +102,16 @@ const policies: PolicyItem[] = [
     href: "https://www.gov.cn/zhengce/202501/content_6999913.htm",
   },
   {
+    date: "2025.05",
+    year: "2025",
+    category: "城市更新",
+    title: "关于持续推进城市更新行动的意见",
+    issuer: "中共中央办公厅、国务院办公厅",
+    summary: "提出到 2030 年城市更新体制机制不断完善，部署既有建筑改造、老旧小区整治、完整社区建设和历史文化保护等八项任务。",
+    audiences: ["产业岗位", "院校教学", "人才评价"],
+    href: "https://www.gov.cn/zhengce/202505/content_7023882.htm",
+  },
+  {
     date: "2026.02",
     year: "2026",
     category: "教学改革",
@@ -112,7 +132,7 @@ export function PolicyView() {
           <div className="ep-policy-hero-copy">
             <span className="ep-policy-kicker">NATIONAL POLICY · INDUSTRY-EDUCATION INTEGRATION</span>
             <h1 id="policy-page-title">国家政策</h1>
-            <p>从职业教育体系改革到教学关键要素更新，连接产业岗位、院校教学与人才评价的实践方向。</p>
+            <p>从职业教育改革、智能建造到城市有机更新，连接产业岗位、院校教学与人才评价的实践方向。</p>
           </div>
           <nav className="ep-policy-pathways" aria-label="国家政策与平台能力">
             {policyPaths.map((item) => {
@@ -135,7 +155,7 @@ export function PolicyView() {
             <span>POLICY TIMELINE</span>
             <h2 id="policy-timeline-title">从体系构建到教学落地</h2>
           </div>
-          <p>六项国家级政策，勾勒出现代职业教育与产教融合的持续演进。</p>
+          <p>八项国家级政策，勾勒出职业教育、智能建造与城市更新的协同方向。</p>
         </div>
         <ol className="ep-policy-timeline">
           {policies.map((policy) => (

@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { Activity, ArrowUpRight, BookOpen, Building2, GraduationCap, Network, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, BookOpen, Building2, DraftingCompass, GraduationCap, ShieldCheck } from "lucide-react";
 import { type Role } from "@/lib/enterprise-workspace";
 import { useWorkspacePage } from "@/components/enterprise/workspace/page-runtime";
 import { Btn, Card, Tag } from "@/components/enterprise/workspace/ui";
@@ -24,15 +24,15 @@ export function LoginView() {
     { role: "student", name: "学生", desc: "学习、实训与求职", icon: <GraduationCap /> },
     { role: "teacher", name: "院校教职工", desc: "教学、评价与成效", icon: <BookOpen /> },
     { role: "schoolAdmin", name: "院校管理", desc: "资源、教务与合作", icon: <ShieldCheck /> },
-    { role: "manage", name: "科来管理", desc: "资源、合作与人才", icon: <Building2 /> },
+    { role: "manage", name: "中建科工管理", desc: "资源、合作与人才", icon: <Building2 /> },
   ];
   return (
     <div className="ep-login">
       <div>
         <Tag>场景化产教融合平台</Tag>
-        <h1>让真实业务现场<br />成为人才成长的起点</h1>
+        <h1>让真实工程现场<br />成为人才成长的起点</h1>
         <p>从岗位标准、场景实战，到能力评价与产业交付。</p>
-        <div className="ep-login-art"><Network size={160} strokeWidth={0.7} /><Activity size={100} strokeWidth={0.8} /></div>
+        <div className="ep-login-art"><Building2 size={160} strokeWidth={0.7} /><DraftingCompass size={100} strokeWidth={0.8} /></div>
       </div>
       <Card>
         <h2>登录场景化产教融合平台</h2>
